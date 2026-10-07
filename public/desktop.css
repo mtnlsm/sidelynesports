@@ -1,97 +1,155 @@
-/* Sidelyne Sports — DESKTOP layout.
-   Loaded only at >=900px (see the media attribute on the <link> in index.html).
-   style.css stays the mobile layout; this file re-lays out the shell for a big screen:
-   full-width scoreboard bar on top, left sidebar nav, wide multi-column content, centered dialogs. */
+/* Sidelyne Sports — DESKTOP layout (>=900px). style.css stays the mobile layout.
+   Goal: calm, editorial, hand-built. Light surfaces, hairline borders, one accent, restrained type.
+   No tilted/italic gimmicks, no heavy glow or stacked shadows. */
 
-:root{--side-w:232px;--top-h:64px}
+:root{--side-w:220px;--top-h:60px;--gap:20px}
 html{scroll-padding-top:calc(var(--top-h) + 16px)}
-body{padding-left:var(--side-w);background:var(--bg)}
+body{padding-left:var(--side-w);background:var(--bg)!important;letter-spacing:0}
 
-/* ---- top bar: full-width scoreboard strip ---- */
-header{position:fixed;top:0;left:0;right:0;z-index:7;height:var(--top-h);margin:0;padding:0 28px;border-bottom:3px solid var(--ab)}
-.logo{font-size:28px}
-.logo svg{width:32px;height:32px}
-#nv{font-size:18px;padding:6px 16px;min-height:36px}
-#th{width:38px;height:38px;cursor:pointer}
-#th:hover,#nv:hover{background:rgba(255,255,255,.18)}
-#nv,#th,#th svg{transition:background .15s}
+/* ---- top bar: slim, flat ---- */
+header{position:fixed;top:0;left:0;right:0;z-index:7;height:var(--top-h);margin:0;padding:0 32px;
+  background:var(--sf);border-bottom:1px solid var(--bd);box-shadow:none}
+.logo{font-size:21px;font-style:normal;font-weight:800;text-transform:none;letter-spacing:-.01em;color:var(--tx);font-family:var(--fb)}
+.logo em{color:var(--mu);font-weight:600}
+.logo svg{width:28px;height:28px;color:var(--ab)}
+header .row{gap:10px}
+#nv,#th{background:var(--sf2);color:var(--tx);border:1px solid var(--bd);transition:background .15s}
+#nv{font-family:var(--fb);font-size:14px;font-weight:700;letter-spacing:0;padding:6px 14px;min-height:36px;border-radius:999px}
+#nv svg{color:var(--ab)}
+#th{width:36px;height:36px;border-radius:50%}
+#th:hover,#nv:hover{background:color-mix(in srgb,var(--ab) 12%,var(--sf2))}
 
-/* ---- left sidebar replaces the bottom tab bar ---- */
+/* ---- left sidebar: plain list, subtle active state ---- */
 #nav.nav.glass{position:fixed;top:var(--top-h);bottom:0;left:0;right:auto;width:var(--side-w);transform:none;
-  flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;
-  padding:20px 14px;overflow-y:auto;border-top:0;border-right:3px solid var(--ab);border-radius:0;z-index:6}
-#nav.nav button,#nav.nav.has-admin button{flex:none;max-width:none;width:100%;min-height:48px;
-  flex-direction:row;justify-content:flex-start;align-items:center;gap:14px;
-  padding:0 16px;border-radius:8px;font-size:17px;letter-spacing:.1em;text-align:left;cursor:pointer}
-#nav.nav button:hover{background:rgba(255,255,255,.07);color:#fff}
-#nav.nav button.on{background:rgba(255,255,255,.12);color:#fff}
+  flex-direction:column;justify-content:flex-start;align-items:stretch;gap:2px;
+  padding:20px 12px;overflow-y:auto;background:var(--sf);border:0;border-right:1px solid var(--bd);border-radius:0;z-index:6}
+#nav.nav button,#nav.nav.has-admin button{flex:none;max-width:none;width:100%;min-height:42px;
+  flex-direction:row;justify-content:flex-start;align-items:center;gap:12px;padding:0 14px;
+  border-radius:8px;font-family:var(--fb);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;
+  text-align:left;color:var(--mu);background:none}
+#nav.nav button:hover{background:var(--sf2);color:var(--tx)}
+#nav.nav button.on{background:color-mix(in srgb,var(--ab) 12%,var(--sf));color:var(--ab)}
+#nav.nav button.on svg{color:var(--ab)}
 #nav.nav button:active{transform:none}
-#nav.nav button.on::before{top:9px;bottom:9px;left:-14px;right:auto;width:4px;height:auto;background:var(--ac);border-radius:0 3px 3px 0}
+#nav.nav button.on::before{display:none}
 #nav.nav button span{display:grid;place-items:center}
 
-/* ---- content area ---- */
-.app{max-width:1180px;min-height:100vh;margin:0 auto;padding:calc(var(--top-h) + 24px) 36px 56px;background:transparent;box-shadow:none}
+/* ---- content ---- */
+.app{max-width:1120px;min-height:100vh;margin:0 auto;padding:calc(var(--top-h) + 32px) 40px 64px;background:transparent;box-shadow:none}
 .page{padding-top:0}
-.page>h2,.page>div>h2,.page h2{font-size:21px;margin:30px 2px 14px!important}
-.page>h2:first-child{margin-top:4px!important}
-.page .pf-info h2,.page .row.sp>h2{font-size:36px}
-.mu{font-size:15px}
 
-/* game / team / people lists become responsive grids */
-.page .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;align-items:start}
+/* section headings: quiet, no tilted bars */
+.page>h2,.page>div>h2,.page h2{font-family:var(--fb);font-style:normal;font-size:12px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--mu);margin:36px 2px 14px!important}
+.page>h2::before,.page>div>h2::before,.page h2::before{display:none}
+.page>h2:first-child{margin-top:0!important}
+.page .pf-info h2,.page .row.sp>h2{font-family:var(--fb);font-style:normal;text-transform:none;letter-spacing:-.02em;font-size:30px;font-weight:800;color:var(--tx);margin:0!important}
+.sec{font-family:var(--fb);font-style:normal;font-size:12px;letter-spacing:.09em;color:var(--mu)}
+.mu{font-size:14px}
+
+/* ---- cards: flat, hairline border, no accent edge ---- */
+.card{margin-bottom:var(--gap);padding:18px 20px;border-radius:12px;border:1px solid var(--bd);border-left:1px solid var(--bd);
+  background:var(--sf);box-shadow:none}
+:root[data-theme="dark"] .card{box-shadow:none}
+.card[data-g]{transition:border-color .15s,background .15s}
+.card[data-g]:hover{transform:none;border-color:color-mix(in srgb,var(--ab) 55%,var(--bd));background:color-mix(in srgb,var(--ab) 3%,var(--sf));box-shadow:none}
+.card[data-g]:active{transform:none}
+.card.lv{border-left:1px solid var(--bd);border-color:color-mix(in srgb,var(--bad) 35%,var(--bd));background:var(--sf)}
+.card.daily,.card.daily.done{border-left:1px solid var(--bd)}
+.card.daily b{font-family:var(--fb);font-style:normal;text-transform:none;font-size:17px;letter-spacing:0}
+.adm-stats .glass{border-top:1px solid var(--bd)}
+
+/* game lists become a clean grid with real gutters */
+.page .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--gap);align-items:start}
 .page .grid>.card{margin-bottom:0}
 .page .grid>p,.page .grid>.sk{grid-column:1/-1}
-.card{margin-bottom:14px;padding:16px 20px}
-.card[data-g]{transition:transform .14s,box-shadow .14s,border-color .14s}
-.card[data-g]:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.14),0 0 0 1px var(--ab)}
-:root[data-theme="dark"] .card[data-g]:hover{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 1px var(--ab)}
-.card[data-g]:active{transform:translateY(-1px)}
 
-/* chip rows wrap on desktop instead of horizontal scrolling */
-.hs{flex-wrap:wrap!important;overflow:visible;margin:0 0 14px!important;padding:2px 0}
+/* scoreboard inside cards */
+.score{font-family:var(--fb);font-size:15px;font-weight:600;text-transform:none;letter-spacing:0;margin:16px 0 14px}
+.score b{font-family:var(--fb);font-style:normal;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.score .mu{font-size:15px}
+.card[data-g]>.row.sp .chip.glass{font-family:var(--fb);font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:none}
+.yp{font-family:var(--fb);font-size:13px;font-weight:600;text-transform:none;letter-spacing:0}
+.live{font-family:var(--fb);transform:none;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:999px}
+.rs{font-family:var(--fb);transform:none;border-radius:999px;font-size:12px;letter-spacing:.02em}
+.rs.w{background:color-mix(in srgb,var(--ab) 16%,var(--sf));color:var(--ab)}
+.badge-ad{font-family:var(--fb);transform:none;border-radius:999px;font-size:11px;letter-spacing:.04em}
+
+/* ---- chips + buttons: plain, no italics/skew ---- */
+.hs{flex-wrap:wrap!important;overflow:visible;margin:0 0 20px!important;padding:0;gap:8px!important}
 #ps{flex-wrap:wrap!important;overflow:visible}
 .chip,button{cursor:pointer}
-.chip:hover:not(.on):not([disabled]){background:color-mix(in srgb,var(--ab) 14%,var(--sf2))}
-.pri{width:auto;min-width:160px;padding:10px 28px}
-.pri:hover{filter:brightness(1.06)}
+.chip{font-family:var(--fb);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;padding:6px 14px;min-height:34px;background:var(--sf);border:1px solid var(--bd)}
+.chip.glass,.card .chip.glass{border-radius:999px}
+.chip:hover:not(.on):not([disabled]){background:var(--sf2);border-color:color-mix(in srgb,var(--mu) 40%,var(--bd))}
+.hs .chip.on{transform:none}
+button{font-family:var(--fb);font-weight:600;font-size:14px;letter-spacing:0;text-transform:none;border-radius:8px}
+.pri{font-family:var(--fb);font-style:normal;font-size:15px;font-weight:700;letter-spacing:0;background:var(--ab);box-shadow:none;border-radius:10px;
+  width:auto;min-width:150px;min-height:44px;padding:10px 24px}
+.pri:hover{background:var(--ab2);filter:none}
+.pri:active{transform:none;box-shadow:none;opacity:.9}
 .card .pri,.modal .pri,#gate .pri{width:100%}
 .row .pri,.shop-row .pri{width:auto}
 
-/* single-column screens get a readable width and sit centered */
-.page:has(#feed){max-width:740px;margin:0 auto}
-.page:has(#lb){max-width:820px;margin:0 auto}
-.page:has(.pf){max-width:900px;margin:0 auto}
+/* pick buttons */
+.pick{font-family:var(--fb);font-size:16px;font-weight:700;text-transform:none;border-radius:10px}
+.pk-grid .pick{min-height:120px;font-size:16px}
+.pick:hover:not(:disabled):not(.on){background:color-mix(in srgb,var(--ab) 8%,var(--sf2))}
+label{font-family:var(--fb);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
+
+/* progress bar: solid, not striped */
+.bar{height:8px;border-radius:999px;border:0}
+.bar>div{border-radius:999px;background:var(--ab)}
+
+/* ---- readable widths for single-column pages ---- */
+.page:has(#feed){max-width:720px;margin:0 auto}
+.page:has(#lb){max-width:800px;margin:0 auto}
+.page:has(.pf){max-width:880px;margin:0 auto}
 .page:has(#adm){max-width:980px;margin:0 auto}
-.page:has(#gq) .card:has(#gq){max-width:620px}
-.page:has(#feed) .card,.page:has(#lb) .card,.page:has(.pf) .card{padding:18px 22px}
+.page:has(#gq) .card:has(#gq){max-width:600px}
+.page:has(#feed) .card,.page:has(#lb) .card,.page:has(.pf) .card{padding:20px 24px}
+.page:has(#feed) .card,.page:has(#lb) .card{margin-bottom:14px}
 
-/* profile */
-.pf-cover{height:210px}
-.pf-top{margin-top:-56px;padding:0 24px}
-.pf-info{padding:12px 24px 0}
-.pf-lv{margin:16px 24px 0}
-.pf-tabs button{min-height:52px;font-size:18px}
+/* ---- profile ---- */
+.pf{border-radius:12px}
+.pf-cover{height:200px}
+.pf-top{margin-top:-52px;padding:0 28px}
+.pf-info{padding:14px 28px 0}
+.pf-lv{margin:18px 28px 0;border-left:1px solid var(--bd);border-radius:10px}
+.pf-counts b,.stats b{font-family:var(--fb);font-style:normal;font-size:22px;font-weight:800}
+.pf-counts{gap:28px}
+.pf-tabs{margin-top:20px}
+.pf-tabs button{min-height:50px;font-family:var(--fb);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none}
 .pf-tabs button:hover:not(.on){background:var(--sf2)}
-.bgs{grid-template-columns:repeat(6,1fr)}
-.av-grid{grid-template-columns:repeat(6,1fr)}
-.adm-stats b{font-size:40px}
+.bgs{grid-template-columns:repeat(6,1fr);gap:10px}
+.bdg{font-family:var(--fb);font-size:13px;letter-spacing:0;text-transform:none}
+.av-grid{grid-template-columns:repeat(8,1fr)}
+.av{box-shadow:none}
+.adm-stats{gap:var(--gap)}
+.adm-stats b{font-family:var(--fb);font-style:normal;font-size:30px!important}
+.pinl{font-family:var(--fb)}
 
-/* ---- dialogs: centered windows instead of bottom sheets ---- */
-.modal{align-items:center;padding:24px}
-@keyframes dpop{from{opacity:0;transform:translateY(12px) scale(.98)}}
-.modal>.glass,#gate.modal>.glass{width:min(560px,100%);max-height:86vh;padding:26px 28px;border-radius:14px;border:1px solid var(--bd);border-top:3px solid var(--ab);animation:dpop .2s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 70px rgba(0,0,0,.45)}
+/* ---- dialogs: centered windows ---- */
+.modal{align-items:center;padding:24px;background:rgba(10,16,12,.5);backdrop-filter:none}
+@keyframes dpop{from{opacity:0;transform:translateY(8px)}}
+.modal>.glass,#gate.modal>.glass{width:min(540px,100%);max-height:86vh;padding:28px 30px;border-radius:14px;border:1px solid var(--bd);border-top:1px solid var(--bd);
+  animation:dpop .18s ease-out;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .modal>.glass::before{display:none}
-#gate.modal>.glass{width:min(460px,100%)}
+#gate.modal>.glass{width:min(440px,100%)}
+#gate.modal{background:var(--bg)}
 #fml{max-height:50vh!important}
+.toast.glass{font-family:var(--fb);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;border:0;border-radius:10px}
 .toasts{top:calc(var(--top-h) + 12px)}
 
-/* ---- thin scrollbars ---- */
-*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--mu) 45%,transparent) transparent}
+/* forms */
+input,textarea{border-radius:8px;background:var(--sf);border:1px solid var(--bd)}
+input:focus,textarea:focus{border-color:var(--ab);box-shadow:0 0 0 3px color-mix(in srgb,var(--ab) 16%,transparent)}
+#gq{border-radius:10px}
 
-/* ---- very wide screens ---- */
+/* thin scrollbars */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--mu) 40%,transparent) transparent}
+
 @media(min-width:1500px){
-  .app{max-width:1320px}
+  .app{max-width:1280px}
   .page .grid{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 }
-
-html body{background:var(--bg)!important}
