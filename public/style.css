@@ -497,3 +497,24 @@ html.nopop .pop{display:none}
 .stk-cu input::-webkit-outer-spin-button,.stk-cu input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .stk-cu input::placeholder{font:600 13px var(--fb,inherit);color:var(--mu)}
 .stk-cu .pri{flex:none;width:auto;min-width:84px;min-height:46px;padding:0 20px}
+
+/* ===== Profile stats ===== */
+.ps-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ps-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 6px}
+.ps-t{background:var(--sf2);border-radius:14px;padding:12px 6px;text-align:center;min-width:0}
+.ps-t b{display:block;font-family:var(--fd);font-size:20px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.ps-t span{display:block;font-size:11px;font-weight:600;color:var(--mu);margin-top:3px}
+.ps-r{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--bd);font-size:14px}
+.ps-r span{color:var(--mu)}.ps-r b{font-weight:700;text-align:right;overflow-wrap:anywhere}
+.ps-up{color:var(--ok)}.ps-dn{color:var(--bad)}
+.ps-sub{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin:14px 0 6px}
+.ps-lv{margin:8px 0 10px;padding:10px 12px;border-radius:12px;background:var(--sf2)}
+.ps-lv .bar{margin:6px 0 0;background:var(--sf)}
+.ps-form{display:flex;gap:5px;flex-wrap:wrap}
+.ps-d{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;font-size:12px;font-weight:800;background:var(--sf2);color:var(--mu)}
+.ps-d.w{background:color-mix(in srgb,var(--ab) 18%,var(--sf));color:var(--ab)}
+.ps-d.l{background:color-mix(in srgb,var(--bad) 16%,var(--sf));color:var(--bad)}
+.ps-sp{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:6px 0;font-size:13px}
+.ps-sp .bar{margin:0 0 3px;height:6px}
+.ps-split{height:10px;border-radius:999px;background:color-mix(in srgb,var(--bad) 55%,var(--sf2));overflow:hidden;margin:6px 0}
+.ps-split i{display:block;height:100%;background:var(--ab)}
