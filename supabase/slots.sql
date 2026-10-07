@@ -48,6 +48,7 @@ create or replace function slots_mult(p_sym text,p_n int) returns int language s
     else 0 end $$;   -- <== TUNE: the pay table
 
 -- The bonus of each theme = win multiplier of each free spin, in order. Keep every list adding up to 12 to keep the payback.   <== TUNE
+--   og   Original        : 6 spins, every win x2 (the classic Sidelyne bonus)
 --   nfl  Touchdown Drive : 6 spins, multiplier climbs 1,1,2,2,3,3
 --   nba  Fast Break      : 8 spins, 1,1,1,1,2,2,2,2
 --   nhl  Power Play      : 4 spins, every win x3
@@ -56,10 +57,11 @@ create or replace function slots_mult(p_sym text,p_n int) returns int language s
 --   soccer Penalty Shootout : 5 kicks, 1,1,2,3,5 (sudden death)
 create or replace function slots_bonus_mults(p_theme text) returns int[] language sql immutable as $$
   select case p_theme
+    when 'og'     then array[2,2,2,2,2,2]
     when 'nfl'    then array[1,1,2,2,3,3]
     when 'nba'    then array[1,1,1,1,2,2,2,2]
     when 'nhl'    then array[3,3,3,3]
-    when 'mlb'    then array[1,1,1,1,1,1,1,1,1,1,1,1]
+    when 'mlb'    then array[1,1,1,1,1,1,1,1,1,1,1,10]
     when 'ufc'    then array[1,2,2,3,4]
     when 'soccer' then array[1,1,2,3,5]
     else null end $$;
@@ -102,7 +104,7 @@ end $$;
 create or replace function slots_spin(p_denom int,p_lines int,p_cpl int,p_theme text default 'nfl') returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
-  c_bonus_p constant numeric:=0.012;   -- <== TUNE: chance of the free spins bonus on any spin (same at every bet size, like a real machine)
+  c_bonus_p numeric:=0.012;            -- <== TUNE: base chance of the free spins bonus on any spin (for a bonus whose multipliers add up to 12). Scaled below by 12/sum(multipliers) so a richer bonus (MLB: 21) triggers less often and the payback stays the same
   c_tease   constant numeric:=0.12;    -- <== TUNE: how often a normal spin shows 2 Sidelynes as a tease
   c_ret_tot constant numeric:=0.072;   -- <== TUNE: chance of a retrigger over one round of free spins (split across the spins so every theme gets the same)
   c_rounds  constant int:=4;           -- max rounds of free spins in one bonus (first round + 3 retriggers)
@@ -117,6 +119,7 @@ begin
   mults:=slots_bonus_mults(p_theme);
   if mults is null then raise exception 'Unknown theme'; end if;
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
+  c_bonus_p:=c_bonus_p*12.0/(select sum(m) from unnest(mults) m);
   total:=p_denom*p_lines*p_cpl;
 
   select novas into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
