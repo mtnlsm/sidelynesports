@@ -385,12 +385,11 @@ html.nopop .pop{display:none}
 .sl-msg{min-height:44px;margin:12px 0 6px;font:800 20px var(--fd,inherit);letter-spacing:.03em;display:flex;align-items:center;justify-content:center}
 .sl-bets{display:flex;justify-content:center;margin:4px 0 10px}.sl-bets .seg{flex-wrap:nowrap}
 .sl-go{width:100%;min-height:50px;font-size:17px}.sl-pay{font-size:12px;margin-top:10px}
-.sl-pin{position:absolute;inset:-6px;z-index:3;background:var(--sf);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;animation:fd .2s}
-.sl-pin-t{font:900 22px var(--fd,inherit);letter-spacing:.08em;color:#f5c542;text-shadow:0 0 12px rgba(245,197,66,.5)}
-.sl-pin canvas{width:min(300px,86%);height:auto;border-radius:14px;background:var(--sf2);border:1px solid var(--bd)}
-.sl-pin-r{min-height:40px;font:900 34px var(--fd,inherit);color:var(--ab)}
 
 .sl-msg{flex-direction:column;text-align:center;line-height:1.15;font-size:18px}.sl-sub{display:block;font:600 12px var(--fb,inherit);letter-spacing:0;color:var(--mu);margin-top:2px}
+.sl-fs{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px;padding:8px 12px;border-radius:12px;background:linear-gradient(90deg,#f5c542,#e8a317);color:#3a2a00;font:800 12px var(--fd,inherit);letter-spacing:.06em;text-transform:uppercase;animation:fd .25s}.sl-fs[hidden]{display:none}.sl-fs b{font-size:16px}
+.sl-wrap.fs .sl-reels{box-shadow:0 0 0 2px #f5c542,0 0 20px rgba(245,197,66,.45),inset 0 2px 10px rgba(0,0,0,.18)}
+.sl-note{font-size:12.5px;line-height:1.45;color:var(--mu);padding-top:6px;border-top:1px solid var(--bd)}
 .sl-info{margin:10px auto 0;display:block}
 .sl-pt{margin-top:10px;text-align:left;font-size:13px}.sl-pt[hidden]{display:none}
 .sl-pth{font:800 12px var(--fd,inherit);letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}
