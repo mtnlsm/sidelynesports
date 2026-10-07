@@ -491,5 +491,9 @@ html.nopop .pop{display:none}
   .toast.glass{font-family:var(--fb);font-size:14px;letter-spacing:0;text-transform:none;border:0;border-radius:999px}
   input,textarea{border:1px solid var(--bd);background:var(--sf)}
 }
-/* custom stake input */
-.stk-cu{display:flex;gap:8px;margin-top:10px}.stk-cu input{flex:1;min-width:0;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font:700 16px var(--fd,inherit)}.stk-cu .pri{min-height:44px;padding:0 18px}
+/* custom stake input (.pri is width:100% by default, so the button must be width:auto or it squeezes the input to nothing) */
+.stk-cu{display:flex;align-items:stretch;gap:8px;margin-top:10px}
+.stk-cu input{flex:1 1 0;width:auto;min-width:0;min-height:46px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--bd);background:var(--sf);color:var(--tx);font:800 18px var(--fd,inherit);-moz-appearance:textfield;appearance:textfield}
+.stk-cu input::-webkit-outer-spin-button,.stk-cu input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stk-cu input::placeholder{font:600 13px var(--fb,inherit);color:var(--mu)}
+.stk-cu .pri{flex:none;width:auto;min-width:84px;min-height:46px;padding:0 20px}
