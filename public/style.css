@@ -547,3 +547,14 @@ html.nopop .pop{display:none}
 /* bet / refund buttons in the game sheet */
 .bet-btn{margin-top:12px}.bet-btn:disabled{opacity:.55}
 .bet-rf{display:block;width:100%;margin-top:12px;min-height:44px;border-radius:14px;font-size:14px}
+
+/* ===== Social login buttons (GitHub / Discord) ===== */
+.oa-or{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--mu,#8a8f98);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.oa-or:before,.oa-or:after{content:"";flex:1;height:1px;background:var(--bd,rgba(128,128,128,.3))}
+.oa-row{display:flex;gap:10px}
+.oa-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:12px;color:#fff;font-weight:700;font-size:15px;border:0;cursor:pointer;transition:transform .12s,filter .12s}
+.oa-btn:hover{filter:brightness(1.12)}
+.oa-btn:active{transform:scale(.97)}
+.oa-btn[disabled]{opacity:.55;pointer-events:none}
+.oa-gh{background:#24292f}
+.oa-dc{background:#5865f2}
