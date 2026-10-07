@@ -1,6 +1,6 @@
 // NFL + NBA + UFC live scores. Uses ESPN's public scoreboard JSON (no key needed), normalized to the Sidelyne Sports game shape:
 // { id, sp, a, b, sa, sb, st:'live'|'up'|'final', clk, date }
-const { cached, TTL } = require('./_cache');
+const { cached, TTL, db } = require('./_cache');
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/';
 const LEAGUES = { // code -> ESPN {sport}/{league}
   NFL: 'football/nfl', NBA: 'basketball/nba', MLB: 'baseball/mlb', NHL: 'hockey/nhl', WNBA: 'basketball/wnba', CFL: 'football/cfl',
@@ -126,6 +126,10 @@ exports.handler = async (event) => {
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
       if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
+      // Save the moneylines of upcoming games so the database (not the browser) decides what a winning bet pays. Needs supabase/odds.sql.
+      try { const c = db(), ml = (v) => { const n = parseInt(v, 10); return n ? n : null; };
+        const rows = items.filter((g) => g.st === 'up' && g.od && (g.od.a || g.od.b)).map((g) => ({ game_id: String(g.id), a: g.a, b: g.b, a_ml: ml(g.od.a), b_ml: ml(g.od.b), updated_at: new Date().toISOString() }));
+        if (c && rows.length) await c.from('game_odds').upsert(rows, { onConflict: 'game_id' }); } catch (e) {}
       return { items, updated: new Date().toISOString() };
     }, { provider: 'espn' });
     return { statusCode: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify(data) };
