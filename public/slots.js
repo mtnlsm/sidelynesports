@@ -125,8 +125,12 @@ function runReel(reel,final,dur){return new Promise(res=>{const st=reel.firstEle
  const prev=[...st.children].slice(-3).map(e=>e.dataset.k);while(prev.length<3)prev.push(rnd());
  const n=14+Math.floor(Math.random()*6);let h=col3(prev);for(let i=0;i<n;i++)h+=cell(rnd());h+=col3(final);
  st.style.transition='none';st.style.transform='translateY(0)';st.innerHTML=h;void st.offsetHeight;reel.classList.add('go');
- st.style.transition=`transform ${dur}ms cubic-bezier(.2,.8,.2,1)`;st.style.transform=`translateY(-${(n+3)*(st.firstElementChild.offsetHeight||H)}px)`;
- let done=false;const fin=()=>{if(done)return;done=true;fin0()};st.addEventListener('transitionend',fin,{once:true});setTimeout(fin,dur+150)})}
+ /* Spin with the Web Animations API, not a CSS transition: the app's "prefers-reduced-motion" rule in style.css sets transition:none!important, which made the reels sit still and snap for anyone with OS-level reduced motion (Windows animation effects off, macOS/iOS Reduce Motion). The in-app Reduce motion switch still skips the spin (calm() above). */
+ const dist=(n+3)*(st.firstElementChild.offsetHeight||H),ease='cubic-bezier(.2,.8,.2,1)';let done=false,anim=null;
+ const fin=()=>{if(done)return;done=true;try{anim&&anim.cancel()}catch(e){}fin0()};
+ try{anim=st.animate([{transform:'translateY(0)'},{transform:`translateY(-${dist}px)`}],{duration:dur,easing:ease,fill:'forwards'});anim.onfinish=fin}
+ catch(e){st.style.transition=`transform ${dur}ms ${ease}`;st.style.transform=`translateY(-${dist}px)`;st.addEventListener('transitionend',ev=>{if(ev.target===st)fin()})}
+ setTimeout(fin,dur+250)})}
 
 function slCss(){if(document.getElementById('slx-css'))return;const st=document.createElement('style');st.id='slx-css';
  st.textContent=`.sl-wrap{--sla:#f5c542;--sla2:#e8a317}${TORDER.map(k=>`.sl-wrap[data-th="${k}"]{--sla:${THEMES[k].a};--sla2:${THEMES[k].b}}`).join('')}
