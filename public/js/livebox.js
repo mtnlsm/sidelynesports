@@ -50,14 +50,14 @@
     if (!gs.length) return teamToggle(c, d) + '<p class="mu">Box score isn\u2019t available yet.</p>';
     const gi = Math.min(c.gi || 0, gs.length - 1), g = gs[gi];
     const tabs = gs.length > 1 ? `<div class="lv-tt lv-gt">${gs.map((x, i) => `<button class="chip${i === gi ? ' on' : ''}" data-lvg="${i}">${E(x.n || x.k)}</button>`).join('')}</div>` : '';
-    const rows = g.rows.slice().sort((a, b) => (a.dnp ? 1 : 0) - (b.dnp ? 1 : 0)).map((r) => `<tr class="${r.st ? 'st' : ''}"><td class="n"><span class="lv-pn">${r.i && /^https:\/\//.test(r.i) ? `<img class="lv-ph" src="${E(r.i)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : '<i class="lv-ph"></i>'}<span><b>${E(r.n)}</b>${r.pos ? `<small> ${E(r.pos)}</small>` : ''}</span></span></td>${r.dnp || !r.s.length ? `<td colspan="${g.labels.length}" class="mu">DNP</td>` : g.labels.map((_, i) => `<td>${E(r.s[i] != null ? r.s[i] : '')}</td>`).join('')}</tr>`).join('');
+    const rows = g.rows.slice().sort((a, b) => (a.dnp ? 1 : 0) - (b.dnp ? 1 : 0)).map((r) => `<tr class="${r.st ? 'st' : ''}"><td class="n"><b>${E(r.n)}</b>${r.pos ? `<small> ${E(r.pos)}</small>` : ''}</td>${r.dnp || !r.s.length ? `<td colspan="${g.labels.length}" class="mu">DNP</td>` : g.labels.map((_, i) => `<td>${E(r.s[i] != null ? r.s[i] : '')}</td>`).join('')}</tr>`).join('');
     const tot = g.tot && g.tot.length ? `<tr class="tot"><td class="n"><b>Total</b></td>${g.labels.map((_, i) => `<td>${E(g.tot[i] != null ? g.tot[i] : '')}</td>`).join('')}</tr>` : '';
     return `${teamToggle(c, d)}${tabs}<div class="lv-sc"><table class="lv-tb lv-bx"><thead><tr><th class="n"></th>${g.labels.map((l) => `<th>${E(l)}</th>`).join('')}</tr></thead><tbody>${rows}${tot}</tbody></table></div>`;
   }
 
   function luTab(d) {
     if (!d.lu[0] && !d.lu[1]) return '<p class="mu">Lineups aren\u2019t available for this game.</p>';
-    const list = (a, bat) => a.map((p, i) => `<li>${bat ? `<span class="bo">${p.bo || i + 1}</span>` : p.jn ? `<span class="bo">${E(p.jn)}</span>` : ''}<b>${E(p.n)}</b>${p.pos ? `<small>${E(p.pos)}</small>` : ''}</li>`).join('');
+    const list = (a, bat) => a.map((p, i) => `<li>${bat ? `<span class="bo">${p.bo || i + 1}</span>` : p.jn ? `<span class="bo">${E(p.jn)}</span>` : ''}${p.i && /^https:\/\//.test(p.i) ? `<img class="lv-ph" src="${E(p.i)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : '<i class="lv-ph"></i>'}<b>${E(p.n)}</b>${p.pos ? `<small>${E(p.pos)}</small>` : ''}</li>`).join('');
     const one = (u, t) => { if (!u) return ''; const bat = d.sp === 'MLB' || d.sp === 'CBASE';
       return `<div class="lv-lu"><div class="lv-h">${E(t.n)}${u.f ? ` <span class="mu">· ${E(u.f)}</span>` : ''}</div><div class="lv-sub">${bat ? 'Batting order' : 'Starters'}</div><ul>${list(u.s, bat)}</ul>${u.p && u.p.length ? `<div class="lv-sub">Pitchers</div><ul>${list(u.p, false)}</ul>` : ''}${u.b && u.b.length ? `<div class="lv-sub">${bat ? 'Bench / subs' : 'Bench'}</div><ul>${list(u.b, false)}</ul>` : ''}</div>`; };
     return one(d.lu[0], d.away) + one(d.lu[1], d.home);
