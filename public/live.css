@@ -48,3 +48,7 @@
 .lv-ts>div>b:last-child{text-align:right}
 .lv-tsh{border-top:0!important}
 .lv-mini{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:600;color:var(--mu);margin:-2px 0 8px}
+
+/* box score player photos */
+.lv-pn{display:inline-flex;align-items:center;gap:8px}
+.lv-ph{flex:none;width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:top;background:var(--sf2);display:block}
