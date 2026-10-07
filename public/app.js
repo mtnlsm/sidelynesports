@@ -1,0 +1,459 @@
+let G=[];let GSTAT='loading';let TEAMS=[],TSTAT='loading';
+const LV=n=>Math.floor(Math.sqrt(n/250))+1,NEED=l=>250*l*l;
+let S={tab:'community',theme:null,novas:0,life:0,preds:{},stk:{},sel:'NFL',ft:'Newest',posts:[],favT:[],favF:[],res:{}};
+try{S.theme=localStorage.getItem('fx-theme');const x=JSON.parse(localStorage.getItem('fx-s')||'null');if(x){S.novas=x.novas;S.preds=x.preds;if(x.favT)S.favT=x.favT;if(x.favF)S.favF=x.favF}}catch(e){}
+const $=s=>document.querySelector(s),sv=()=>{try{localStorage.setItem('fx-s',JSON.stringify({novas:S.novas,preds:S.preds,favT:S.favT,favF:S.favF}))}catch(e){}};
+if(S.theme)document.documentElement.dataset.theme=S.theme;
+function toast(t){const e=document.createElement('div');e.className='toast glass';e.textContent=t;$('#ts').append(e);setTimeout(()=>e.remove(),2600)}
+function earn(n,why){const old=LV(S.life);S.novas+=n;S.life+=n;sv();const p=document.createElement('div');p.className='pop';p.textContent='+'+n+' SP';document.body.append(p);setTimeout(()=>p.remove(),1400);toast('+'+n+' SP · '+why);if(LV(S.life)>old)setTimeout(()=>toast('Level up! Level '+LV(S.life)),700);hdr()}
+function hdr(){$('#nv').innerHTML=ic('nova',14,1)+' '+S.novas.toLocaleString()+'<span class="nvw"> SP</span><span class="nvl"> · Lv '+LV(S.life)+'</span>'}
+const P={gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',live:'<circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7 7a7 7 0 0 0 0 10M17 7a7 7 0 0 1 0 10M4 4a11 11 0 0 0 0 16M20 4a11 11 0 0 1 0 16"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',predict:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',community:'<path d="M4 5h16v11H9l-5 4z"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>',board:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 20h8"/>',profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',heart:'<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>',star:'<path d="M12 3l2.6 6 6.4.5-4.9 4.3 1.6 6.2-5.7-3.4-5.7 3.4 1.6-6.2L3 9.5 9.4 9z"/>',flame:'<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 1-9z"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',flag:'<path d="M5 21V4h11l-1 4 1 4H5"/>',lock:'<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',medal:'<circle cx="12" cy="14" r="6"/><path d="M8 3l4 6 4-6"/>',theme:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',nova:'<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/>',nfl:'<ellipse cx="12" cy="12" rx="10" ry="6" transform="rotate(-35 12 12)"/><path d="M9.5 9.5l5 5M11 8l5 5M8 11l5 5"/>',nba:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.5 5.5c4 3 4 10 0 13M18.5 5.5c-4 3-4 10 0 13"/>',ufc:'<path d="M7 11V7a2 2 0 0 1 4 0V6a2 2 0 0 1 4 0v1a2 2 0 0 1 3 2v5a6 6 0 0 1-6 6h-1a5 5 0 0 1-5-5z"/>'};
+const MMA=sp=>sp==='UFC'||sp==='PFL';
+P.mlb='<circle cx="12" cy="12" r="9"/><path d="M6 5c3 3 3 11 0 14M18 5c-3 3-3 11 0 14"/>';
+P.nhl='<path d="M5 4l8 13h5"/><ellipse cx="17" cy="19" rx="3.5" ry="1.5"/>';
+P.soccer='<circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20 10l-4.5.5M17 19l-2.8-4.5M7 19l2.8-4.5M4 10l4.5.5"/>';
+const SOC=['EPL','LALIGA','BUND','SERIEA','LIGUE1','MLS','UCL','UEL','WC','LIGAMX','ERED','PORT'];
+const SPG=[['NFL','NFL',['NFL']],['NBA','NBA',['NBA']],['MLB','MLB',['MLB']],['NHL','NHL',['NHL']],['WNBA','WNBA',['WNBA']],['CFB','College FB',['CFB']],['CBB','College BB',['CBB']],['CBASE','College Baseball',['CBASE']],['CFL','CFL',['CFL']],['SOCCER','Soccer',SOC],['UFC','UFC',['UFC']],['PFL','PFL',['PFL']]];
+const SPN={EPL:'Premier League',LALIGA:'La Liga',BUND:'Bundesliga',SERIEA:'Serie A',LIGUE1:'Ligue 1',MLS:'MLS',UCL:'Champions League',UEL:'Europa League',WC:'World Cup',LIGAMX:'Liga MX',ERED:'Eredivisie',PORT:'Liga Portugal',CFB:'College Football',CBB:'College Basketball',CBASE:'College Baseball'};
+const spl=c=>SPN[c]||c;
+const ICA={wnba:'nba',cfb:'nfl',cbb:'nba',cbase:'mlb',cfl:'nfl',pfl:'ufc'};SOC.forEach(c=>ICA[c.toLowerCase()]='soccer');
+const ic=(n,z=20,f)=>`<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]||P[ICA[n]]||P.ufc}</svg>`;
+const crestSvg=(n,sp,z=40)=>{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;const i=n.split(' ').map(w=>w[0]).join('').slice(0,2);return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><path d="${MMA(sp)?'M20 2l16 8v12c0 8-7 14-16 16C11 36 4 30 4 22V10z':'M20 2l16 7v13c0 8-7 13-16 16C11 35 4 30 4 22V9z'}" fill="hsl(${h} 40% 36%)"/><text x="20" y="25" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="sans-serif">${i}</text></svg>`};
+/* ESPN logos/headshots. IMG maps "SPORT|name" (or "P|player") to an image; if there is none or it fails to load, the letter crest above stays. */
+let IMG={};
+const isDark=()=>{const d=document.documentElement.dataset.theme;return d?d==='dark':matchMedia('(prefers-color-scheme:dark)').matches};
+const imgUrl=(u,z,hs)=>/^https:\/\/a\.espncdn\.com\/i\//.test(u)?u.replace('https://a.espncdn.com/i/','https://a.espncdn.com/combiner/i?img=/i/')+'&w='+Math.round(z*(hs?4.14:3))+'&h='+Math.round(z*3):u;
+function indexImgs(){const m={};
+try{(TEAMS||[]).forEach(t=>{if(t.lg)m[t.sp+'|'+t.n]='l'+t.lg});
+(G||[]).forEach(g=>{if(g.la)m[g.sp+'|'+g.a]='l'+g.la;if(g.lb)m[g.sp+'|'+g.b]='l'+g.lb;if(g.ia)m[g.sp+'|'+g.a]='h'+g.ia;if(g.ib)m[g.sp+'|'+g.b]='h'+g.ib;(g.ld||[]).forEach(l=>{if(l.i)m['P|'+l.p]='h'+l.i})})}catch(e){}
+IMG=m}
+const LOGOK=window.LOGOK=new Set();
+const crest=(n,sp,z=40)=>{const svg=crestSvg(n,sp,z),v=IMG[sp+'|'+n]||IMG['P|'+n];if(!v||!/^https:\/\//.test(v.slice(1)))return svg;
+const u=v.slice(1),hs=v[0]==='h',dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u),src=imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs);
+const ok=LOGOK.has(src);return `<span class="cr ${hs?'hs':'lg'}" style="width:${z}px;height:${z}px">${ok?svg.replace('<svg','<svg style="visibility:hidden"'):svg}<img${ok?' class="ok"':''} src="${esc(src)}" data-o="${esc(imgUrl(u,z,hs))}"${dk?' data-d="1"':''} alt="" ${ok?'decoding="sync"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" onload="if(this.naturalWidth>8){LOGOK.add(this.getAttribute('src'));this.previousElementSibling.style.visibility='hidden';this.style.opacity=1}" onerror="if(this.dataset.d){this.removeAttribute('data-d');this.classList.add('wb');this.src=this.dataset.o}else this.remove()"></span>`};
+const nm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+const NICK=window.UFC_NICKS||{},POP=(window.UFC_POPULAR||[]).map(nm);
+const FIGHTERS=(()=>{const seen=new Set(),l=[];(window.UFC_FIGHTERS||window.UFC_TOP100||[]).filter(Array.isArray).forEach(([n,d])=>{const k=nm(n);if(seen.has(k))return;seen.add(k);l.push({n,d,k,nk:NICK[n]||''})});const pi=f=>{const i=POP.indexOf(f.k);return i<0?1e6:i};return l.map((f,i)=>[f,i]).sort((a,b)=>pi(a[0])-pi(b[0])||a[1]-b[1]).map(x=>x[0])})();
+const sq=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const hit=(hay,q)=>{const h=sq(hay),c=h.replace(/ /g,'');return q.split(' ').every(t=>h.includes(t))||c.includes(q.replace(/ /g,''))};
+const fighterOf=n=>FIGHTERS.find(f=>f.k===nm(n));
+const gameOf=n=>G.filter(g=>g.st!=='final'&&(MMA(g.sp)?nm(g.a)===nm(n)||nm(g.b)===nm(n):g.a===n||g.b===n)).sort((x,y)=>(x.st==='live'?0:1)-(y.st==='live'?0:1))[0];
+const liveTag=n=>{const g=gameOf(n);return g?(g.st==='live'?' · LIVE now':g.date&&!isNaN(Date.parse(g.date))?' · '+when(g):''):''};
+{const ff=S.favF.map(n=>{const f=fighterOf(n);return f&&f.n}).filter(Boolean);if(ff.length!==S.favF.length||ff.some((n,i)=>n!==S.favF[i])){S.favF=ff;sv()}}
+let TLs=null,TLc=[];const TL=()=>{if(TLs!==TEAMS){TLs=TEAMS;const m=new Map();TEAMS.forEach(t=>{const e=m.get(t.n);if(e){if(!e.sps.includes(t.sp))e.sps.push(t.sp)}else m.set(t.n,{...t,sps:[t.sp]})});TLc=[...m.values()]}return TLc};
+const roster=k=>k==='T'?TL().map(t=>[t.n,t.sps[0],t.sps.map(spl).join(' · ')+liveTag(t.n),[t.n,t.full,t.ab,t.sps.join(' '),t.sps.map(spl).join(' ')].join(' ')]):FIGHTERS.map(f=>[f.n,'UFC',f.d+(f.nk?' · "'+f.nk+'"':'')+liveTag(f.n),f.n+' '+f.d+' '+f.nk+' ufc mma']);
+const inAction=k=>{const seen=new Set(),out=[];G.forEach(g=>{if((k==='T')===!MMA(g.sp))[g.a,g.b].forEach(n=>{if(k==='F'){const f=fighterOf(n);if(!f||seen.has(f.k))return;seen.add(f.k);out.push([f.n,'UFC',f.d+liveTag(f.n)])}else if(!seen.has(n)){seen.add(n);out.push([n,g.sp,spl(g.sp)+liveTag(n)])}})});return out};
+const isFav=g=>[g.a,g.b].some(n=>S.favT.includes(n)||S.favF.some(f=>nm(f)===nm(n)));
+const spc=g=>`<span class="chip glass">${ic(g.sp.toLowerCase(),14)} ${spl(g.sp)}${isFav(g)?' '+ic('star',13,1):''}</span>`;
+const frow=(k,x)=>{const on=(k==='T'?S.favT:S.favF).includes(x[0]);return `<div class="glass card row sp"><div class="row">${crest(x[0],x[1])}<div><b>${x[0]}</b><div class="mu">${x[2]}</div></div></div><button class="chip ${on?'on':''}" data-fav="${k}:${x[0]}" aria-pressed="${on}" aria-label="Favorite ${x[0]}">${ic('star',16,on)}</button></div>`};
+const pill=(n,k)=>{const x=roster(k).find(t=>t[0]===n)||[n,k==='T'?'NFL':'UFC'];return `<span class="chip glass row" style="gap:6px;padding:4px 12px 4px 4px">${crest(n,x[1],24)}${n}</span>`};
+const favCard=()=>`<div class="glass card"><div class="row sp"><b>Favorite teams</b><button class="chip" data-fm="T">Manage</button></div><div class="row" style="flex-wrap:wrap;margin:10px 0 16px">${S.favT.map(n=>pill(n,'T')).join('')||'<span class="mu">None yet — tap Manage to pick your teams.</span>'}</div><div class="row sp"><b>Favorite fighters</b><button class="chip" data-fm="F">Manage</button></div><div class="row" style="flex-wrap:wrap;margin-top:10px">${S.favF.map(n=>pill(n,'F')).join('')||'<span class="mu">None yet — tap Manage to pick your fighters.</span>'}</div></div>`;
+let GQ='';
+function gsearch(){const q=sq(GQ);if(!q)return'';const T=roster('T').filter(x=>hit(x[3],q)),F=roster('F').filter(x=>hit(x[3],q));const sec=(t,a,k)=>a.length?`<h2 style="margin:16px 0 10px">${t} <span class="mu">${a.length}</span></h2><div class="grid">${a.slice(0,24).map(x=>frow(k,x)).join('')}</div>${a.length>24?'<p class="mu" style="margin-top:8px">Keep typing to narrow it down…</p>':''}`:'';return (peopleHtml()+sec('Teams',T,'T')+sec('Fighters',F,'F'))||`<p class="mu" style="margin-top:14px">${TEAMS.length||TSTAT!=='loading'?'No teams or fighters match "'+esc(GQ)+'".':'Loading teams…'}</p>`}
+let curFM=null;
+function drawFM(){const c=curFM,l=c.m.querySelector('#fml');if(!l)return;const k=c.k,q=sq(c.q||''),all=roster(k),r=q?all.filter(x=>hit(x[3],q)):all,st=l.scrollTop;
+l.innerHTML=r.slice(0,80).map(x=>frow(k,x)).join('')+(r.length>80?'<p class="mu" style="margin-top:8px">Showing 80 of '+r.length+'. Search to narrow it down…</p>':'')||`<p class="mu">${all.length?'No matches for "'+esc(c.q)+'".':TSTAT==='error'&&k==='T'?'Teams unavailable right now. Retrying…':'Loading teams…'}</p>`;l.scrollTop=st}
+function favModal(k){const m=modal('');m.firstChild.innerHTML=`<h3 style="margin-bottom:10px">${k==='T'?'Favorite teams':'Favorite fighters'}</h3><input id="fmq" type="search" placeholder="${k==='T'?'Search teams…':'Search fighters…'}" aria-label="${k==='T'?'Search teams':'Search fighters'}" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="font-size:16px;margin-bottom:10px"><div id="fml" style="max-height:52vh;overflow:auto;overscroll-behavior:contain"></div><button class="pri" style="margin-top:10px" data-x>Done</button>`;curFM={m,k,q:''};drawFM();setTimeout(()=>{const i=m.querySelector('#fmq');if(i)i.focus()},50)}
+document.addEventListener('input',e=>{if(e.target.id==='gq'){const was=!!sq(GQ);GQ=e.target.value;searchPeople();if(was!==!!sq(GQ)){const p=$('#m .page');p.innerHTML=R.discover();LASTH=null;const i=$('#gq');i.focus();i.setSelectionRange(i.value.length,i.value.length)}else{const r=$('#gqr');if(r)r.innerHTML=gsearch()}return}if(e.target.id==='fmq'&&curFM){curFM.q=e.target.value;drawFM();const l=curFM.m.querySelector('#fml');if(l)l.scrollTop=0}});
+const NAV=[['community','home','Home'],['live','live','Live'],['discover','discover','Discover'],['predict','predict','Picks'],['board','board','Ranks'],['profile','profile','Profile']];
+$('#nav').innerHTML=NAV.map(n=>`<button data-t="${n[0]}" aria-label="${n[2]}"><span>${ic(n[1],22)}</span>${n[2]}</button>`).join('');
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.t)};
+$('#th').onclick=()=>{const d=document.documentElement,dk=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;S.theme=dk?'light':'dark';d.dataset.theme=S.theme;try{localStorage.setItem('fx-theme',S.theme)}catch(e){}repaint()};
+try{matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>repaint())}catch(e){}
+function go(t,np){if(!np&&pathUser())history.pushState({},'','/');S.tab=t;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));const m=$('#m');{const h=R[t]();LASTH=h;m.innerHTML='<div class="page enter">'+h+'</div>';scrollTo(0,0);if(t==='profile')profileExtras();if(t==='predict')loadProps();if(t==='admin')loadAdmin();if(t==='community')loadFeed();if(t==='discover')loadSuggest();if(t==='shop')loadShop();if(t==='board')loadBoard()}}
+let LASTH=null;
+function repaint(){const pg=$('#m .page');if(!pg||!R[S.tab])return;const h=R[S.tab]();if(h===LASTH)return;const y=scrollY;LASTH=h;pg.classList.remove('enter');pg.innerHTML=h;scrollTo(0,y)}
+const score=g=>{const t=(n,v)=>`<div style="flex:1">${crest(n,g.sp,MMA(g.sp)?44:38)}<br>${n}${v===undefined?'':'<br><b>'+v+'</b>'}</div>`;return `<div class="score">${t(g.a,MMA(g.sp)&&g.st!=='final'?undefined:g.sa)}<span class="mu">${MMA(g.sp)||g.st==='up'?'vs':'–'}</span>${t(g.b,MMA(g.sp)&&g.st!=='final'?undefined:g.sb)}</div>`};
+const when=g=>g.st==='up'?new Date(g.date).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}):(g.clk||new Date(g.date).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}));
+const pickLine=g=>{const p=S.preds[g.id];if(!p)return g.st==='final'?'No pick made':'Tap to predict';const r=S.res[g.id];const t=r?(r.r==='win'?' <span class="rs w">Correct · +'+(r.s>0?r.a-r.s:r.a)+' SP</span>':r.r==='loss'?' <span class="rs l">Missed · '+(r.s>0?'-'+r.s:'+'+r.a)+' SP</span>':r.r==='void'&&r.s>0?' <span class="rs">Refunded · '+r.s+' SP back</span>':''):(g.st==='final'?' <span class="rs">Scoring…</span>':'');return '<span class="yp">'+ic('check',14)+' Your pick: <b>'+esc(p)+'</b></span>'+t};
+const resMsg=g=>{const r=S.res[g.id];return r?(r.r==='win'?'You called it. +'+(r.s>0?r.a-r.s:r.a)+' SP.':r.r==='loss'?(r.s>0?'Missed this one. -'+r.s+' SP.':'Missed this one. +'+r.a+' SP for playing.'):r.r==='void'&&r.s>0?'Pick voided. '+r.s+' SP refunded.':''):''};
+const gc=g=>`<div class="glass card${g.st==='live'?' lv':''}" data-g="${g.id}" tabindex="0" role="button" style="cursor:pointer"><div class="row sp">${spc(g)}${g.st==='live'?'<span class="live"><i></i>LIVE</span>':''}<span class="mu">${when(g)}</span></div>${score(g)}<div class="mu">${pickLine(g)}</div></div>`;
+const gl=l=>l.length?l.map(gc).join(''):`<p class="mu">${GSTAT==='loading'?'Loading live games…':GSTAT==='error'?'Live data unavailable right now. Retrying…':'No games right now.'}</p>`;
+const R={
+live(){return`<h2 style="margin-bottom:10px">Live scores</h2><p class="mu" style="margin-bottom:10px">Scores update automatically every 20 seconds.</p><div class="grid" id="lv">${gl(G.filter(g=>g.st==='live'))}</div>${(()=>{const fin=finList();return fin.length?`<h2 style="margin:16px 0 10px">Finished · last 36 hours</h2><div class="grid">${gl(fin.slice(0,30))}</div>`:''})()}`},
+discover(){const sb=`<div class="glass card" style="padding:8px 12px"><input id="gq" type="search" value="${esc(GQ)}" placeholder="Search teams, fighters or people…" aria-label="Search teams and fighters" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="font-size:16px;width:100%"></div>`;if(sq(GQ))return sb+`<div id="gqr">${gsearch()}</div>`;return sb+`<div id="gqr"></div><h2 style="margin-top:14px">Games</h2><div class="grid" style="margin-top:10px">${gl(G.slice().sort((a,b)=>(a.st==='live'?0:1)-(b.st==='live'?0:1)||(+isFav(b))-(+isFav(a))).slice(0,6))}</div><h2 style="margin:16px 0 10px">Teams in action</h2><div class="grid">${inAction('T').slice(0,6).map(x=>frow('T',x)).join('')||'<p class="mu">No teams in action right now.</p>'}</div><h2 style="margin:16px 0 10px">Fighters in action</h2><div class="grid">${inAction('F').slice(0,6).map(x=>frow('F',x)).join('')||'<p class="mu">No top-100 fighters on a card right now.</p>'}</div><div id="gsug">${sugHtml()}</div>`},
+predict(){const grp=SPG.find(x=>x[0]===S.sel)||SPG[0],codes=grp[2].length>1&&S.lg&&S.lg!=='ALL'?[S.lg]:grp[2],rk={live:0,up:1,final:2},list=G.filter(g=>codes.includes(g.sp)).sort((a,b)=>rk[a.st]-rk[b.st]||(a.st==='final'?Date.parse(b.date)-Date.parse(a.date):Date.parse(a.date)-Date.parse(b.date)));
+return`${modeBar()}<div class="row hs">${SPG.map(x=>`<button class="chip ${grp[0]===x[0]?'on':''}" data-s="${x[0]}">${ic(x[0].toLowerCase(),16)} ${x[1]}</button>`).join('')}</div>${grp[2].length>1?`<div class="row hs">${['ALL',...grp[2]].map(c=>`<button class="chip ${(S.lg||'ALL')===c?'on':''}" data-lg="${c}">${c==='ALL'?'All leagues':spl(c)}</button>`).join('')}</div>`:''}${S.pv==='p'?propsBody(codes):`<div class="grid">${gl(list)}</div>`}<p class="mu" style="margin-top:14px">Predictions are free. No money, no odds — just SP.</p>`},
+community(){const cats=[['feed','Feed'],['daily','Daily SP'],['slots','Slots']];return`<div class="cat-row" role="tablist">${cats.map(c=>`<button class="chip ${(S.hc||'feed')===c[0]?'on':''}" role="tab" data-hc="${c[0]}">${c[1]}</button>`).join('')}</div>${S.hc==='daily'?dailyCard('daily'):S.hc==='slots'?dailyCard('slots'):`<div class="glass card"><textarea id="pt" rows="2" maxlength="1000" placeholder="Share a take…" aria-label="New post"></textarea><div class="row sp" style="margin-top:8px"><div class="row" id="ps">${['NFL','NBA','MLB','NHL','WNBA','CFB','CBB','CFL','SOCCER','UFC'].map(x=>`<button class="chip ${S.psp===x?'on':''}" data-ps="${x}">${x}</button>`).join('')}</div><button class="pri" id="pp">Post</button></div></div><div class="row sp" style="margin-bottom:12px"><div class="row">${['Newest','Popular'].map(f=>`<button class="chip ${S.ft===f?'on':''}" data-ft="${f}">${f}</button>`).join('')}</div><button class="chip" data-rf>${ic('refresh',14)} Refresh</button></div><div id="feed">${feedHtml()}</div>`}`},
+board(){return'<div id="lb"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>'},
+admin(){if(!isAdmin())return'<div class="glass card"><b>Admins only</b><p class="mu">You do not have access to this page.</p></div>';return`<div class="row sp" style="margin-bottom:12px"><h2>Admin</h2><span class="badge-ad">${ic('shield',12)} Admin</span></div><div id="adm"><div class="sk"></div><div class="sk"></div></div>`},
+profile(){const l=LV(S.life),lo=NEED(l-1),hi=NEED(l),p=Math.max(0,(S.life-lo)/(hi-lo)*100),np=Object.keys(S.preds).length,h=hue(ME.username),tab=S.pt||'picks',name=ME.display_name||ME.username,fc=ME.fc||{};
+const joined=ME.created_at?new Date(ME.created_at).toLocaleDateString([],{month:'long',year:'numeric'}):'';
+const A=S.ach||new Set(),BD=[[A.has('first_pick')||np>=1,'First Pick','medal'],[A.has('picks_5')||np>=5,'5 Picks','medal'],[A.has('picks_25')||np>=25,'25 Picks','medal'],[A.has('level_2')||l>=2,'Level 2','nova'],[A.has('level_5')||l>=5,'Level 5','flame'],[A.has('fan_club')||S.favT.length+S.favF.length>=3,'Fan Club','star']];
+let body='';
+if(tab==='picks')body=`<div class="glass card"><b>Recent predictions</b><div style="margin-top:6px">${Object.entries(S.preds).reverse().map(([k,v])=>{const g=G.find(x=>x.id===k);return`<div class="pk"><div><div>${g?esc(g.a)+' vs '+esc(g.b):esc((S.pm[k]&&S.pm[k].m)||'Game '+k)}</div><div class="mu">${g?g.sp:esc((S.pm[k]&&S.pm[k].sp)||'')}</div></div><span class="chip glass">${ic('predict',14)} ${esc(v)}</span></div>`}).join('')||'<p class="mu">No picks yet — try the Picks tab.</p>'}</div></div>`;
+else if(tab==='favs')body=favCard();
+else body=`<div class="glass card"><b>Badges</b><div class="bgs" style="margin-top:10px">${BD.map(b=>`<div class="bdg ${b[0]?'':'off'}">${ic(b[2],26)}${b[1]}</div>`).join('')}</div></div>`;
+return`<div class="pf glass"><div class="pf-cover" style="${coverCss(ME)}"><button class="pf-eb" data-ep>${ic('camera',14)} Edit banner</button></div><div class="pf-top"><div class="pf-av">${avHtml(ME,100)}<button class="pf-cam" id="cam" aria-label="Change profile photo">${ic('camera',16)}</button></div><div class="row" style="gap:8px"><button class="chip" data-settings aria-label="Settings" style="padding:8px 10px">${ic('gear',16)}</button><button class="chip" data-shop style="padding:8px 16px;font-size:13px">${ic('nova',13,1)} SP Shop</button><button class="chip" id="ep" style="padding:8px 16px;font-size:13px">Edit profile</button></div></div><div class="pf-info"><h2>${esc(name)}${flr(ME)}${isAdmin()?`<span class="badge-ad">${ic('shield',12)} Admin</span>`:''}</h2><div class="mu">@${esc(ME.username)}</div><p>${ME.bio?esc(ME.bio):'<span class="mu">No bio yet.</span>'}</p>${joined?`<div class="mu">Joined ${joined}</div>`:''}<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><span class="chip glass" style="overflow-wrap:anywhere">${esc(location.host)}/@${esc(ME.username)}</span><button class="chip" data-copy="${esc(ME.username)}">Copy link</button></div><div class="pf-counts"><span data-fl="r:${esc(ME.id)}" style="cursor:pointer"><b id="pfr">${fc.r??'–'}</b> Followers</span><span data-fl="g:${esc(ME.id)}" style="cursor:pointer"><b id="pfg">${fc.g??'–'}</b> Following</span><span><b>${np}</b> Picks</span></div></div><div class="pf-lv"><div class="row sp"><b>Level ${l}</b><span class="mu">${S.novas.toLocaleString()} ${ic('nova',12,1)}</span></div><div class="bar"><div style="width:${p}%"></div></div><span class="mu">${(hi-S.life).toLocaleString()} SP to Level ${l+1}</span></div><div class="pf-tabs">${[['picks','Picks'],['favs','Favorites'],['ach','Badges']].map(t=>`<button data-pt="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></div>${body}<div class="row" style="justify-content:center;margin-top:4px"><button class="chip" id="lo">Log out</button></div>`}};
+function modal(h){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="glass" role="dialog" aria-modal="true">${h}<button class="chip" style="margin-top:12px" data-x>Close</button></div>`;m.onclick=e=>{if(e.target===m||e.target.dataset.x!==undefined)m.remove()};document.body.append(m);return m}
+function game(id){const g=G.find(x=>x.id===id);if(!g)return;const m=modal('');let stk=25;const draw=()=>{const cur=S.preds[g.id],lock=g.st!=='up',have=S.stk[g.id]||0,eff=have>0?have:stk,opts=[25,50,100,250,500].filter(v=>v>have&&v-have<=S.novas),allin=S.novas+have,soc=SOC.includes(g.sp);
+const chips=opts.map(v=>'<button class="chip '+(have===0&&v===stk?'on':'')+'" data-stk="'+v+'">'+(have>0?'Raise to ':'')+v+'</button>').join('')+(allin>have&&allin>=25&&!opts.includes(allin)?'<button class="chip allin '+(have===0&&stk===allin?'on':'')+'" data-stk="'+allin+'">'+(have>0?'Raise to ':'')+'All-in · '+allin.toLocaleString()+'</button>':'');
+const stake=lock?'':(have===0&&S.novas<25?'<div class="stk-box"><b>Not enough SP</b><div class="mu" style="margin-top:4px">You need at least 25 SP to pick. Grab your free daily SP on the Home tab (Daily SP).</div></div>':'<div class="stk-box"><div class="row sp"><span class="stk-l">'+(have>0?'Your stake':'Stake')+'</span><span class="stk-v">'+eff.toLocaleString()+' <small>SP</small></span></div>'+(chips?'<div class="stk-chips">'+chips+'</div>':'')+'<div class="stk-pay"><div class="w"><small>If right</small><b>+'+eff.toLocaleString()+'</b></div><div class="l"><small>If wrong</small><b>\u2212'+eff.toLocaleString()+'</b></div>'+(soc?'<div><small>Draw</small><b>Push</b></div>':'')+'</div></div>');
+const tiles=(lock&&!cur)?'':`<div class="pk-grid">${(soc?[g.a,'Draw',g.b]:[g.a,g.b]).map(t=>`<button class="pick ${cur===t?'on':''}" data-p="${esc(t)}" ${lock?'disabled':''}>${t==='Draw'?ic('predict',34):crest(t,g.sp,52)}<span class="pn">${esc(t)}</span>${cur===t?'<small>\u2713 Your pick</small>':''}</button>`).join('')}</div>`;
+const note=lock?ic('lock',14)+' '+(resMsg(g)||'Predictions locked \u2014 event has started.'):(cur===undefined?'Tap a team to lock in your pick.':'Tap the other side any time before the start to change it.');
+m.firstChild.innerHTML=`<div class="row sp sh-hd">${spc(g)}<span class="${g.st==='live'?'live':'mu'}">${g.st==='live'?'<i></i>LIVE \u00b7 ':''}${when(g)}</span></div>${lock?score(g):''}<div class="sh-t">${lock?(cur?'Your pick':'No pick made'):'Pick a winner'}</div>${tiles}${stake}<p class="mu sh-note">${note}</p><button class="chip sheet-close" data-x>Close</button>`};draw();m.firstChild.onclick=e=>{const sc=e.target.closest('[data-stk]');if(sc){if(g.st!=='up')return;const v=+sc.dataset.stk,hv=S.stk[g.id]||0;if(hv>0)savePick(g,S.preds[g.id],v).then(ok=>{if(ok!==false)toast('Stake raised to '+v+' SP');if(m.isConnected)draw()});else{stk=v;draw()}return}const b=e.target.closest('[data-p]');if(!b)return;const prev=S.preds[g.id],first=prev===undefined,hv2=S.stk[g.id]||0;S.preds[g.id]=b.dataset.p;sv();toast(first?'Pick locked in · -'+stk+' SP':'Pick changed');savePick(g,b.dataset.p,hv2>0?hv2:stk).then(ok=>{if(ok!==false){if(m.isConnected)draw();return}if(prev===undefined)delete S.preds[g.id];else S.preds[g.id]=prev;sv();if(m.isConnected)draw();if(S.tab==='predict')go(S.tab)});draw();if(S.tab==='predict')go(S.tab)}}
+document.addEventListener('click',e=>{const t=e.target,q=s=>t.closest(s);let c;
+if(c=q('[data-fav]')){const[k,n]=c.dataset.fav.split(':'),a=k==='T'?S.favT:S.favF,i=a.indexOf(n);i<0?a.push(n):a.splice(i,1);toast(i<0?'Added '+n+' to favorites':'Removed '+n+' from favorites');sv();saveFav(k,n,i<0);if(curFM&&curFM.m.isConnected)drawFM();repaint();return}
+if(c=q('[data-fm]'))return favModal(c.dataset.fm);
+if(q('[data-sugmore]')){S.sugN=(S.sugN||3)+5;const e=$('#gsug');if(e)e.innerHTML=sugHtml();return}
+if(q('[data-settings]'))return openSettings();
+if(c=q('[data-g]'))return game(c.dataset.g);
+if(c=q('[data-s]')){S.sel=c.dataset.s;S.lg='ALL';return go('predict')}
+if(c=q('[data-lg]')){S.lg=c.dataset.lg;return go('predict')}
+if(c=q('[data-ft]')){S.ft=c.dataset.ft;return go('community')}
+if(q('#lo')){(async()=>{await FX_DB.auth.signOut();try{localStorage.removeItem('fx-s')}catch(e){}location.reload()})()}
+});
+let FIN={};const FIN_MS=36*36e5;
+async function mergeFin(){try{if(!FX_DB)return;const r=await FX_DB.from('finished_games').select('game_id,sport,a,b,sa,sb,game_date,finished_at').gt('finished_at',new Date(Date.now()-FIN_MS).toISOString());if(r.error||!r.data)return;r.data.forEach(x=>{FIN[x.game_id]=Date.parse(x.finished_at);if(!G.some(g=>String(g.id)===x.game_id))G.push({id:x.game_id,sp:x.sport,a:x.a,b:x.b,sa:x.sa,sb:x.sb,st:'final',date:x.game_date,clk:'Final'})})}catch(e){}}
+const finList=()=>G.filter(g=>g.st==='final'&&Date.now()-(FIN[g.id]||Date.parse(g.date)+3*36e5)<FIN_MS).sort((a,b)=>(FIN[b.id]||Date.parse(b.date))-(FIN[a.id]||Date.parse(a.date)));
+async function loadGames(){try{const r=await FX_API.games();G=(r.items||[]).filter(g=>g&&!/\b(TBA|TBD)\b|opponent/i.test(g.a+' '+g.b)&&g.date&&!isNaN(Date.parse(g.date))&&(g.st!=='up'||Date.parse(g.date)>Date.now()));await mergeFin();indexImgs();GSTAT='ok';checkResults()}catch(e){GSTAT='error'}
+if(curFM&&curFM.m.isConnected)drawFM();
+const pg=document.querySelector('#m .page');if(pg&&!document.querySelector('.modal')&&!(S.tab==='discover'&&document.activeElement&&document.activeElement.id==='gq')&&['live','discover','predict'].includes(S.tab))repaint()}
+async function loadTeams(){try{const r=await FX_API.teams();TEAMS=r.items||[];indexImgs();TSTAT=TEAMS.length?'ok':'error';if(TEAMS.length&&!r.partial){const ok=new Set(TEAMS.map(t=>t.n)),ft=S.favT.filter(n=>ok.has(n));if(ft.length!==S.favT.length){S.favT=ft;sv()}}}catch(e){TSTAT='error'}
+if(TSTAT==='error')setTimeout(loadTeams,30000);if(curFM&&curFM.m.isConnected)drawFM()}
+loadTeams();setInterval(loadTeams,36e5);loadGames();setInterval(()=>{if(!document.hidden)loadGames()},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadGames()});
+
+/* ===== ACCOUNT + PROFILE SETUP (required before using the app) ===== */
+let ME=null;const ME_U=()=>ME?ME.username:'you';
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function gate(h){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';g.className='modal';g.style.zIndex=30;document.body.append(g)}g.innerHTML=`<div class="glass" role="dialog" aria-modal="true">${h}</div>`;return g}
+const ungate=()=>{const g=document.getElementById('gate');if(g)g.remove()};
+const ERR='<p class="mu" id="gerr" style="color:#ff6b6b;min-height:1.3em;margin:8px 0"></p>';
+async function enter(p){ME={id:p.id,username:p.username,display_name:p.display_name,bio:p.bio||'',avatar_url:p.avatar_url||null,banner_url:p.banner_url||null,role:p.role||'user',created_at:p.created_at||null,flair:p.flair||null,team_theme:p.team_theme||null};applyTheme(ME.team_theme);if(isAdmin()&&!$('#nav [data-t=admin]')){$('#nav').classList.add('has-admin');$('#nav').insertAdjacentHTML('beforeend',`<button data-t="admin" aria-label="Admin"><span>${ic('shield',22)}</span>Admin</button>`)}startRealtime();loadFollowing();await loadSaved();ungate();hdr();loadDaily();route(true)}
+function authScreen(mode){const up=mode==='up';const g=gate(`<h2>${up?'Create your account':'Welcome back'}</h2>${up?`<label>Username<input id="au" maxlength="20" autocapitalize="none" autocomplete="username" spellcheck="false" placeholder="e.g. gridiron_jo"></label><span class="mu">3–20 letters, numbers or underscores. Can't be changed later.</span><label style="display:block;margin-top:8px">Display name<input id="ad" maxlength="30" autocomplete="nickname" placeholder="e.g. Jo"></label><label style="display:block;margin-top:8px">Email<input id="ae" type="email" autocomplete="email"></label>`:`<label>Username or email<input id="ae" autocapitalize="none" autocomplete="username" spellcheck="false" placeholder="username"></label>`}<label style="display:block;margin-top:8px">Password<input id="ap" type="password" autocomplete="${up?'new-password':'current-password'}" placeholder="${up?'8+ characters':'Password'}"></label>${ERR}<button class="pri" id="ago">${up?'Sign up':'Log in'}</button><p class="mu" style="margin-top:12px;text-align:center"><a href="#" id="asw">${up?'Have an account? Log in':'New here? Create an account'}</a></p>`);
+const err=t=>g.querySelector('#gerr').textContent=t,btn=g.querySelector('#ago'),val=id=>{const e=g.querySelector(id);return e?e.value.trim():''};
+g.querySelector('#asw').onclick=e=>{e.preventDefault();authScreen(up?'in':'up')};
+g.querySelectorAll('input').forEach(i=>i.onkeydown=e=>{if(e.key==='Enter')btn.click()});
+btn.onclick=async()=>{const pw=g.querySelector('#ap').value;err('');
+if(up){const username=val('#au').toLowerCase(),dn=val('#ad'),email=val('#ae');
+if(!/^[a-z0-9_]{3,20}$/.test(username))return err('Username must be 3–20 characters: letters, numbers, underscores.');
+if(['you','me','u','admin','fanova','sidelyne','sidelynesports','sidelyne_sports','support','mod','api','login','signup','settings','index'].includes(username))return err('That username is reserved.');
+if(!dn)return err('Pick a display name.');
+if(!/^\S+@\S+\.\S+$/.test(email))return err('Enter a valid email.');
+if(pw.length<8)return err('Password must be at least 8 characters.');
+btn.disabled=true;
+const t=await FX_DB.from('profiles').select('id').eq('username',username).maybeSingle();
+if(t.data){btn.disabled=false;return err('That username is taken.')}
+const r=await FX_DB.auth.signUp({email,password:pw,options:{data:{username,display_name:dn}}});btn.disabled=false;
+if(r.error)return err(/already|registered|exists/i.test(r.error.message)?'An account is already registered with this email.':r.error.message);
+if(r.data.user&&Array.isArray(r.data.user.identities)&&r.data.user.identities.length===0)return err('An account is already registered with this email.');
+if(!r.data.session){g.firstChild.innerHTML=`<h2>Check your email</h2><p style="margin:10px 0">We sent a confirmation link to ${esc(email)}. Confirm it, then log in with your username <b>@${esc(username)}</b>.</p><button class="pri" id="tl">Go to log in</button>`;g.querySelector('#tl').onclick=()=>authScreen('in');return}
+return afterAuth(r.data.session.user)}
+const id=val('#ae');if(!id)return err('Enter your username or email.');if(!pw)return err('Enter your password.');
+btn.disabled=true;
+if(id.includes('@')){const r=await FX_DB.auth.signInWithPassword({email:id,password:pw});btn.disabled=false;if(r.error)return err(/confirm/i.test(r.error.message)?'Please confirm your email first, then log in.':r.error.message);return afterAuth(r.data.session.user)}
+try{const res=await fetch('/.netlify/functions/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:id,password:pw})}),j=await res.json().catch(()=>({}));
+if(!res.ok){btn.disabled=false;return err(j.error||'Login failed. Try again.')}
+const r=await FX_DB.auth.setSession({access_token:j.access_token,refresh_token:j.refresh_token});btn.disabled=false;if(r.error)return err(r.error.message);afterAuth(r.data.session.user)}
+catch(e){btn.disabled=false;err('Could not reach the server. Try again.')}}}
+async function afterAuth(user){const r=await FX_DB.from('profiles').select('*').eq('id',user.id).maybeSingle();
+if(r.error||!r.data){const g=gate(`<h2>Couldn't load your profile</h2><p class="mu" style="margin:8px 0">${esc(r.error?r.error.message:'Profile row missing. Did you run supabase/schema.sql and migration_profile.sql?')}</p><button class="pri" id="rt">Retry</button><button class="chip" id="lo2" style="margin-top:8px">Log out</button>`);g.querySelector('#rt').onclick=()=>afterAuth(user);g.querySelector('#lo2').onclick=async()=>{await FX_DB.auth.signOut();location.reload()};return}
+if(!r.data.onboarded)return setupScreen(user,r.data);enter(r.data)}
+function setupScreen(user,prof){prof=prof||{};const g=gate(`<h2>Create your profile</h2><p class="mu" style="margin-bottom:10px">This is how other fans will see you.</p><label>Username<input id="pu" maxlength="20" autocapitalize="none" autocomplete="off" placeholder="e.g. gridiron_jo"></label><span class="mu">3–20 letters, numbers or underscores. Can't be changed later.</span><label style="display:block;margin-top:8px">Display name<input id="pd" maxlength="30" placeholder="e.g. Jo"></label><label style="display:block;margin-top:8px">Bio (optional)<textarea id="pb" rows="2" maxlength="280" placeholder="Chiefs fan. UFC degenerate."></textarea></label>${ERR}<button class="pri" id="pgo">Create profile</button><button class="chip" id="plo" style="margin-top:8px">Log out</button>`);
+const err=t=>g.querySelector('#gerr').textContent=t,btn=g.querySelector('#pgo');
+g.querySelector('#plo').onclick=async()=>{await FX_DB.auth.signOut();location.reload()};
+btn.onclick=async()=>{const username=g.querySelector('#pu').value.trim().toLowerCase(),dn=g.querySelector('#pd').value.trim(),bio=g.querySelector('#pb').value.trim();err('');
+if(!/^[a-z0-9_]{3,20}$/.test(username))return err('Username must be 3–20 characters: letters, numbers, underscores.');
+if(['you','admin','fanova','sidelyne','sidelynesports','sidelyne_sports','support','mod'].includes(username))return err('That username is reserved.');
+if(!dn)return err('Pick a display name.');
+btn.disabled=true;
+{const r=await FX_DB.from('profiles').update({username,display_name:dn,bio,onboarded:true}).eq('id',user.id);btn.disabled=false;
+if(r.error)return err(r.error.code==='23505'?'That username is taken.':r.error.message);
+return enter({...prof,id:user.id,username,display_name:dn,bio})}}}
+/* ===== PROFILE PHOTOS, SOCIAL PROFILE, ADMIN ===== */
+P.check='<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+P.camera='<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>';
+P.shield='<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>';
+const isAdmin=()=>!!ME&&ME.role==='admin';
+const hue=t=>{let h=0;for(const c of String(t))h=(h*31+c.charCodeAt(0))%360;return h};
+const BN={b1:['Pitch','repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 40px,transparent 40px 80px),linear-gradient(135deg,#0b7a43,#064d2a)'],b2:['Hardwood','repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 18px,transparent 18px 36px),linear-gradient(135deg,#d98a3d,#a35a1c)'],b3:['Night Game','radial-gradient(circle at 20% 0%,rgba(255,255,255,.25),transparent 45%),linear-gradient(135deg,#1c2f5e,#0a1226)'],b4:['Octagon','repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px),linear-gradient(135deg,#8c1c1c,#2a0a0a)'],b5:['Ice','linear-gradient(160deg,rgba(255,255,255,.35),transparent 50%),linear-gradient(135deg,#4aa3d6,#1d5b8a)'],b6:['Sunset','linear-gradient(135deg,#f2994a,#c23b6b 55%,#4b2a7a)']};
+const AVP={a1:['nfl','#0b7a43','#064d2a'],a2:['nba','#e07a2b','#a14a0f'],a3:['ufc','#b32424','#5e0f0f'],a4:['soccer','#2f6fdb','#173d85'],a5:['mlb','#1c2f5e','#0a1226'],a6:['nhl','#3b97c8','#1b5a82']};
+const coverCss=u=>{const b=u&&u.banner_url;if(b&&b.startsWith('preset:')&&BN[b.slice(7)])return'background:'+BN[b.slice(7)][1];if(b)return`background:url('${esc(b).replace(/'/g,'%27')}') center/cover`;return`background:linear-gradient(135deg,hsl(${hue(u.username)} 40% 32%),hsl(${(hue(u.username)+40)%360} 40% 22%))`};
+const avHtml=(u,z)=>{const n=(u.display_name||u.username||'?')[0].toUpperCase(),h=hue(u.username),a=u.avatar_url;if(a&&a.startsWith('preset:')&&AVP[a.slice(7)]){const v=AVP[a.slice(7)];return`<div class="pav" style="width:${z}px;height:${z}px;background:linear-gradient(135deg,${v[1]},${v[2]})">${ic(v[0],Math.round(z*.52))}</div>`}return a?`<img class="pav" src="${esc(a)}" alt="" style="width:${z}px;height:${z}px">`:`<div class="pav" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.4)}px;background:hsl(${h} 38% 38%)">${esc(n)}</div>`};
+function resizeImg(file,w=480,h=480){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const r=w/h;let sw=img.width,sh=sw/r;if(sh>img.height){sh=img.height;sw=sh*r}const c=document.createElement('canvas');c.width=Math.min(w,Math.round(sw));c.height=Math.round(c.width/r);c.getContext('2d').drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('Could not process image')),'image/jpeg',.88)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('That file is not a supported image'))};img.src=u})}
+async function uploadImg(file,kind){const b=kind==='banner'?await resizeImg(file,1500,500):await resizeImg(file,480,480),path=ME.id+'/'+kind+'.jpg',up=await FX_DB.storage.from('avatars').upload(path,b,{upsert:true,contentType:'image/jpeg',cacheControl:'3600'});if(up.error)throw up.error;return FX_DB.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now()}
+async function profileExtras(){try{const[a,b]=await Promise.all([FX_DB.from('follows').select('*',{count:'exact',head:true}).eq('followee',ME.id),FX_DB.from('follows').select('*',{count:'exact',head:true}).eq('follower',ME.id)]);ME.fc={r:a.count||0,g:b.count||0};const x=$('#pfr'),y=$('#pfg');if(x)x.textContent=ME.fc.r;if(y)y.textContent=ME.fc.g}catch(e){}}
+function editProfile(){const pend={avatar_url:ME.avatar_url||null,banner_url:ME.banner_url||null};
+const m=modal(`<h3>Edit profile</h3><div class="ed-cover" id="edc"><div class="ed-av" id="eda"></div></div><div class="sec">Banner</div><div class="pgrid" id="bng">${Object.entries(BN).map(([k,v])=>`<button class="bn-opt" data-bn="preset:${k}" aria-label="${v[0]} banner" title="${v[0]}" style="background:${v[1]}"></button>`).join('')}</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" id="bnu">${ic('camera',14)} Upload your own</button><button class="chip" id="bnr">Reset</button></div><div class="sec">Profile picture</div><div class="av-grid" id="avg">${Object.keys(AVP).map(k=>`<button class="av-opt" data-avp="preset:${k}" aria-label="Avatar ${k.slice(1)}">${avHtml({avatar_url:'preset:'+k,username:'x'},46)}</button>`).join('')}</div><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" id="avu">${ic('camera',14)} Upload your own</button><button class="chip" id="avr">Reset</button></div><div class="sec">Details</div><label>Display name<input id="dn" maxlength="30" value="${esc(ME.display_name||'')}"></label><label style="display:block;margin-top:8px">Bio<textarea id="bi" rows="3" maxlength="280">${esc(ME.bio||'')}</textarea></label><p class="mu" style="margin-top:6px">Username @${esc(ME.username)} can't be changed.</p><button class="pri" style="margin-top:10px;width:100%" id="sd">Save changes</button>`);
+const paint=()=>{m.querySelector('#edc').style.cssText=coverCss({banner_url:pend.banner_url,username:ME.username});m.querySelector('#eda').innerHTML=avHtml({...ME,avatar_url:pend.avatar_url},64);m.querySelectorAll('[data-bn]').forEach(b=>b.classList.toggle('sel',b.dataset.bn===pend.banner_url));m.querySelectorAll('[data-avp]').forEach(b=>b.classList.toggle('sel',b.dataset.avp===pend.avatar_url))};paint();
+const pickFile=kind=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async()=>{const f=i.files[0];if(!f)return;if(!/^image\//.test(f.type))return toast('Please choose an image');if(f.size>10*1024*1024)return toast('Image is too large (max 10 MB)');toast('Uploading…');try{pend[kind==='banner'?'banner_url':'avatar_url']=await uploadImg(f,kind);paint();toast('Uploaded. Press Save to keep it.')}catch(e){toast('Upload failed: '+(e.message||e))}};i.click()};
+m.addEventListener('click',e=>{const t=e.target;let c;if(c=t.closest('[data-bn]')){pend.banner_url=c.dataset.bn;paint()}else if(c=t.closest('[data-avp]')){pend.avatar_url=c.dataset.avp;paint()}else if(t.closest('#bnr')){pend.banner_url=null;paint()}else if(t.closest('#avr')){pend.avatar_url=null;paint()}else if(t.closest('#bnu'))pickFile('banner');else if(t.closest('#avu'))pickFile('avatar')});
+m.querySelector('#sd').onclick=async()=>{const dn=m.querySelector('#dn').value.trim(),bi=m.querySelector('#bi').value.trim();if(!dn)return toast('Display name is required');const r=await FX_DB.from('profiles').update({display_name:dn,bio:bi,avatar_url:pend.avatar_url,banner_url:pend.banner_url}).eq('id',ME.id);if(r.error)return toast('Could not save: '+r.error.message);Object.assign(ME,{display_name:dn,bio:bi},pend);m.remove();toast('Profile updated');S.tab==='user'?openUser(ME.username,false):go('profile')}}
+document.addEventListener('click',async e=>{const t=e.target,q=s=>t.closest(s);let c;
+if(q('#cam')||q('#ep')||q('[data-ep]'))return editProfile();
+if(c=q('[data-pt]')){S.pt=c.dataset.pt;return go('profile')}
+});
+/* ===== COMMUNITY (shared feed via Supabase) ===== */
+P.refresh='<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>';
+const ago=d=>{const s=Math.max(0,(Date.now()-Date.parse(d))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';if(s<604800)return Math.floor(s/86400)+'d';return new Date(d).toLocaleDateString([],{month:'short',day:'numeric'})};
+function feedHtml(){if(S.ferr)return`<div class="glass card"><b>Couldn't load posts</b><p class="mu">${esc(S.ferr)}</p>${/relation|exist|permission|policy|schema cache/i.test(S.ferr)?'<p class="mu">Make sure supabase/community.sql and supabase/shop.sql have been run.</p>':''}</div>`;
+if(!S.feed)return'<div class="sk"></div><div class="sk"></div>';
+let L=S.feed.slice();if(S.ft==='Popular')L.sort((a,b)=>b.post_likes.length-a.post_likes.length||Date.parse(b.created_at)-Date.parse(a.created_at));
+const pins=L.filter(isPinned).sort((a,b)=>Date.parse(b.pinned_until)-Date.parse(a.pinned_until));L=[...pins,...L.filter(p=>!isPinned(p))];
+return L.map(postCard).join('')||'<p class="mu">No posts yet. Be the first to share a take.</p>'}
+let LASTFEED=null;const drawFeed=()=>{const f=$('#feed');if(f&&S.tab==='community'){const h=feedHtml();if(h===LASTFEED&&f.firstChild)return;LASTFEED=h;f.innerHTML=h}};
+const POSTSEL='id,user_id,body,sport,created_at,pinned_until,profiles!user_id(username,display_name,avatar_url,flair),post_likes(user_id),comments(count)';
+let FL=false;
+async function loadFeed(){if(!FX_DB||!ME||FL)return;FL=true;try{const[r,pr]=await Promise.all([FX_DB.from('posts').select(POSTSEL).order('created_at',{ascending:false}).limit(60),FX_DB.from('posts').select(POSTSEL).gt('pinned_until',new Date().toISOString()).order('pinned_until',{ascending:false}).limit(10)]);if(r.error)S.ferr=r.error.message;else{S.ferr=null;const seen=new Set(r.data.map(x=>x.id));S.feed=[...r.data,...(pr.error?[]:pr.data.filter(x=>!seen.has(x.id)))]}}catch(e){S.ferr=String(e.message||e)}FL=false;drawFeed();Object.keys(S.cmOpen).filter(k=>S.cmOpen[k]).forEach(loadThread)}
+let RT=null,RTT=null;const kick=()=>{clearTimeout(RTT);RTT=setTimeout(()=>{if(S.tab==='community')loadFeed()},400)};
+function startRealtime(){if(RT||!FX_DB)return;try{RT=FX_DB.channel('community-feed').on('postgres_changes',{event:'*',schema:'public',table:'posts'},kick).on('postgres_changes',{event:'*',schema:'public',table:'post_likes'},kick).on('postgres_changes',{event:'*',schema:'public',table:'comments'},kick).subscribe()}catch(e){console.error('realtime',e)}}
+setInterval(()=>{if(ME&&S.tab==='community'&&!document.hidden)loadFeed()},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME&&S.tab==='community')loadFeed()});
+document.addEventListener('click',async e=>{const t=e.target,q=s=>t.closest(s);let c;
+if(c=q('[data-ps]')){const v=c.dataset.ps;S.psp=S.psp===v?null:v;document.querySelectorAll('#ps .chip').forEach(b=>b.classList.toggle('on',b.dataset.ps===S.psp));return}
+if(c=q('[data-rf]')){const h=c.innerHTML;c.disabled=true;c.textContent='Refreshing…';await loadFeed();c.disabled=false;c.innerHTML=h;return}
+if(c=q('#pp')){const ta=$('#pt'),v=ta.value.trim();if(!v)return toast('Write something first');c.disabled=true;
+const r=await FX_DB.from('posts').insert({user_id:ME.id,body:v,sport:S.psp||null}).select(POSTSEL).single();c.disabled=false;
+if(r.error)return toast('Could not post: '+r.error.message);ta.value='';S.feed=[r.data,...(S.feed||[])];drawFeed();syncNovas('Community post');return}
+if(c=q('[data-pl]')){const p=findPost(c.dataset.pl);if(!p)return;const had=p.post_likes.some(x=>x.user_id===ME.id);
+p.post_likes=had?p.post_likes.filter(x=>x.user_id!==ME.id):[...p.post_likes,{user_id:ME.id}];redraw();
+const r=had?await FX_DB.from('post_likes').delete().eq('post_id',p.id).eq('user_id',ME.id):await FX_DB.from('post_likes').insert({post_id:p.id,user_id:ME.id});
+if(r.error&&r.error.code!=='23505'){toast('Could not update like');loadFeed()}return}
+if(c=q('[data-pd]')){const id=c.dataset.pd,r=await FX_DB.from('posts').delete().eq('id',id).select('id');if(r.error)return toast('Could not delete: '+r.error.message);if(!r.data.length)return toast('You can\'t delete that post');S.feed=(S.feed||[]).filter(x=>x.id!==id);if(S.up&&S.up.posts)S.up.posts=S.up.posts.filter(x=>x.id!==id);redraw();return toast('Post deleted')}
+if(c=q('[data-rp]')){const id=c.dataset.rp,m=modal(`<h3>Report post</h3><textarea id="rr" rows="3" maxlength="200" placeholder="What's wrong with this post?"></textarea><button class="pri" style="margin-top:10px" id="rs">Send report</button>`);
+m.querySelector('#rs').onclick=async()=>{const r=await FX_DB.from('reports').insert({reporter:ME.id,target_type:'post',target_id:id,reason:m.querySelector('#rr').value.trim()||null});if(r.error)return toast('Could not report: '+r.error.message);m.remove();toast('Report sent. Thanks!')}}
+});
+
+/* ===== USER LINKS (/@username), FOLLOW, PEOPLE SEARCH, COMMENTS ===== */
+S.cm={};S.cmOpen={};S.fset=new Set();S.people=[];S.sug=null;S.up=null;S.pq='';
+const pathUser=()=>{let p=location.pathname;try{p=decodeURIComponent(p)}catch(e){}const m=p.match(/^\/(?:@|u\/)?([A-Za-z0-9_]{3,20})\/?$/);return m?m[1].toLowerCase():null};
+const dname=u=>esc(u.display_name||u.username);
+const ulink=(u,inner)=>u&&u.username&&u.username!=='unknown'?`<a class="ulk" href="/@${esc(u.username)}" data-u="${esc(u.username)}">${inner}</a>`:inner;
+const findPost=id=>[...(S.feed||[]),...((S.up&&S.up.posts)||[])].find(x=>x.id===id);
+const redraw=()=>{if(S.tab==='community')drawFeed();else if(S.tab==='user')drawUserPosts()};
+const drawUserPosts=()=>{const e=$('#uposts');if(e&&S.up&&S.up.posts)e.innerHTML=postsList(S.up.posts)};
+const postsList=L=>L.map(postCard).join('')||'<p class="mu">No posts yet.</p>';
+const ccount=p=>S.cmOpen[p.id]&&S.cm[p.id]?S.cm[p.id].length:(p.comments&&p.comments[0]?p.comments[0].count:0);
+const bump=(id,d)=>{const p=findPost(id);[...(S.feed||[]),...((S.up&&S.up.posts)||[])].filter(x=>x.id===id).forEach(x=>{x.comments=[{count:Math.max(0,((x.comments&&x.comments[0]&&x.comments[0].count)||0)+d)}]})};
+function postCard(p){const u=p.profiles||{username:'unknown'},liked=p.post_likes.some(x=>x.user_id===ME.id),mine=p.user_id===ME.id,pin=isPinned(p);
+return`<div class="glass card fp${pin?' pinned':''}">${pin?pinLbl(p):''}<div class="row">${ulink(u,avHtml(u,44))}<div style="flex:1;min-width:0">${ulink(u,`<b>${dname(u)}</b>`)}${flr(u)}<div class="mu">${ulink(u,'@'+esc(u.username))} · ${ago(p.created_at)}</div></div>${p.sport?`<span class="chip glass">${esc(p.sport)}</span>`:''}</div><p style="margin:10px 0;overflow-wrap:anywhere;white-space:pre-wrap">${esc(p.body)}</p><div class="row" style="flex-wrap:wrap"><button class="chip ${liked?'on':''}" data-pl="${esc(p.id)}">${ic('heart',16,liked)} ${p.post_likes.length}</button><button class="chip ${S.cmOpen[p.id]?'on':''}" data-cm="${esc(p.id)}" aria-label="Comments">${ic('chat',16)} ${ccount(p)}</button>${mine?`<button class="chip" data-hl="${esc(p.id)}">${ic('pin',14)} ${pin?'Extend':'Highlight'}</button>`:''}${isAdmin()?`<button class="chip" data-ad="editpost" data-id="${esc(p.id)}">Edit</button>`:''}${mine||isAdmin()?`<button class="chip" data-pd="${esc(p.id)}">${ic('trash',14)} Delete</button>`:`<button class="chip" data-rp="${esc(p.id)}">${ic('flag',14)} Report</button>`}</div><div id="cm-${esc(p.id)}">${S.cmOpen[p.id]?thread(p.id):''}</div></div>`}
+function thread(id){const L=S.cm[id];if(!L)return'<div class="sk"></div>';
+return`<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px">${L.map(c=>{const u=c.profiles||{username:'unknown'};return`<div class="row" style="align-items:flex-start;margin-bottom:10px">${ulink(u,avHtml(u,32))}<div style="flex:1;min-width:0"><div>${ulink(u,`<b>${dname(u)}</b>`)}${flr(u)} <span class="mu">@${esc(u.username)} · ${ago(c.created_at)}</span></div><div style="overflow-wrap:anywhere;white-space:pre-wrap">${esc(c.body)}</div></div>${isAdmin()?`<button class="chip" data-ad="editcm" data-id="${esc(c.id)}" data-p="${esc(id)}">Edit</button>`:''}${c.user_id===ME.id||isAdmin()?`<button class="chip" data-cd="${esc(c.id)}:${esc(id)}" aria-label="Delete comment">${ic('trash',14)}</button>`:''}</div>`}).join('')||'<p class="mu" style="margin-bottom:10px">No comments yet.</p>'}<div class="row" style="gap:8px"><input id="ci-${esc(id)}" maxlength="500" placeholder="Write a comment…" autocomplete="off" style="flex:1;min-width:0;font-size:16px"><button class="pri" data-cs="${esc(id)}" style="padding:8px 16px">Send</button></div></div>`}
+const paintThread=id=>{const e=document.getElementById('cm-'+id);if(e&&S.cmOpen[id]){const i=document.getElementById('ci-'+id),v=i?i.value:'';e.innerHTML=thread(id);const n=document.getElementById('ci-'+id);if(n&&v)n.value=v}};
+async function loadThread(id){try{const r=await FX_DB.from('comments').select('id,user_id,body,created_at,profiles!user_id(username,display_name,avatar_url,flair)').eq('post_id',id).order('created_at',{ascending:true}).limit(100);if(r.error){toast('Could not load comments: '+r.error.message);S.cm[id]=S.cm[id]||[]}else S.cm[id]=r.data}catch(e){S.cm[id]=S.cm[id]||[]}paintThread(id)}
+
+/* follow state */
+function loadFollowing(){S.fp=(async()=>{try{const r=await FX_DB.from('follows').select('followee').eq('follower',ME.id);if(!r.error)S.fset=new Set(r.data.map(x=>x.followee))}catch(e){}})();return S.fp}
+const followBtn=(id,st='')=>{if(!ME||id===ME.id)return'';const on=S.fset.has(id);return`<button class="chip ${on?'on':''}" data-fo="${esc(id)}" style="padding:8px 16px;font-size:13px;${st}">${on?'Following':'Follow'}</button>`};
+const pRow=u=>`<div class="glass card row sp"><a class="ulk row" href="/@${esc(u.username)}" data-u="${esc(u.username)}" style="min-width:0;flex:1">${avHtml(u,40)}<div style="min-width:0"><b>${dname(u)}</b>${flr(u)}<div class="mu">@${esc(u.username)}${u.novas?' · '+u.novas.toLocaleString()+' SP':''}</div></div></a>${followBtn(u.id)}</div>`;
+
+/* people search + suggestions (Discover tab) */
+let PT=null;
+const rawQ=()=>GQ.trim().replace(/^@/,'').toLowerCase().replace(/[^a-z0-9_ ]/g,'').trim();
+function peopleHtml(){if(!rawQ()||!S.people.length)return'';return`<h2 style="margin:16px 0 10px">People <span class="mu">${S.people.length}</span></h2><div class="grid">${S.people.map(pRow).join('')}</div>`}
+function searchPeople(){clearTimeout(PT);const raw=rawQ();if(!raw){S.people=[];S.pq='';return}
+PT=setTimeout(async()=>{if(!FX_DB||!ME)return;let r;try{r=await FX_DB.from('profiles').select('id,username,display_name,avatar_url,novas,flair').eq('onboarded',true).or(`username.ilike.%${raw.replace(/ /g,'%')}%,display_name.ilike.%${raw.replace(/ /g,'%')}%`).order('novas',{ascending:false}).limit(12)}catch(e){return}
+if(raw!==rawQ())return;S.people=r.error?[]:r.data;S.pq=raw;const g=$('#gqr');if(g&&sq(GQ))g.innerHTML=gsearch()},250)}
+const sugHtml=()=>{const a=S.sug||[];if(!a.length)return'';const n=Math.min(S.sugN||3,a.length);return`<h2 style="margin:16px 0 10px">People to follow</h2><div class="grid">${a.slice(0,n).map(pRow).join('')}</div>${n<a.length?'<button class="chip" data-sugmore style="margin:10px auto 0;display:block">Show more</button>':''}`};
+async function loadSuggest(){if(!FX_DB||!ME)return;try{const r=await FX_DB.from('profiles').select('id,username,display_name,avatar_url,novas,flair').eq('onboarded',true).neq('id',ME.id).order('novas',{ascending:false}).order('created_at',{ascending:false}).limit(20);S.sug=r.error?[]:r.data}catch(e){S.sug=[]}const e=$('#gsug');if(e&&!sq(GQ))e.innerHTML=sugHtml()}
+
+/* public profile page */
+function userHtml(){const U=S.up||{};
+if(U.loading)return'<div class="sk"></div><div class="sk"></div>';
+if(U.err)return`<div class="glass card"><b>Couldn't load profile</b><p class="mu">${esc(U.err)}</p><button class="chip" data-home>Back to home</button></div>`;
+if(!U.prof)return`<div class="glass card"><b>@${esc(U.username)} not found</b><p class="mu" style="margin:6px 0 10px">No one has that username.</p><button class="chip" data-home>Back to home</button></div>`;
+const u=U.prof,h=hue(u.username),me=u.id===ME.id,l=LV(u.lifetime_novas||u.novas||0),fc=U.fc||{r:0,g:0},joined=u.created_at?new Date(u.created_at).toLocaleDateString([],{month:'long',year:'numeric'}):'';
+return`<div class="pf glass"><div class="pf-cover" style="${coverCss(u)}"></div><div class="pf-top"><div class="pf-av">${avHtml(u,100)}</div>${me?'<button class="chip" id="ep" style="padding:8px 16px;font-size:13px">Edit profile</button>':followBtn(u.id)}</div><div class="pf-info"><h2>${dname(u)}${flr(u)}</h2><div class="mu">@${esc(u.username)}</div><p>${u.bio?esc(u.bio):'<span class="mu">No bio yet.</span>'}</p>${joined?`<div class="mu">Joined ${joined}</div>`:''}<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><span class="chip glass" style="overflow-wrap:anywhere">${esc(location.host)}/@${esc(u.username)}</span><button class="chip" data-copy="${esc(u.username)}">Copy link</button></div><div class="pf-counts"><span data-fl="r:${esc(u.id)}" style="cursor:pointer"><b id="ufr">${fc.r}</b> Followers</span><span data-fl="g:${esc(u.id)}" style="cursor:pointer"><b>${fc.g}</b> Following</span><span><b>${(U.posts||[]).length}</b> Posts</span></div></div><div class="pf-lv"><div class="row sp"><b>Level ${l}</b><span class="mu">${(u.novas||0).toLocaleString()} ${ic('nova',12,1)}</span></div></div></div><h3 style="margin:14px 0 10px">Posts</h3><div id="uposts">${postsList(U.posts||[])}</div>`}
+R.user=userHtml;
+async function openUser(name,push=true){name=String(name).toLowerCase();if(push&&pathUser()!==name)history.pushState({},'','/@'+name);
+if(S.tab!=='user')S.back=S.tab;S.tab='user';document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',!!ME&&name===ME.username&&b.dataset.t==='profile'));
+S.up={username:name,loading:true};$('#m').innerHTML='<div class="page">'+userHtml()+'</div>';scrollTo(0,0);
+const stale=()=>S.tab!=='user'||!S.up||S.up.username!==name;
+try{const r=await FX_DB.from('profiles').select('id,username,display_name,avatar_url,banner_url,bio,novas,level,created_at,flair,lifetime_novas').eq('username',name).eq('onboarded',true).maybeSingle();if(stale())return;
+if(r.error)S.up={username:name,err:r.error.message};else if(!r.data)S.up={username:name};
+else{const id=r.data.id;
+const[a,b,pp]=await Promise.all([FX_DB.from('follows').select('*',{count:'exact',head:true}).eq('followee',id),FX_DB.from('follows').select('*',{count:'exact',head:true}).eq('follower',id),FX_DB.from('posts').select(POSTSEL).eq('user_id',id).order('created_at',{ascending:false}).limit(30),S.fp]);if(stale())return;
+S.up={username:name,prof:r.data,fc:{r:a.count||0,g:b.count||0},posts:pp.error?[]:pp.data}}}
+catch(e){if(stale())return;S.up={username:name,err:String(e.message||e)}}
+$('#m').innerHTML='<div class="page">'+userHtml()+'</div>'}
+const startTab=()=>{try{const s=JSON.parse(localStorage.getItem('fx-set')||'{}').start;return NAV.some(n=>n[0]===s)?s:'community'}catch(e){return'community'}};
+function route(first){const u=pathUser();if(u)openUser(u,false);else go(first?startTab():(S.tab==='user'?(S.back||'community'):S.tab),true)}
+window.addEventListener('popstate',()=>{if(ME){document.querySelectorAll('.modal:not(#gate)').forEach(x=>x.remove());route(false)}});
+async function followList(kind,uid){const m=modal(`<h3>${kind==='r'?'Followers':'Following'}</h3><div id="fll" style="max-height:55vh;overflow:auto"><div class="sk"></div></div>`);
+const col=kind==='r'?'follower':'followee',other=kind==='r'?'followee':'follower';
+const r=await FX_DB.from('follows').select(`p:profiles!${col}(id,username,display_name,avatar_url,novas,flair)`).eq(other,uid).order('created_at',{ascending:false}).limit(100);
+const box=m.querySelector('#fll');if(!box)return;const L=r.error?[]:r.data.map(x=>x.p).filter(Boolean);
+box.innerHTML=r.error?`<p class="mu">${esc(r.error.message)}</p>`:L.map(pRow).join('')||`<p class="mu">${kind==='r'?'No followers yet.':'Not following anyone yet.'}</p>`}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id&&e.target.id.startsWith('ci-')){e.preventDefault();const b=document.querySelector('[data-cs="'+e.target.id.slice(3)+'"]');if(b)b.click()}});
+document.addEventListener('click',async e=>{const t=e.target,q=s=>t.closest(s);let c;
+if(c=q('[data-u]')){if(e.metaKey||e.ctrlKey||e.shiftKey||e.button)return;e.preventDefault();document.querySelectorAll('.modal:not(#gate)').forEach(x=>x.remove());return openUser(c.dataset.u)}
+if(q('[data-home]'))return go('community');
+if(c=q('[data-copy]')){const link=location.origin+'/@'+c.dataset.copy;try{await navigator.clipboard.writeText(link);toast('Link copied')}catch(x){toast(link)}return}
+if(c=q('[data-fl]')){const[k,id]=c.dataset.fl.split(':');return followList(k,id)}
+if(c=q('[data-fo]')){const id=c.dataset.fo;if(id===ME.id||c.disabled)return;const had=S.fset.has(id);c.disabled=true;
+const r=had?await FX_DB.from('follows').delete().eq('follower',ME.id).eq('followee',id):await FX_DB.from('follows').insert({follower:ME.id,followee:id});
+if(r.error&&r.error.code!=='23505'){c.disabled=false;return toast('Could not update: '+r.error.message)}
+had?S.fset.delete(id):S.fset.add(id);
+document.querySelectorAll('[data-fo="'+id+'"]').forEach(b=>{b.classList.toggle('on',!had);b.textContent=had?'Follow':'Following';b.disabled=false});
+if(S.up&&S.up.prof&&S.up.prof.id===id&&S.up.fc){S.up.fc.r=Math.max(0,S.up.fc.r+(had?-1:1));const x=$('#ufr');if(x)x.textContent=S.up.fc.r}
+if(ME.fc)ME.fc.g=Math.max(0,(ME.fc.g||0)+(had?-1:1));
+return toast(had?'Unfollowed':'Following')}
+if(c=q('[data-cm]')){const id=c.dataset.cm;S.cmOpen[id]=!S.cmOpen[id];c.classList.toggle('on',S.cmOpen[id]);const e2=document.getElementById('cm-'+id);if(S.cmOpen[id]){if(e2)e2.innerHTML=thread(id);loadThread(id)}else if(e2)e2.innerHTML='';return}
+if(c=q('[data-cs]')){const id=c.dataset.cs,inp=document.getElementById('ci-'+id),v=inp?inp.value.trim():'';if(!v)return toast('Write something first');c.disabled=true;
+const r=await FX_DB.from('comments').insert({post_id:id,user_id:ME.id,body:v}).select('id,user_id,body,created_at,profiles!user_id(username,display_name,avatar_url,flair)').single();c.disabled=false;
+if(r.error)return toast('Could not comment: '+r.error.message);(S.cm[id]=S.cm[id]||[]).push(r.data);bump(id,1);redraw();return}
+if(c=q('[data-cd]')){const[cid,pid]=c.dataset.cd.split(':'),r=await FX_DB.from('comments').delete().eq('id',cid).select('id');if(r.error)return toast('Could not delete: '+r.error.message);if(!r.data.length)return toast("You can't delete that comment");S.cm[pid]=(S.cm[pid]||[]).filter(x=>x.id!==cid);bump(pid,-1);redraw();return toast('Comment deleted')}
+});
+
+/* ===== SAVED TO YOUR ACCOUNT: picks, favorites, badges, SP ===== */
+S.pm={};S.ach=null;
+const BADGE={first_pick:'First Pick',picks_5:'5 Picks',picks_25:'25 Picks',level_2:'Level 2',level_5:'Level 5',fan_club:'Fan Club'};
+function applyNovas(n,why){if(typeof n!=='number')return;const d=n-S.novas;if(d>0&&why)earn(d,why);else{if(d>0)S.life+=d;S.novas=n;sv();hdr()}}
+async function syncNovas(why){try{const r=await FX_DB.from('profiles').select('novas,lifetime_novas').eq('id',ME.id).single();if(!r.error){applyNovas(r.data.novas,why);if(typeof r.data.lifetime_novas==='number'){S.life=r.data.lifetime_novas;hdr()}}}catch(e){}}
+async function refreshBadges(){try{const r=await FX_DB.rpc('sync_badges');if(r.error||!Array.isArray(r.data))return;const old=S.ach;S.ach=new Set(r.data);if(old)r.data.filter(x=>!old.has(x)).forEach(x=>toast('Badge unlocked: '+(BADGE[x]||x)))}catch(e){}}
+let CR=false,ORPH=false;
+let LK=0;async function kickSettle(){if(Date.now()-LK<60000)return;LK=Date.now();try{const r=await fetch('/.netlify/functions/settle-games',{cache:'no-store'});const j=await r.json().catch(()=>null);if(j&&j.errors&&j.errors.length)console.warn('settle-games',j.errors)}catch(e){}}
+async function checkResults(){if(CR||!FX_DB||!ME)return;const ids=G.filter(g=>g.st==='final'&&S.preds[g.id]&&!S.res[g.id]).map(g=>String(g.id));
+if(!ORPH&&S.loaded&&GSTAT==='ok'){ORPH=true;Object.keys(S.preds).forEach(id=>{if(!S.res[id]&&!ids.includes(id)&&!G.some(g=>String(g.id)===id))ids.push(id)})} // once per visit: picks whose game already left the live feed
+if(!ids.length)return;CR=true;try{await kickSettle();const r=await FX_DB.from('user_picks').select('game_id,result,awarded').in('game_id',ids).not('settled_at','is',null);if(r.error||!r.data.length)return;r.data.forEach(x=>{S.res[x.game_id]={r:x.result,a:x.awarded||0}});const w=r.data.filter(x=>x.result==='win').length,l=r.data.filter(x=>x.result==='loss').length;await syncNovas(r.data.length>1?'Results are in':w?'Correct pick':l?'Pick played':null);if(['predict','live'].includes(S.tab))go(S.tab)}catch(e){}finally{CR=false}}
+async function savePick(g,pick,stake){const m=g.a+' vs '+g.b;S.pm[g.id]={m,sp:g.sp};try{const r=await FX_DB.rpc('save_pick',{p_game:String(g.id),p_sport:g.sp,p_pick:pick,p_matchup:m,p_stake:stake||25});if(r.error)throw r.error;S.stk=S.stk||{};if(r.data.stake)S.stk[g.id]=r.data.stake;applyNovas(r.data.novas,null);refreshBadges();return true}catch(e){toast('Pick not saved: '+(e.message||e));return false}}
+async function saveFav(k,n,add){const kind=k==='T'?'team':'fighter';try{const r=add?await FX_DB.from('user_favs').insert({user_id:ME.id,kind,name:n}):await FX_DB.from('user_favs').delete().eq('user_id',ME.id).eq('kind',kind).eq('name',n);if(r.error&&r.error.code!=='23505')throw r.error;refreshBadges()}catch(e){toast('Favorite not saved: '+(e.message||e))}}
+async function loadSaved(){try{
+const get=()=>Promise.all([FX_DB.from('user_picks').select('game_id,sport,pick,matchup,stake,result,awarded,settled_at').order('updated_at',{ascending:true}),FX_DB.from('user_favs').select('kind,name').order('created_at',{ascending:true})]);
+let[pk,fv]=await get();if(pk.error||fv.error)throw pk.error||fv.error;
+let local=null;try{local=JSON.parse(localStorage.getItem('fx-s')||'null')}catch(e){}
+if(local&&!pk.data.length&&!fv.data.length){const picks=Object.entries(local.preds||{}).map(([id,v])=>{const g=G.find(x=>String(x.id)===id);return{game_id:id,pick:v,sport:g?g.sp:null,matchup:g?g.a+' vs '+g.b:null}}),favs=[...(local.favT||[]).map(n=>({kind:'team',name:n})),...(local.favF||[]).map(n=>({kind:'fighter',name:n}))];
+if(picks.length||favs.length){const r=await FX_DB.rpc('import_local',{p_picks:picks,p_favs:favs});if(!r.error)[pk,fv]=await get()}}
+try{localStorage.removeItem('fx-s')}catch(e){}
+S.preds={};S.pm={};S.res={};S.stk={};pk.data.forEach(x=>{S.preds[x.game_id]=x.pick;S.stk[x.game_id]=x.stake||0;if(x.settled_at)S.res[x.game_id]={r:x.result,a:x.awarded||0,s:x.stake||0};if(x.matchup)S.pm[x.game_id]={m:x.matchup,sp:x.sport||''}});
+S.favT=fv.data.filter(x=>x.kind==='team').map(x=>x.name);S.favF=fv.data.filter(x=>x.kind==='fighter').map(x=>x.name);
+const pr=await FX_DB.from('profiles').select('novas,lifetime_novas').eq('id',ME.id).single();if(!pr.error){S.novas=pr.data.novas||0;S.life=Math.max(pr.data.lifetime_novas||0,S.novas)}
+sv();S.loaded=true;await refreshBadges()}catch(e){console.error('loadSaved',e);toast('Could not load your saved picks: '+(e.message||e))}}
+/* ===== RANKS: real leaderboard (was a stub that only showed you as #1) ===== */
+async function loadBoard(){const box=$('#lb');if(!box)return;
+try{const r=await FX_DB.from('profiles').select('id,username,display_name,avatar_url,novas,lifetime_novas,flair').eq('onboarded',true).order('lifetime_novas',{ascending:false}).order('created_at',{ascending:true}).limit(50);if(r.error)throw r.error;
+if(!$('#lb'))return;const L=r.data||[];
+$('#lb').innerHTML=L.map((u,i)=>{const me=ME&&u.id===ME.id,pts=Math.max(u.lifetime_novas||0,u.novas||0);return`<div class="glass card row sp" style="${me?'box-shadow:inset 0 0 0 1.5px var(--ab)':''}"><a class="ulk row" href="/@${esc(u.username)}" data-u="${esc(u.username)}" style="min-width:0;flex:1"><b style="width:26px;text-align:center;flex:none;color:${i<3?'var(--ab)':'var(--mu)'}">${i+1}</b>${avHtml(u,40)}<div style="min-width:0"><b class="ellip" style="display:block">${dname(u)}${flr(u)}</b><div class="mu">@${esc(u.username)} · Lv ${LV(pts)}</div></div></a><b style="flex:none">${pts.toLocaleString()} ${ic('nova',14,1)}</b></div>`}).join('')||'<p class="mu">No one is on the board yet.</p>'}
+catch(e){const b=$('#lb');if(b)b.innerHTML=`<div class="glass card"><b>Couldn't load the leaderboard</b><p class="mu">${esc(e.message||e)}</p></div>`}}
+/* ===== SP SHOP: name flair, post highlights, team themes (needs supabase/shop.sql) ===== */
+P.pin='<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7"/>';
+P.crown='<path d="M3 7l4.5 4.5L12 5l4.5 6.5L21 7l-2 12H5z"/>';
+P.bolt='<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>';
+const FLAIR={star:['Star','star','#3b82f6',1],bolt:['Bolt','bolt','#eab308',1],medal:['Medal','medal','#10b981',0],trophy:['Trophy','board','#d99a06',0],flame:['Flame','flame','#f97316',1],crown:['Crown','crown','#a855f7',1]};
+const flid=f=>String(f||'').replace(/^flair:/,'');
+const flr=(u,z=12)=>{const f=u&&u.flair&&FLAIR[flid(u.flair)];return f?`<span class="flr" title="${f[0]}" style="--fc:${f[2]}">${ic(f[1],z,f[3])}</span>`:''};
+const isPinned=p=>!!p.pinned_until&&Date.parse(p.pinned_until)>Date.now();
+const pinLeft=t=>{const m=Math.max(1,Math.round((Date.parse(t)-Date.now())/6e4));return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m'};
+const pinLbl=p=>`<div class="pinl">${ic('pin',13,1)} Highlighted · ${pinLeft(p.pinned_until)} left</div>`;
+
+/* team theme engine: turns two team colors into readable light + dark palettes */
+const hx=h=>{h=String(h||'').replace('#','');return /^[0-9a-f]{6}$/i.test(h)?[0,2,4].map(i=>parseInt(h.slice(i,i+2),16)):null};
+const toHex=r=>'#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const lum=r=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(r[0])+.7152*f(r[1])+.0722*f(r[2])};
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const mixc=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const onC=r=>cr(r,[255,255,255])>=cr(r,[16,25,15])?'#ffffff':'#10190f';
+const fitC=(r,bg,min)=>{let c=r;const tg=lum(bg)>.5?[0,0,0]:[255,255,255];for(let i=0;i<24&&cr(c,bg)<min;i++)c=mixc(c,tg,.12);return c};
+function teamVars(h1,h2){let a=hx(h1),b=hx(h2)||a;if(!a)return null;
+const okc=c=>{const l=lum(c);return l>.04&&l<.8},dist=(x,y)=>Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2]);
+if(lum(a)>=.8){if(lum(b)<.8){const t=a;a=b;b=t}else a=mixc(a,[0,0,0],.55)}
+if(!okc(b)||dist(a,b)<70)b=mixc(a,lum(a)>.35?[0,0,0]:[255,255,255],.55);
+const fixB=c=>{let x=c;for(let i=0;i<20&&Math.max(cr(x,[255,255,255]),cr(x,[16,25,15]))<4.5;i++)x=mixc(x,[0,0,0],.06);return x};
+const L=[255,255,255],D=[21,29,23],aL=fixB(a),bD=fixB(fitC(a,D,2.2)),hL=fitC(b,L,1.25),hD=fitC(b,D,1.8);
+return{'tb-l':toHex(aL),'tb-d':toHex(bD),'tx-l':onC(aL),'tx-d':onC(bD),'ta-l':toHex(fitC(a,L,4.5)),'ta-d':toHex(fitC(a,D,4.5)),'th-l':toHex(hL),'th-d':toHex(hD),'tk-l':onC(hL),'tk-d':onC(hD)}}
+const TKEYS=['tb-l','tb-d','tx-l','tx-d','ta-l','ta-d','th-l','th-d','tk-l','tk-d'];
+function applyTheme(t){const d=document.documentElement,mt=document.querySelector('meta[name="theme-color"]'),v=t&&teamVars(t.c1,t.c2);
+if(!v){d.removeAttribute('data-team');TKEYS.forEach(k=>d.style.removeProperty('--'+k));if(mt)mt.content='#0e8f4a';return}
+d.setAttribute('data-team',String(t.id||'team').replace(/[^a-z0-9:_]/gi,''));TKEYS.forEach(k=>d.style.setProperty('--'+k,v[k]));if(mt)mt.content=v['tb-l']}
+const tkey=n=>sq(n).replace(/ /g,'_').slice(0,40);
+const swt=(a,b)=>`<span class="sw" style="background:linear-gradient(135deg,${esc(a)} 50%,${esc(b)} 50%)"></span>`;
+
+/* shop state */
+S.shop={items:[],owned:{},mine:[],ok:false,err:null};
+const shopItems=k=>S.shop.items.filter(x=>x.kind===k);
+const shopPrice=id=>{const x=S.shop.items.find(i=>i.id===id);return x?x.price:null};
+const drawShop=()=>{const pg=$('#m .page');if(pg&&S.tab==='shop')pg.innerHTML=R.shop()};
+async function loadShop(){if(!FX_DB||!ME)return;
+try{const[a,b,c]=await Promise.all([FX_DB.from('shop_items').select('id,kind,name,price,data,sort').eq('active',true).order('sort',{ascending:true}),FX_DB.from('user_items').select('item_id,data'),FX_DB.from('posts').select('id,body,created_at,pinned_until').eq('user_id',ME.id).order('created_at',{ascending:false}).limit(8)]);
+const bad=a.error||b.error;if(bad)throw bad;
+S.shop={items:a.data||[],owned:Object.fromEntries((b.data||[]).map(x=>[x.item_id,x.data||{}])),mine:c.error?[]:(c.data||[]),ok:true,err:null}}
+catch(e){S.shop={...S.shop,ok:false,err:String(e.message||e)}}
+drawShop()}
+const ensureShop=async()=>{if(!S.shop.ok)await loadShop();return S.shop.ok};
+
+R.shop=()=>{const sh=S.shop,head=`<div class="row sp" style="margin-bottom:6px"><h2>SP Shop</h2><span class="chip glass">${ic('nova',14,1)} ${S.novas.toLocaleString()} SP</span></div><p class="mu" style="margin-bottom:14px">Spend the SP you earn from picks and posts. Everything here is cosmetic: it never changes your level, your picks or your payouts.</p>`;
+if(sh.err)return head+`<div class="glass card"><b>Couldn't load the shop</b><p class="mu" style="margin:6px 0">${esc(sh.err)}</p><p class="mu" style="margin-bottom:10px">Make sure supabase/shop.sql has been run.</p><button class="chip" data-shop-r>Try again</button></div>`;
+if(!sh.ok)return head+'<div class="sk"></div><div class="sk"></div>';
+const cur=flid(ME.flair),T=ME.team_theme;
+const flairs=shopItems('flair').map(it=>{const k=flid(it.id),o=!!sh.owned[it.id],on=o&&cur===k;
+const act=on?`<span class="chip glass">Active</span><button class="chip" data-eq="flair:">Remove</button>`:o?`<button class="chip" data-eq="${esc(it.id)}">Equip</button>`:`<button class="pri" style="padding:6px 14px;font-size:13px" data-bf="${esc(it.id)}">${it.price.toLocaleString()} SP</button>`;
+return`<div class="shop-row"><div class="row" style="min-width:0;flex:1"><span class="ellip"><b>${dname(ME)}</b></span>${flr({flair:k},14)}<span class="mu">${esc(it.name)}</span></div><div class="row" style="gap:6px;flex:none">${act}</div></div>`}).join('')||'<p class="mu">No flair for sale right now.</p>';
+const pins=shopItems('pin'),pinTxt=pins.map(x=>((x.data&&x.data.hours)||'?')+' hours · '+x.price.toLocaleString()+' SP').join(' · ');
+const mine=sh.mine.map(p=>{const pn=isPinned(p);return`<div class="shop-row"><div style="min-width:0;flex:1"><div class="ellip">${esc(p.body.slice(0,90))}</div><div class="mu">${pn?'Highlighted · '+pinLeft(p.pinned_until)+' left':'Posted '+ago(p.created_at)}</div></div><button class="chip" data-hl="${esc(p.id)}" style="flex:none">${ic('pin',14)} ${pn?'Extend':'Highlight'}</button></div>`}).join('')||'<p class="mu">Post a take in Community first, then come back to highlight it.</p>';
+const price=shopPrice('theme:team'),ths=Object.entries(sh.owned).filter(([k])=>k.startsWith('theme:')).map(([k,d])=>{const on=!!T&&T.id===k;
+return`<div class="shop-row"><div class="row" style="min-width:0;flex:1">${swt(d.c1||'#888888',d.c2||'#444444')}<b class="ellip">${esc(d.n||k.slice(6))}</b></div>${on?'<span class="chip glass" style="flex:none">Active</span>':`<button class="chip" data-eq="${esc(k)}" style="flex:none">Equip</button>`}</div>`}).join('');
+return head+`<div class="glass card"><b>Name flair</b><p class="mu" style="margin:4px 0 8px">A small badge next to your name on posts and comments.</p>${flairs}</div>
+<div class="glass card"><b>Post highlights</b><p class="mu" style="margin:4px 0 8px">Pin one of your takes to the top of the community feed.${pinTxt?' '+pinTxt+'.':''} One highlighted post at a time.</p>${mine}</div>
+<div class="glass card"><b>Team themes</b><p class="mu" style="margin:4px 0 10px">Recolor the whole app in your favorite team's colors${price==null?'':'. '+price.toLocaleString()+' SP per team, yours to keep'}.</p>${ths||'<p class="mu" style="margin-bottom:10px">You don\'t own a theme yet.</p>'}<div class="row" style="flex-wrap:wrap;margin-top:10px"><button class="pri" data-thbuy style="padding:8px 16px">Get a team theme</button>${T?'<button class="chip" data-eq="theme:">Use default colors</button>':''}</div></div>`};
+
+async function rpcShop(fn,args){try{const r=await FX_DB.rpc(fn,args);if(r.error){toast(r.error.message);return null}return r.data}catch(e){toast(String(e.message||e));return null}}
+const afterSpend=d=>{if(d&&typeof d.novas==='number'){S.novas=d.novas;sv();hdr()}};
+function patchMine(){const f=ME.flair||null,fix=p=>{if(p.profiles&&p.user_id===ME.id)p.profiles.flair=f};
+(S.feed||[]).forEach(fix);((S.up&&S.up.posts)||[]).forEach(fix);Object.values(S.cm).forEach(L=>(L||[]).forEach(fix));if(S.up&&S.up.prof&&S.up.prof.id===ME.id)S.up.prof.flair=f}
+function confirmBuy(title,price,run){const poor=S.novas<price,m=modal(`<h3>${esc(title)}</h3><p style="margin:10px 0">This costs <b>${price.toLocaleString()} SP</b>. You have ${S.novas.toLocaleString()} SP${poor?'.':', leaving '+(S.novas-price).toLocaleString()+'.'}</p>${poor?`<p style="color:var(--bad);margin-bottom:10px">You need ${(price-S.novas).toLocaleString()} more SP. Make picks and posts to earn it.</p>`:''}<button class="pri" id="cb" style="width:100%" ${poor?'disabled':''}>Buy for ${price.toLocaleString()} SP</button>`);
+m.querySelector('#cb').onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent='Buying…';const ok=await run();if(ok)m.remove();else{b.disabled=poor;b.textContent='Buy for '+price.toLocaleString()+' SP'}}}
+async function buyFlair(id){const d=await rpcShop('shop_buy_flair',{p_item:id});if(!d)return false;afterSpend(d);ME.flair=d.flair||null;S.shop.owned[id]={};patchMine();drawShop();toast('Flair unlocked and equipped');return true}
+async function buyTheme(t){const d=await rpcShop('shop_buy_theme',{p_key:tkey(t.n),p_name:t.n,p_c1:'#'+t.c,p_c2:'#'+(t.c2||t.c)});if(!d)return false;afterSpend(d);const th=d.team_theme;ME.team_theme=th;S.shop.owned[th.id]={n:th.n,c1:th.c1,c2:th.c2};applyTheme(th);document.querySelectorAll('.modal:not(#gate)').forEach(x=>x.remove());drawShop();toast(t.n+' theme unlocked');return true}
+async function pinModal(id){if(!await ensureShop())return toast('Shop unavailable. Make sure supabase/shop.sql has been run.');
+const opts=shopItems('pin');if(!opts.length)return toast('Highlights are not available right now');
+const p=findPost(id)||S.shop.mine.find(x=>x.id===id);if(!p)return;let sel=opts[0].id;const m=modal('');
+const draw=()=>{const o=opts.find(x=>x.id===sel),poor=S.novas<o.price;m.firstChild.innerHTML=`<h3>Highlight this take</h3><p class="mu" style="margin:8px 0 12px;overflow-wrap:anywhere">${esc(p.body.slice(0,140))}</p><div class="row" style="margin-bottom:10px">${opts.map(x=>`<button class="pick ${x.id===sel?'on':''}" data-pn="${esc(x.id)}"><b>${(x.data&&x.data.hours)||'?'} hours</b><small>${x.price.toLocaleString()} SP</small></button>`).join('')}</div><p class="mu">It sits at the top of the community feed for everyone. ${isPinned(p)?'This post is already highlighted, so the time is added on top (12 hours max). ':''}You have ${S.novas.toLocaleString()} SP.</p>${poor?`<p style="color:var(--bad);margin-top:6px">You need ${(o.price-S.novas).toLocaleString()} more SP.</p>`:''}<button class="pri" id="pgo" style="margin-top:12px;width:100%" ${poor?'disabled':''}>Highlight for ${o.price.toLocaleString()} SP</button><button class="chip" style="margin-top:12px" data-x>Close</button>`};
+draw();m.firstChild.onclick=async e=>{const b=e.target.closest('[data-pn]');if(b){sel=b.dataset.pn;return draw()}
+const g=e.target.closest('#pgo');if(!g)return;g.disabled=true;g.textContent='Highlighting…';
+const d=await rpcShop('shop_pin_post',{p_post:id,p_item:sel});if(!d)return draw();
+afterSpend(d);[S.feed,S.up&&S.up.posts,S.shop.mine].forEach(L=>(L||[]).forEach(x=>{if(x.id===id)x.pinned_until=d.pinned_until}));
+m.remove();redraw();drawShop();if(S.tab==='community')loadFeed();toast('Your take is highlighted')}}
+function themeModal(){const price=shopPrice('theme:team');if(price==null)return toast('Themes are not available right now');
+const m=modal('');m.firstChild.innerHTML=`<h3>Team themes</h3><p class="mu" style="margin:6px 0 10px">${price.toLocaleString()} SP per team. Your favorites are listed first.</p><input id="tmq" type="search" placeholder="Search teams…" aria-label="Search teams" autocomplete="off" autocapitalize="none" spellcheck="false" style="font-size:16px"><div id="tml" style="max-height:48vh;overflow:auto;overscroll-behavior:contain;margin-top:10px"></div><button class="chip" style="margin-top:12px" data-x>Close</button>`;
+const st={q:''},list=()=>{const q=sq(st.q),all=TL().filter(t=>hx(t.c));
+const L=all.filter(t=>!q||hit([t.n,t.full,t.ab,t.sps.map(spl).join(' ')].join(' '),q)).sort((a,b)=>(+S.favT.includes(b.n))-(+S.favT.includes(a.n))||a.n.localeCompare(b.n));
+m.querySelector('#tml').innerHTML=L.slice(0,60).map(t=>{const own=!!S.shop.owned['theme:'+tkey(t.n)];return`<div class="shop-row"><div class="row" style="min-width:0;flex:1">${swt('#'+t.c,'#'+(t.c2||t.c))}<div style="min-width:0"><b class="ellip">${esc(t.n)}${S.favT.includes(t.n)?' ★':''}</b><div class="mu ellip">${esc(t.sps.map(spl).join(' · '))}</div></div></div>${own?'<span class="chip glass" style="flex:none">Owned</span>':`<button class="pri" style="padding:6px 14px;font-size:13px;flex:none" data-tb="${esc(tkey(t.n))}">${price.toLocaleString()} SP</button>`}</div>`}).join('')||`<p class="mu">${all.length?'No teams match "'+esc(st.q)+'".':TEAMS.length?'Team colors are not available yet. Try again in a minute.':TSTAT==='error'?'Teams unavailable right now.':'Loading teams…'}</p>`};
+list();m.addEventListener('input',e=>{if(e.target.id==='tmq'){st.q=e.target.value;list()}})}
+document.addEventListener('click',async e=>{const t=e.target,q=s=>t.closest(s);let c;
+if(q('[data-shop]')){if(ME)go('shop');return}
+if(q('[data-shop-r]'))return loadShop();
+if(c=q('[data-hl]'))return pinModal(c.dataset.hl);
+if(q('[data-thbuy]')){if(await ensureShop())themeModal();else toast('Shop unavailable. Make sure supabase/shop.sql has been run.');return}
+if(c=q('[data-bf]')){const it=S.shop.items.find(x=>x.id===c.dataset.bf);if(it)confirmBuy(it.name+' flair',it.price,()=>buyFlair(it.id));return}
+if(c=q('[data-tb]')){const tm=TL().find(x=>tkey(x.n)===c.dataset.tb),price=shopPrice('theme:team');if(tm&&price!=null)confirmBuy(tm.n+' theme',price,()=>buyTheme(tm));return}
+if(c=q('[data-eq]')){const v=c.dataset.eq,kind=v.split(':')[0],item=v.split(':')[1]?v:'';c.disabled=true;
+const d=await rpcShop('shop_equip',{p_kind:kind,p_item:item});if(!d){c.disabled=false;return}
+if(kind==='flair'){ME.flair=d.flair||null;patchMine();redraw()}else{ME.team_theme=d.team_theme||null;applyTheme(ME.team_theme)}
+drawShop();return toast(item?'Equipped':'Removed')}
+});
+
+/* ===== PROPS: higher / lower picks on player & fighter stats ===== */
+let PR=[],PP={},PST='loading';
+const pLocked=p=>p.status!=='open'||Date.parse(p.starts_at)<=Date.now();
+const redrawP=()=>{if(S.tab==='predict'&&!document.querySelector('.modal'))repaint()};
+async function loadProps(){if(!FX_DB||!ME)return;try{const since=new Date(Date.now()-36*36e5).toISOString();const[a,b]=await Promise.all([FX_DB.from('props').select('id,game_id,sport,matchup,subject,stat_label,line,starts_at,actual,status').gt('starts_at',since).order('starts_at',{ascending:true}).limit(1500),FX_DB.from('prop_picks').select('prop_id,choice,stake,result,awarded,settled_at')]);if(a.error||b.error)throw a.error||b.error;PR=a.data;const old=PP;PP={};let fresh=0;b.data.forEach(x=>{PP[x.prop_id]={c:x.choice,r:x.result,a:x.awarded||0,s:x.stake||0};if(x.settled_at&&old[x.prop_id]&&!old[x.prop_id].r)fresh++});PST='ok';if(fresh)syncNovas('Prop results are in')}catch(e){PST='error'}if(S.pv==='p')redrawP()}
+setInterval(()=>{if(S.tab==='predict'&&S.pv==='p'&&!document.hidden)loadProps()},6e4);
+let PSTK=25;const stkBar=()=>`<div class="mu" style="margin:4px 0 6px">Stake per pick (SP taken when you pick; right = win the same amount, wrong = lose it):</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">${[25,50,100,250,500].map(v=>`<button class="chip ${PSTK===v?'on':''}" data-pstk="${v}" ${v>S.novas?'disabled':''}>${v}</button>`).join('')}${S.novas>=25&&![25,50,100,250,500].includes(S.novas)?`<button class="chip allin ${PSTK===S.novas?'on':''}" data-pstk="${S.novas}">All-in · ${S.novas.toLocaleString()}</button>`:''}</div>`;
+const modeBar=()=>`<div class="row" style="margin-bottom:10px">${[['g','Game winners'],['p','Higher / Lower']].map(([k,l])=>`<button class="chip ${(S.pv||'g')===k?'on':''}" data-pv="${k}">${l}</button>`).join('')}</div>`;
+const propCard=p=>{const m=PP[p.id],lock=pLocked(p),r=m&&m.r,btn=(c,l)=>`<button class="chip ${m&&m.c===c?'on':''}" data-pp="${esc(p.id)}" data-pc="${c}" ${lock?'disabled':''} style="flex:1;justify-content:center;padding:10px">${l}</button>`;
+const note=r==='win'?`<span class="rs w">Correct · +${m.s>0?m.a-m.s:m.a} SP</span>`:r==='loss'?`<span class="rs l">Missed · ${m.s>0?'-'+m.s:'+'+m.a} SP</span>`:r==='void'||p.status==='void'?(m&&m.s>0?'<span class="rs">Void · '+m.s+' SP refunded</span>':'<span class="rs">Void · no payout</span>'):p.status==='settled'?(m?'<span class="rs">Scoring…</span>':'<span class="mu">Final</span>'):lock?'<span class="mu">'+ic('lock',14)+' Locked</span>':m?'<span class="yp">'+ic('check',14)+' Your pick: <b>'+m.c+'</b>'+(m.s>0?' · '+m.s+' SP staked':'')+(m.s>0&&PSTK>m.s?' · tap your side again to raise to '+PSTK:'')+'</span>':'<span class="mu">Costs '+PSTK+' SP · win +'+PSTK+' SP</span>';
+return`<div class="glass card"><div class="row sp"><div class="row" style="min-width:0;gap:10px">${crest(p.subject,p.sport,36)}<b>${esc(p.subject)}</b></div><span class="mu">${when({st:'up',date:p.starts_at})}</span></div><div class="mu">${esc(p.matchup||'')}</div><div style="margin:8px 0"><span style="font:800 30px 'Barlow Condensed',sans-serif">${p.line}</span> <span class="mu">${esc(p.stat_label)}${p.status==='settled'?' · result '+p.actual:''}</span></div><div class="row" style="gap:8px">${btn('higher','▲ Higher')}${btn('lower','▼ Lower')}</div><div style="margin-top:8px">${note}</div></div>`};
+function propsBody(codes){const L=PR.filter(p=>codes.includes(p.sport)).sort((a,b)=>(a.status==='open'?0:1)-(b.status==='open'?0:1)||Date.parse(a.starts_at)-Date.parse(b.starts_at)||a.game_id.localeCompare(b.game_id));
+if(!L.length)return`<p class="mu">${PST==='loading'?'Loading picks…':PST==='error'?'Could not load picks right now.':'No higher/lower picks posted for this sport yet. They appear a few days before game time.'}</p>`;
+const g=new Map();L.forEach(p=>{if(!g.has(p.game_id))g.set(p.game_id,[]);g.get(p.game_id).push(p)});let n=0;
+return stkBar()+[...g].map(([id,ps])=>{if(n>=120)return'';const s=ps.slice(0,Math.max(0,120-n));n+=s.length;return`<h2 style="margin:16px 0 10px">${esc(ps[0].matchup||id)} <span class="mu">${ps.length}</span></h2><div class="grid">${s.map(propCard).join('')}</div>`}).join('')}
+async function pickProp(id,ch){const p=PR.find(x=>x.id===id);if(!p||pLocked(p))return;const prev=PP[id],raise=!!(prev&&prev.c===ch&&prev.s>0&&PSTK>prev.s);if(prev&&prev.c===ch&&!raise)return;const st=raise?PSTK:prev&&prev.s>0?prev.s:PSTK;PP[id]={c:ch,r:null,a:0,s:st};redrawP();try{const r=await FX_DB.rpc('save_prop_pick',{p_prop:id,p_choice:ch,p_stake:st});if(r.error)throw r.error;if(PP[id]&&r.data.stake)PP[id].s=r.data.stake;toast(raise?'Stake raised to '+st+' SP':prev?'Pick changed':'Pick locked in · -'+st+' SP');applyNovas(r.data.novas,null);redrawP()}catch(e){if(prev)PP[id]=prev;else delete PP[id];toast('Pick not saved: '+(e.message||e));redrawP()}}
+document.addEventListener('click',e=>{let c;if(c=e.target.closest('[data-pv]')){S.pv=c.dataset.pv;go('predict');return}if(c=e.target.closest('[data-pstk]')){const v=+c.dataset.pstk;if(Number.isFinite(v)&&v>=25){PSTK=v;redrawP()}return}if(c=e.target.closest('[data-pp]'))pickProp(c.dataset.pp,c.dataset.pc)});
+async function boot(){await fxInitSupabase();
+if(FX_DB){const{data}=await FX_DB.auth.getSession();return data.session?afterAuth(data.session.user):authScreen('up')}
+gate('<h2>Sign-up unavailable</h2><p class="mu" style="margin:8px 0">Accounts require an email, but the sign-up service is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY and reload.</p>')}
+$('#th').innerHTML=ic('theme',18);hdr();{const nv=$('#nv');nv.setAttribute('role','button');nv.setAttribute('tabindex','0');nv.setAttribute('aria-label','Open SP Shop');nv.style.cursor='pointer';nv.onclick=()=>{if(ME)go('shop')};nv.onkeydown=e=>{if(e.key==='Enter'&&ME)go('shop')}}boot();
+/* ===== DAILY SP: free 25 SP every day (needs supabase/daily.sql) ===== */
+let DAILY=null;
+function dailyCard(cat){if(!ME)return '';let d='';
+if(DAILY&&!DAILY.err){if(DAILY.available)d=`<div class="rw-row row sp"><div><b>Daily SP</b><div class="mu">Free 25 SP every day. Busted? Come back tomorrow.</div></div><button class="pri" data-daily style="padding:8px 18px;min-height:40px">Claim 25</button></div>`;
+else{const t=DAILY.next?new Date(DAILY.next):null,ms=t?Math.max(0,t-Date.now()):0,h=Math.floor(ms/36e5),mi=Math.floor(ms%36e5/6e4);d=`<div class="rw-row row sp"><div><b>Daily SP claimed</b><div class="mu">Next 25 SP in ${h}h ${mi}m</div></div><span class="chip glass">✓ Done</span></div>`}}
+if(cat==='daily')return `<div class="glass card rw"><div class="rw-h">Daily points</div>${d||'<p class="mu">Daily SP is unavailable right now.</p>'}</div><p class="mu" style="margin:10px 2px">Claim 25 free SP every 24 hours. Use it to pick winners, spin slots or shop.</p>`;
+return `<div class="glass card rw"><div class="rw-h">Slots</div><div class="rw-row row sp"><div><b>Sidelyne Slots</b><div class="mu">5 reels · 9 paylines. 3+ Sidelynes = 1,000 SP bonus.</div></div><button class="pri" data-slots style="padding:8px 18px;min-height:40px">Play</button></div></div>`}
+async function loadDaily(){if(!FX_DB||!ME)return;try{const r=await FX_DB.rpc('daily_status');if(r.error)throw r.error;DAILY=r.data}catch(e){DAILY={err:1}}if(S.tab==='community'&&S.hc==='daily'&&!document.querySelector('.modal'))repaint()}
+async function claimDaily(btn){if(btn){btn.disabled=true;btn.textContent='Claiming…'}try{const r=await FX_DB.rpc('claim_daily');if(r.error)throw r.error;DAILY={available:false,next:r.data.next};if(r.data.claimed)applyNovas(r.data.novas,'Daily SP');else{applyNovas(r.data.novas,null);toast('Already claimed today')}}catch(e){toast('Could not claim: '+(e.message||e))}loadDaily()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-daily]');if(b)claimDaily(b)});
+setInterval(()=>{if(ME&&DAILY&&DAILY.available===false&&DAILY.next&&Date.now()>=new Date(DAILY.next))loadDaily()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME)loadDaily()});
+
+document.addEventListener('click',e=>{const c=e.target.closest('[data-hc]');if(!c)return;S.hc=c.dataset.hc;go('community');if(S.hc==='daily')loadDaily()});

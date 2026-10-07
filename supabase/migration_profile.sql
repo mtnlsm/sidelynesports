@@ -1,0 +1,1 @@
+-- No longer needed: schema.sql is now idempotent and includes this migration. Just re-run schema.sql.

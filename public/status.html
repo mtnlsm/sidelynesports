@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Payout check</title>
+<style>body{font:16px/1.45 -apple-system,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:20px;background:#070a08;color:#eef3f0}
+.c{background:#101712!important;border-left:4px solid #0e9d52}
+h1{font-size:28px;font-style:italic;text-transform:uppercase}.c{border-radius:16px;padding:14px 16px;margin:10px 0}.ok{color:#0e8f4a}.bad{color:#e5392d}small{opacity:.7}button{font:inherit;font-weight:600;border:0;border-radius:12px;background:#0e8f4a;color:#fff;padding:12px 18px;width:100%}</style></head><body>
+<h1>Payout check</h1><p>This tests every step that pays SP after a game ends.</p><div id="o" class="c">Checking...</div><button onclick="go()">Run again / pay out now</button>
+<script>
+async function go(){const o=document.getElementById('o');o.textContent='Checking...';
+try{const r=await fetch('/.netlify/functions/settle-games?fresh=1',{cache:'no-store'});const t=await r.text();let j;try{j=JSON.parse(t)}catch(e){o.innerHTML='<b class="bad">The payout function did not answer correctly (HTTP '+r.status+').</b><br><small>Redeploy the latest zip to production, then try again.<br>'+t.slice(0,200).replace(/</g,'&lt;')+'</small>';return}
+let h=(j.checks||[]).map(c=>'<p><b class="'+(c.ok?'ok':'bad')+'">'+(c.ok?'OK':'PROBLEM')+'</b> '+c.name+(c.fix?'<br><small>'+c.fix+'</small>':'')+'</p>').join('');
+if(j.errors&&j.errors.length)h+='<p><b class="bad">Errors</b><br><small>'+j.errors.join('<br>').replace(/</g,'&lt;')+'</small></p>';
+if(typeof j.paid==='number'&&!(j.checks||[]).some(c=>!c.ok))h+='<p><b>Result:</b> '+j.finals+' finished games known, '+j.openPickGames+' with unpaid picks, <b>'+j.paid+' picks paid just now</b>.</p>';
+o.innerHTML=h||'No details returned.'}catch(e){o.textContent='Could not reach the site: '+e.message}}
+go();
+</script></body></html>
