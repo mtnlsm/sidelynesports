@@ -2,17 +2,17 @@
 -- Run in Supabase SQL Editor AFTER stake.sql (it uses sp_credit from there). Safe to re-run. Replaces the old slots_spin(int).
 -- Every spin is decided here on the server (the app only plays the animation), so the odds can't be tampered with.
 --
--- HOW A BET WORKS (like a real machine): 1 SP = 1 cent.
+-- HOW A BET WORKS (like a real machine):
 --   total bet = denom x lines x credits per line
---   denom  : 1, 2, 5, 10, 25 or 100 SP per credit (1c, 2c, 5c, 10c, 25c, $1)
+--   denom  : 1, 2, 5, 10, 25 or 100 SP per credit
 --   lines  : 1, 3, 5 or 9 active paylines
 --   credits per line: 1 to 10
---   Smallest bet = 1 SP (1c x 1 line x 1 credit). Biggest = 9,000 SP ($90).
+--   Smallest bet = 1 SP (1 x 1 line x 1 credit). Biggest = 9,000 SP.
 -- LINE PAYS: 3, 4 or 5 matching symbols left to right from reel 1 on an active line.
 --   Pays = multiplier x credits per line x denom x payback factor. Multipliers (3 / 4 / 5 of a kind):
 --     soccer 8/22/70  ufc 10/28/100  nhl 14/40/140  mlb 18/50/200  nba 22/70/300  nfl 34/110/500
 -- BONUS: 3+ Sidelynes anywhere = 6 FREE SPINS at your bet (all lines win x2). 3 more Sidelynes during the bonus = +6 (max 36).
--- PAYBACK BY DENOM (like a real casino, bigger denoms pay back more): about 88% at 1c up to about 96% at $1.
+-- PAYBACK BY DENOM (like a real casino, bigger denoms pay back more): about 88% at denom 1 up to about 96% at denom 100.
 --   (measured by simulation: raw return is ~74.5% at factor 1.0; slots_adj() scales it per denom.)
 
 create table if not exists slot_spins(
