@@ -422,3 +422,72 @@ html.nopop .pop{display:none}
 .sl-svb .pri{flex:1;min-height:38px;font-size:14px}
 .sl-svb .chip{min-height:38px}
 .sl-svre{margin:8px auto 0;display:block}
+
+/* ===== PHONE CLEANUP (<900px): flat, calm, even spacing. Desktop is handled by desktop.css ===== */
+@media(max-width:899px){
+  :root{--gap:12px}
+  .app{padding:0 16px calc(var(--nav-h) + 32px + env(safe-area-inset-bottom,0px))}
+  /* header: flat bar instead of dark gradient strip */
+  header{margin:0 -16px 12px;padding:10px 16px;background:var(--sf);border-bottom:1px solid var(--bd);box-shadow:none}
+  .logo{font-family:var(--fb);font-style:normal;text-transform:none;font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--tx)}
+  .logo em{color:var(--mu);font-weight:600}
+  .logo svg{color:var(--ab)}
+  #nv,#th{background:var(--sf2);color:var(--tx);border:1px solid var(--bd)}
+  #nv{font-family:var(--fb);font-size:14px;letter-spacing:0}
+  #nv svg{color:var(--ab)}
+  /* headings: quiet labels with room above */
+  .page>h2,.page>div>h2,.page h2{font-family:var(--fb);font-style:normal;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:26px 2px 10px!important}
+  .page>h2::before,.page>div>h2::before,.page h2::before{display:none}
+  .page>h2:first-child{margin-top:6px!important}
+  .page .pf-info h2,.page .row.sp>h2{font-family:var(--fb);font-style:normal;text-transform:none;font-size:24px;letter-spacing:-.02em;margin:0!important}
+  .sec{font-family:var(--fb);font-style:normal;letter-spacing:.08em;color:var(--mu);margin:22px 2px 10px}
+  /* cards: flat, hairline, even gaps */
+  .card{margin-bottom:var(--gap);padding:16px;border-radius:14px;border-left:1px solid var(--bd);box-shadow:none}
+  :root[data-theme="dark"] .card{box-shadow:none}
+  .card.lv{border-left:1px solid var(--bd);border-color:color-mix(in srgb,var(--bad) 35%,var(--bd));background:var(--sf)}
+  .card.daily,.card.daily.done{border-left:1px solid var(--bd)}
+  .card.daily b{font-family:var(--fb);font-style:normal;text-transform:none;font-size:16px;letter-spacing:0}
+  .adm-stats .glass{border-top:1px solid var(--bd)}
+  .adm-stats{gap:var(--gap)}
+  .page .grid{gap:0}
+  /* scoreboard */
+  .score{font-family:var(--fb);font-size:15px;text-transform:none;letter-spacing:0;margin:14px 0 12px}
+  .score b{font-family:var(--fb);font-style:normal;font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .score .mu{font-size:15px}
+  .card[data-g]>.row.sp .chip.glass,.yp{font-family:var(--fb);font-size:12px;text-transform:none;letter-spacing:.01em}
+  .live{font-family:var(--fb);transform:none;font-size:11px;letter-spacing:.08em;padding:3px 9px;border-radius:999px}
+  .rs,.badge-ad{font-family:var(--fb);transform:none;border-radius:999px;letter-spacing:.02em}
+  /* chips + buttons: no italics/skew */
+  .chip{font-family:var(--fb);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;border-radius:999px;padding:6px 14px;min-height:34px;background:var(--sf)}
+  .chip.glass,.card .chip.glass{border-radius:999px}
+  .hs{margin:0 -16px 14px!important;padding:2px 16px;gap:8px!important}
+  .hs .chip.on{transform:none}
+  button{font-family:var(--fb);font-weight:600;font-size:15px;letter-spacing:0;text-transform:none;border-radius:10px}
+  .pri{font-family:var(--fb);font-style:normal;font-size:16px;font-weight:700;letter-spacing:0;background:var(--ab);box-shadow:none;border-radius:12px}
+  .pri:active{transform:scale(.98);box-shadow:none}
+  .pick{font-family:var(--fb);font-size:16px;text-transform:none;border-radius:12px}
+  .pk-grid .pick{font-size:16px}
+  label{font-family:var(--fb);font-size:13px;letter-spacing:0;text-transform:none}
+  .bar{height:8px;border-radius:999px;border:0}
+  .bar>div{border-radius:999px;background:var(--ab)}
+  /* tab bar: light, simple, active = accent color */
+  .nav.glass{background:color-mix(in srgb,var(--sf) 92%,transparent);border-top:1px solid var(--bd);padding-top:6px}
+  .nav button{font-family:var(--fb);font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mu)}
+  .nav button.on{color:var(--ab)}
+  .nav button.on::before{display:none}
+  .nav button.on svg{color:var(--ab)}
+  .nav.has-admin button{font-size:10px}
+  /* profile */
+  .pf{margin-bottom:var(--gap);border-radius:14px}
+  .pf-top{padding:0 16px}.pf-info{padding:12px 16px 0}.pf-lv{margin:16px 16px 0;border-left:1px solid var(--bd);border-radius:12px}
+  .pf-counts b,.stats b,.adm-stats b{font-family:var(--fb);font-style:normal;font-weight:800}
+  .pf-tabs button{font-family:var(--fb);font-size:14px;letter-spacing:0;text-transform:none}
+  .bdg{font-family:var(--fb);font-size:12px;letter-spacing:0;text-transform:none}
+  .av{box-shadow:none}
+  .pinl{font-family:var(--fb)}
+  /* sheets + toasts */
+  .modal>.glass{border-top:1px solid var(--bd);border-radius:20px 20px 0 0}
+  #gate.modal>.glass{border-top:1px solid var(--bd)}
+  .toast.glass{font-family:var(--fb);font-size:14px;letter-spacing:0;text-transform:none;border:0;border-radius:999px}
+  input,textarea{border:1px solid var(--bd);background:var(--sf)}
+}
