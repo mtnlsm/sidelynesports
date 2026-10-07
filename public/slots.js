@@ -11,6 +11,14 @@ const THEMES={
  mlb:{name:'MLB',a:'#2b59c3',b:'#173a8a',root:247,s:[['🧢','Cap'],['🌭','Hot dog'],['🧤','Mitt'],['🏟️','Ballpark'],['🏆','Trophy'],['⚾','Baseball']],bonus:{name:'HOME RUN DERBY',unit:'Swing',m:[1,1,1,1,1,1,1,1,1,1,1,1],d:'12 swings at ×1. Lots of spins, lots of chances to connect.'}},
  ufc:{name:'UFC',a:'#c81d25',b:'#6d0f14',root:220,s:[['🥋','Gi'],['🔔','Bell'],['💪','Flex'],['🏅','Medal'],['🏆','Title belt'],['🥊','Knockout']],bonus:{name:'FIGHT NIGHT',unit:'Round',m:[1,2,2,3,4],d:'5 rounds and the pressure builds. Round 5 is the knockout at ×4.'}},
  soccer:{name:'Soccer',a:'#7b4fd6',b:'#4a2a9a',root:277,s:[['🧤','Keeper gloves'],['🥅','Goal'],['👟','Cleat'],['🟨','Yellow card'],['🏆','Trophy'],['⚽','Ball']],bonus:{name:'PENALTY SHOOTOUT',unit:'Kick',m:[1,1,2,3,5],d:'5 penalty kicks. The last one is sudden death at ×5.'}}};
+/* BONUS SYMBOL ART: the scatter that triggers the bonus is the Sidelyne "S" on most machines, but NFL shows the Lombardi Trophy and Soccer shows the World Cup trophy. Drawn as inline SVG so no image files are needed. */
+const LOMBARDI=z=>`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="slLg" x1="0" x2="1"><stop offset="0" stop-color="#8d97a6"/><stop offset=".45" stop-color="#f6f8fb"/><stop offset="1" stop-color="#848e9d"/></linearGradient><linearGradient id="slLy" x1="0" x2="1"><stop offset="0" stop-color="#b98a12"/><stop offset=".5" stop-color="#ffe37a"/><stop offset="1" stop-color="#b98a12"/></linearGradient></defs><path d="M9.5 30.2h13l-1.4-3.6H10.9z" fill="url(#slLg)" stroke="#59636f" stroke-width=".6" stroke-linejoin="round"/><rect x="10.6" y="27.2" width="10.8" height="1.7" rx=".6" fill="url(#slLy)"/><path d="M13 26.4l1.1-5.2h3.8l1.1 5.2z" fill="url(#slLg)" stroke="#59636f" stroke-width=".6" stroke-linejoin="round"/><path d="M11.8 21.4h8.4l-1.2-2.3h-6z" fill="url(#slLg)" stroke="#59636f" stroke-width=".6" stroke-linejoin="round"/><ellipse cx="16" cy="10.4" rx="5.7" ry="8.9" transform="rotate(-16 16 10.4)" fill="url(#slLg)" stroke="#59636f" stroke-width=".7"/><path d="M14.5 4.6l3.1 11.6" stroke="#59636f" stroke-width=".8" stroke-linecap="round"/><path d="M13.7 7.2l2.8-.7M14.4 9.6l2.9-.8M15 12l2.9-.8" stroke="#59636f" stroke-width=".7" stroke-linecap="round"/></svg>`;
+const WCUP=z=>`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="slWg" x1="0" x2="1"><stop offset="0" stop-color="#b8860b"/><stop offset=".5" stop-color="#ffe680"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs><rect x="9.5" y="27" width="13" height="3.4" rx="1" fill="#1f8f4a" stroke="#14663a" stroke-width=".5"/><rect x="10.5" y="24.6" width="11" height="2.4" rx=".8" fill="#1f8f4a" stroke="#14663a" stroke-width=".5"/><path d="M12.2 24.6c-.6-4-2.7-5.6-2.3-9.6.3-2.6 2-3.8 3.6-4.7h5c1.6.9 3.3 2.1 3.6 4.7.4 4-1.7 5.6-2.3 9.6z" fill="url(#slWg)" stroke="#8a6508" stroke-width=".6" stroke-linejoin="round"/><path d="M13.3 22.6c1.6-3.4 .8-6.2 2.7-8.4 1.9 2.2 1.1 5 2.7 8.4" fill="none" stroke="#8a6508" stroke-width=".6" opacity=".7"/><circle cx="16" cy="7.2" r="5.1" fill="url(#slWg)" stroke="#8a6508" stroke-width=".6"/><path d="M11 7.2h10M16 2.1c-2.2 2.6-2.2 7.6 0 10.2M16 2.1c2.2 2.6 2.2 7.6 0 10.2" fill="none" stroke="#8a6508" stroke-width=".55" opacity=".75"/></svg>`;
+THEMES.nfl.sc={n:'Lombardi Trophy',p:'Lombardi Trophies',svg:LOMBARDI};
+THEMES.soccer.sc={n:'World Cup trophy',p:'World Cup trophies',svg:WCUP};
+/* the emoji fallback sets used a trophy emoji as a normal symbol; swap it so it can't be confused with the bonus trophy */
+THEMES.nfl.s[4]=['💍','Championship ring'];THEMES.soccer.s[4]=['🏅','Medal'];
+const SCN=()=>TH().sc?TH().sc.n:'Sidelyne',SCP=()=>TH().sc?TH().sc.p:'Sidelynes';
 const TORDER=['og','nfl','nba','nhl','mlb','ufc','soccer'];
 let theme='og';try{const t=localStorage.getItem('fx-slt');if(THEMES[t])theme=t}catch(e){}
 const TH=()=>THEMES[theme];
@@ -40,7 +48,8 @@ const tn=k=>{const t=tm(k);return t?['',t.n]:(TH().s[SYM.indexOf(k)]||['?','?'])
 const LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1]];
 const LNAME=['Middle row','Top row','Bottom row','V shape','Peak','Step down','Step up','Arch','Bowl'];
 const PAY={nfl:[34,110,500],nba:[22,70,300],mlb:[18,50,200],nhl:[14,40,140],ufc:[10,28,100],soccer:[8,22,70]};
-const sym=(k,z=36)=>k==='S'?`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ab)"/><path d="M22 10.5h-9.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 1 0 7H10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`:(theme==='og'?ic(k,z):tm(k)?logo(tm(k),Math.round(z*1.1)):`<span class="sl-em" style="font-size:${Math.round(z*.85)}px">${tn(k)[0]}</span>`);
+const SZ=()=>{try{return matchMedia('(min-width:900px)').matches?44:36}catch(e){return 36}};
+const sym=(k,z=SZ())=>k==='S'&&TH().sc?TH().sc.svg(Math.round(z*1.32)):k==='S'?`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ab)"/><path d="M22 10.5h-9.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 1 0 7H10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`:(theme==='og'?ic(k,z):tm(k)?logo(tm(k),Math.round(z*1.1)):`<span class="sl-em" style="font-size:${Math.round(z*.85)}px">${tn(k)[0]}</span>`);
 const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
 const rnd=()=>SYM[Math.floor(Math.random()*SYM.length)];
 const calm=()=>document.documentElement.classList.contains('rm');
@@ -66,18 +75,18 @@ function brass(f,t0,d,g){const c=ac(),o=out();if(!c||!o)return;const t=c.current
 const SCALE=[0,2,4,7,9,12,14,16,19,21,24];
 const note=i=>TH().root*Math.pow(2,SCALE[Math.min(i,SCALE.length-1)]/12);
 const sfx={
- /* lever pull + reel motor spinning up, with a ratchet tick while the symbols fly by */
+ /* SPINNING REELS: no low motor rumble. A fast ratchet of crisp ticks (reels passing symbols) over a bright, fluttering whir, with a lever clack at the start. */
  spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();const t=c.currentTime;
-  tone(130,0,.16,'sine',.14,60);nz(0,.05,'bandpass',1800,0,2,.1,.002);nz(0,.45,'bandpass',300,1500,1,.05,.08);
-  const m=c.createOscillator(),lp=c.createBiquadFilter(),g=c.createGain(),lfo=c.createOscillator(),lg=c.createGain(),hs=c.createBufferSource(),hf=c.createBiquadFilter(),hg=c.createGain();
-  m.type='sawtooth';m.frequency.setValueAtTime(40,t);m.frequency.exponentialRampToValueAtTime(78,t+.5);lp.type='lowpass';lp.frequency.value=420;lp.Q.value=1;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.07,t+.25);
-  lfo.frequency.value=17;lg.gain.value=.025;lfo.connect(lg);lg.connect(g.gain);m.connect(lp);lp.connect(g);g.connect(o);
-  hs.buffer=nbuf(c);hs.loop=true;hf.type='bandpass';hf.frequency.value=1400;hf.Q.value=.6;hg.gain.setValueAtTime(.0001,t);hg.gain.linearRampToValueAtTime(.022,t+.3);hs.connect(hf);hf.connect(hg);hg.connect(o);
-  m.start(t);lfo.start(t);hs.start(t);mot={m,lfo,hs,g,hg};
-  clearInterval(tickT);tickT=setInterval(()=>nz(0,.014,'bandpass',2000+Math.random()*900,0,5,.05+Math.random()*.03,.001),52)},
- spinOff(){clearInterval(tickT);tickT=null;if(!mot)return;const c=actx,t=c.currentTime,k=mot;mot=null;try{k.g.gain.cancelScheduledValues(t);k.g.gain.setValueAtTime(Math.max(k.g.gain.value,.0001),t);k.g.gain.exponentialRampToValueAtTime(.0001,t+.18);k.hg.gain.cancelScheduledValues(t);k.hg.gain.setValueAtTime(Math.max(k.hg.gain.value,.0001),t);k.hg.gain.exponentialRampToValueAtTime(.0001,t+.18);[k.m,k.lfo,k.hs].forEach(x=>x.stop(t+.22))}catch(e){}},
- /* each reel locking in: a mechanical clunk */
- stop(i){const f=95+i*7;tone(f*1.6,0,.14,'sine',.22,f*.55);nz(0,.07,'lowpass',1100,260,.8,.22,.002);nz(0,.018,'bandpass',3200,0,3,.08,.001)},
+  nz(0,.06,'bandpass',1100,500,2,.16,.002);tone(210,0,.07,'triangle',.08,120);
+  const hs=c.createBufferSource(),hf=c.createBiquadFilter(),hg=c.createGain(),lfo=c.createOscillator(),lg=c.createGain();
+  hs.buffer=nbuf(c);hs.loop=true;hf.type='bandpass';hf.Q.value=1.1;hf.frequency.setValueAtTime(700,t);hf.frequency.exponentialRampToValueAtTime(1900,t+.6);
+  hg.gain.setValueAtTime(.0001,t);hg.gain.linearRampToValueAtTime(.035,t+.2);
+  lfo.frequency.value=26;lg.gain.value=.018;lfo.connect(lg);lg.connect(hg.gain);
+  hs.connect(hf);hf.connect(hg);hg.connect(o);hs.start(t);lfo.start(t);mot={hs,lfo,hg};
+  let n=0;clearInterval(tickT);tickT=setInterval(()=>{n++;const hi=n%2;nz(0,.016,'bandpass',hi?2900:2100,0,6,.07,.001);tone(hi?1250:980,0,.03,'triangle',.028)},46)},
+ spinOff(){clearInterval(tickT);tickT=null;if(!mot)return;const c=actx,t=c.currentTime,k=mot;mot=null;try{k.hg.gain.cancelScheduledValues(t);k.hg.gain.setValueAtTime(Math.max(k.hg.gain.value,.0001),t);k.hg.gain.exponentialRampToValueAtTime(.0001,t+.15);[k.hs,k.lfo].forEach(x=>x.stop(t+.2))}catch(e){}},
+ /* each reel locking in: a short mechanical clack-thunk */
+ stop(i){nz(0,.045,'bandpass',1500+i*120,600,1.5,.2,.001);tone(260+i*18,0,.08,'triangle',.12,130);nz(0,.012,'highpass',4000,0,1,.08,.001)},
  /* line win: coins in the tray + a bell run; bigger wins get a bigger shower, more bells and brass */
  win(l){if(l<=0){shower(3,.25,.05);bell(note(5),.05,.7,.08);return}
   if(l===1){shower(8,.7,.05);[5,7,9].forEach((s,i)=>bell(note(s),i*.11,.8,.08));return}
@@ -88,9 +97,11 @@ const sfx={
  coin(){clink(0,.035)},
  /* bonus finished: brass fanfare with a coin shower */
  bonusWin(){[[0,2,5],[2,4,7],[0,5,9]].forEach((ch,k)=>ch.forEach(s=>brass(note(s),k*.34,k===2?1.4:.36,.05)));shower(40,2.2,.055);[5,7,9,10,12].forEach((s,i)=>bell(note(s),1+i*.1,1.3,.08))},
- lose(){tone(240,0,.35,'triangle',.07,110)},
+ lose(){tone(392,0,.14,'sine',.06);tone(330,.14,.2,'sine',.05)},
  click(){nz(0,.02,'bandpass',2400,0,4,.06,.001);tone(500,0,.03,'square',.02)}};
-const lvl=(pay,st)=>!st?1:pay>=50*st?3:pay>=15*st?2:pay>=4*st?1:0;
+/* BIGX = a "big win" is any win of this many times your TOTAL bet. It drives the BIG WIN banner, the louder win sound and the Stop on big win rule. */
+const BIGX=10,MEGAX=40;
+const lvl=(pay,st)=>!st?1:pay>=MEGAX*st?3:pay>=BIGX*st?2:pay>=4*st?1:0;
 const total=()=>denom*lines*cpl,dl=d=>String(d);
 const col3=a=>a.map(cell).join('');
 const mini=l=>`<svg width="60" height="36" viewBox="0 0 60 36" aria-hidden="true">${[0,1,2,3,4].map(c=>[0,1,2].map(r=>`<rect x="${c*12+1}" y="${r*12+1}" width="10" height="10" rx="2" fill="var(--bd)"/>`).join('')).join('')}<polyline fill="none" stroke="var(--ab)" stroke-width="2.4" stroke-linejoin="round" points="${l.map((r,c)=>`${c*12+6},${r*12+6}`).join(' ')}"/></svg>`;
@@ -102,7 +113,7 @@ function runReel(reel,final,dur){return new Promise(res=>{const st=reel.firstEle
  const prev=[...st.children].slice(-3).map(e=>e.dataset.k);while(prev.length<3)prev.push(rnd());
  const n=14+Math.floor(Math.random()*6);let h=col3(prev);for(let i=0;i<n;i++)h+=cell(rnd());h+=col3(final);
  st.style.transition='none';st.style.transform='translateY(0)';st.innerHTML=h;void st.offsetHeight;reel.classList.add('go');
- st.style.transition=`transform ${dur}ms cubic-bezier(.2,.8,.2,1)`;st.style.transform=`translateY(-${(n+3)*H}px)`;
+ st.style.transition=`transform ${dur}ms cubic-bezier(.2,.8,.2,1)`;st.style.transform=`translateY(-${(n+3)*(st.firstElementChild.offsetHeight||H)}px)`;
  let done=false;const fin=()=>{if(done)return;done=true;fin0()};st.addEventListener('transitionend',fin,{once:true});setTimeout(fin,dur+150)})}
 
 function slCss(){if(document.getElementById('slx-css'))return;const st=document.createElement('style');st.id='slx-css';
@@ -114,22 +125,22 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-wrap.fs .sl-reels{box-shadow:0 0 0 2px var(--sla),0 0 22px color-mix(in srgb,var(--sla) 55%,transparent),inset 0 2px 10px rgba(0,0,0,.18)}
 .sl-wrap .sl-go{background:var(--sla);border-color:var(--sla);color:#fff}.sl-wrap .sl-go:disabled{opacity:.55}
 .sl-wrap[data-th="og"] .sl-reels{background:var(--sf2);border-color:var(--bd)}.sl-wrap[data-th="og"] .sl-fs{background:linear-gradient(90deg,#f5c542,#e8a317);color:#3a2a00}.sl-wrap[data-th="og"].fs .sl-reels{box-shadow:0 0 0 2px #f5c542,0 0 20px rgba(245,197,66,.45),inset 0 2px 10px rgba(0,0,0,.18)}.sl-wrap[data-th="og"] .sl-th .chip.on,.sl-wrap[data-th="og"] .sl-auto .chip.on,.sl-wrap[data-th="og"] .sl-go{color:var(--abx,#fff)}.sl-c .cr{display:block}.sl-ptr .cr{flex:none}.sl-em{display:block;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
-.sl-auto{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:10px}.sl-auto .mu{font-size:12px}.sl-auto .chip.on{background:var(--sla);border-color:var(--sla);color:#fff}`;
+.sl-auto{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px}.sl-ar{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}.sl-th .chip{white-space:nowrap}.sl-auto .mu{font-size:12px}.sl-auto .chip.on{background:var(--sla);border-color:var(--sla);color:#fff}`;
  document.head.appendChild(st)}
 
 function openSlots(){
  if(!ME)return;slCss();TSET=teamSet();
  const start=Array.from({length:NR},()=>[rnd(),rnd(),rnd()]);
  const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3>Slots</h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal mu">Balance <b id="slb"></b> SP<span id="slcr"></span></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div></div><div class="sl-msg" id="slm"></div><div class="sl-bets" style="flex-direction:column;align-items:center;gap:4px"><div class="mu" style="font-size:12px">Denom (SP per credit)</div><div class="seg" id="sld"></div><div class="mu" style="font-size:12px">Lines</div><div class="seg" id="sll"></div><div class="mu" style="font-size:12px">Credits per line</div><div class="seg" id="slc"></div><div class="row sp" style="width:100%;margin-top:4px"><span id="sltot" class="mu"></span><button class="chip" data-slmax>Max bet</button></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of SP? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div></div>`);
- const ptHtml=()=>`<div class="sl-pth">Line pays (x credits bet per line, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} Sidelyne ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 Sidelynes anywhere starts the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}. Land 3 more Sidelynes during the bonus for another full round (up to ${theme==='og'?6:4} rounds). ${TSET?'The symbols are team logos, and your ★ favorite teams are the top symbols. ':''}Every machine has its own bonus. Total bet = denom × lines × credits per line. Bigger denoms bet more, win more, and pay back a little better.</div><div class="sl-pth" style="margin-top:12px">Paylines · play 1, 3, 5 or 9 (in this order)</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
+ const ptHtml=()=>`<div class="sl-pth">Line pays (x credits bet per line, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}. Land 3 more ${SCP()} during the bonus for another full round (up to ${theme==='og'?6:4} rounds). ${TSET?'The symbols are team logos, and your ★ favorite teams are the top symbols. ':''}Every machine has its own bonus. Total bet = denom × lines × credits per line. Bigger denoms bet more, win more, and pay back a little better.</div><div class="sl-pth" style="margin-top:12px">Paylines · play 1, 3, 5 or 9 (in this order)</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=Number(v).toLocaleString();$m('#slcr').textContent=' · '+Math.floor(v/denom).toLocaleString()+' credits'};
  const fit=()=>{if(S.novas<MINBET)return;while(total()>S.novas){if(cpl>1)cpl=CPLS[CPLS.indexOf(cpl)-1];else if(lines>1)lines=LNS[LNS.indexOf(lines)-1];else if(denom>1)denom=DENOMS[DENOMS.indexOf(denom)-1];else break}};
  const lk=()=>busy||autoOn;
  const seg=(a,cur,at,lab,ok)=>a.map(v=>`<button data-${at}="${v}" class="${v===cur?'on':''}" ${lk()||!ok(v)?'disabled':''}>${lab(v)}</button>`).join('');
- const defMsg=()=>'<span>'+TH().name+' · 3 Sidelynes = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
+ const defMsg=()=>'<span>'+TH().name+' · 3 '+SCP()+' = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
  const uiExtra=()=>{$m('#slth').innerHTML=TORDER.map(k=>`<button class="chip ${k===theme?'on':''}" data-slth="${k}" ${lk()?'disabled':''}>${k==='og'?'🎰':THEMES[k].s[5][0]} ${THEMES[k].name}</button>`).join('');
   $m('#slmu').textContent=muted?'🔇 Sound off':'🔊 Sound on';
-  $m('#slau').innerHTML=autoOn?'':`<span class="mu">Auto spin</span>`+[10,25,50,100].map(n=>`<button class="chip" data-slau="${n}" ${busy||S.novas<total()&&!(wsv>0)?'disabled':''}>${n}</button>`).join('')+`<button class="chip ${stopBonus?'on':''}" data-sltg="bonus" ${busy?'disabled':''}>Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" ${busy?'disabled':''}>Stop on big win</button>`};
+  $m('#slau').innerHTML=(autoOn?'':`<div class="sl-ar"><span class="mu">Auto spin</span>`+[10,25,50,100].map(n=>`<button class="chip" data-slau="${n}" ${busy||S.novas<total()&&!(wsv>0)?'disabled':''}>${n}</button>`).join('')+`</div>`)+`<div class="sl-ar"><button class="chip ${stopBonus?'on':''}" data-sltg="bonus" aria-pressed="${stopBonus}">${stopBonus?'✓ ':''}Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" aria-pressed="${stopBig}" title="Any win of ${BIGX}× your total bet or more">${stopBig?'✓ ':''}Stop on big win</button></div>`};
  const draw=()=>{fit();
   $m('#sld').innerHTML=seg(DENOMS,denom,'sld',dl,v=>v<=S.novas);
   $m('#sll').innerHTML=seg(LNS,lines,'sll',v=>v,v=>denom*v*cpl<=S.novas);
@@ -175,23 +186,25 @@ function openSlots(){
    msg.innerHTML='<span id="slct">+0 SP</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+r.line_pay.toLocaleString()+' SP from lines':'')+'</small>';
    sfx.bonusWin();await countUp($m('#slct'),r.payout,calm()?0:1400,true);await wait(calm()?200:700)}
   else if(r.payout>0){reels.classList.add('win');sfx.win(lvl(r.payout,stake));msg.innerHTML=winMsg(wins,r.payout,stake);try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}}
-  else msg.textContent=r.scatters===2?'So close! Two Sidelynes…':'No luck. Spin again!';
+  else msg.textContent=r.scatters===2?'So close! Two '+SCP()+'…':'No luck. Spin again!';
   applyNovas(r.novas,r.payout>stake?'Slots win':null);busy=false;if(m.isConnected)draw();
   return{ok:true,payout:r.payout,stake,bonus:r.kind==='bonus'}}
 
  /* auto spin: keeps spinning with the current bet until the count runs out, you tap Stop, you run low on SP, or a stop rule hits */
- async function autoLoop(){
+ async function autoLoop(){let why='';
   while(autoOn&&autoLeft>0&&m.isConnected){
    if(!(wsv>0||S.novas>=total())){toast('Auto spin stopped: not enough SP');break}
    const res=await spin(wsv>0);
    if(!res||!res.ok)break;
    autoLeft--;
-   if(res.bonus&&stopBonus)break;
-   if(res.payout>=15*res.stake&&stopBig)break;
+   if(res.bonus&&stopBonus){why='bonus round played';break}
+   if(res.payout>=BIGX*res.stake&&stopBig){why='big win';break}
    if(!autoOn)break;
    if(m.isConnected)draw();
    await wait(Math.max(calm()?300:700,1150-(Date.now()-lastAt)))}
-  autoOn=false;autoLeft=0;if(m.isConnected)draw()}
+  autoOn=false;autoLeft=0;
+  if(why&&m.isConnected){toast('Auto spin stopped: '+why);const mg=$m('#slm');if(mg)mg.insertAdjacentHTML('beforeend','<small class="sl-sub" style="color:var(--sla);font-weight:800">Auto spin stopped · '+why+'</small>')}
+  if(m.isConnected)draw()}
 
  /* the bonus: the server already played every free spin, we replay them one after another */
  const total0=()=>r0bet;let r0bet=1;
@@ -211,7 +224,7 @@ function openSlots(){
    if(f.pay>0){reels.classList.add('win');sfx.win(lvl(f.pay,total0()));msg.innerHTML=winMsg(f.wins,f.pay,stake);try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}await wait(calm()?250:1150)}
    else await wait(calm()?150:500)}
   return m.isConnected}
- const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=50*st?'MEGA WIN! ':pay>=15*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+pay.toLocaleString()+' SP<small class="sl-sub">'+(best?LNAME[best.line]+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
+ const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=MEGAX*st?'MEGA WIN! ':pay>=BIGX*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+pay.toLocaleString()+' SP<small class="sl-sub">'+(best?LNAME[best.line]+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
  const countUp=(el,to,ms,snd)=>new Promise(res=>{const t0=performance.now();let lc=0;const tick=t=>{const p=ms?Math.min(1,(t-t0)/ms):1;if(snd&&t-lc>70){lc=t;sfx.coin()}el.textContent='+'+Math.round(to*p).toLocaleString()+' SP';p<1&&el.isConnected?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-slots]'))openSlots()});
 window.openSlots=openSlots;
