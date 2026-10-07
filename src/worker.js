@@ -11,10 +11,11 @@ import settleGames from './functions/settle-games.js';
 import botsTick from './functions/bots-tick.js';
 import botsCron from './functions/bots-cron.js';
 import propsCron from './functions/props-cron.js';
+import propsSettleCron from './functions/props-settle-cron.js';
 import settleGamesCron from './functions/settle-games-cron.js';
 
 const FN = { 'sports-data': sportsData, mma, fighter, props, login, config, settle, 'settle-games': settleGames, 'bots-tick': botsTick };
-const CRON = { '*/5 * * * *': settleGamesCron, '*/20 * * * *': botsCron, '*/15 * * * *': propsCron };
+const CRON = { '*/5 * * * *': settleGamesCron, '*/20 * * * *': botsCron, '*/15 * * * *': propsCron, '*/10 * * * *': propsSettleCron };
 
 // Cloudflare passes secrets/variables in `env`; the functions read process.env, so copy them across (a no-op when nodejs_compat already did it).
 const loadEnv = (env) => { for (const k of Object.keys(env || {})) if (typeof env[k] === 'string' && process.env[k] === undefined) process.env[k] = env[k]; };
