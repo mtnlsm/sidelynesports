@@ -52,3 +52,17 @@
 /* box score player photos */
 .lv-pn{display:inline-flex;align-items:center;gap:8px}
 .lv-ph{flex:none;width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:top;background:var(--sf2);display:block}
+
+/* ===== BIGGER LIVE GAME POPUP + roomier box score ===== */
+.modal>.glass:has(.lvd){width:min(760px,100%);max-height:92vh}
+.lv-tb{font-size:15px}
+.lv-tb th{font-size:12px;padding:8px 10px;white-space:nowrap;letter-spacing:.02em}
+.lv-tb td{padding:10px 12px;white-space:nowrap}
+.lv-bx td,.lv-bx th{padding:10px 12px}
+.lv-tb .n{padding-left:4px;padding-right:14px;min-width:132px;box-shadow:6px 0 6px -6px rgba(0,0,0,.18)}
+.lv-bx .n b{font-size:15px}
+.lv-bx .n small{font-size:12px;margin-left:2px}
+.lv-sc{margin:0 -4px 12px;padding:0 4px}
+.lv-lu li{padding:8px 0;font-size:14px;gap:10px}
+.lv-tt{gap:8px;flex-wrap:wrap}
+@media(max-width:899px){.modal>.glass:has(.lvd){max-height:94vh;padding-left:14px;padding-right:14px}.lv-tb{font-size:14px}.lv-tb td,.lv-bx td,.lv-bx th{padding:9px 10px}.lv-tb .n{min-width:116px}}
