@@ -41,7 +41,7 @@ const TH=()=>THEMES[theme];
    Your favorite teams (the ★ ones) become the TOP symbols; the rest are filled from DEFT, then from any other team in that sport.
    If the team list has not loaded yet, the emoji set above is used instead. */
 const SPF={nfl:['NFL'],nba:['NBA'],nhl:['NHL'],mlb:['MLB'],soccer:['EPL','LALIGA','BUND','SERIEA','LIGUE1','MLS','UCL','UEL','WC','LIGAMX','ERED','PORT']};
-const DEFT={nfl:['Chiefs','Cowboys','49ers','Eagles','Packers','Steelers'],nba:['Lakers','Warriors','Celtics','Knicks','Bulls','Heat'],nhl:['Rangers','Bruins','Maple Leafs','Blackhawks','Canadiens','Penguins'],mlb:['Yankees','Dodgers','Red Sox','Cubs','Braves','Mets'],soccer:['Real Madrid','Barcelona','Manchester United','Liverpool','Bayern','Manchester City']};
+const DEFT={nfl:['Chiefs','Cowboys','49ers','Eagles','Packers','Steelers'],nba:['Lakers','Warriors','Celtics','Knicks','Bulls','Heat'],nhl:['Rangers','Bruins','Maple Leafs','Blackhawks','Canadiens','Penguins'],mlb:['Orioles','Yankees','Dodgers','Red Sox','Cubs','Braves'],soccer:['Real Madrid','Barcelona','Manchester United','Liverpool','Bayern','Manchester City']};
 let TSET=null;
 /* UFC default fighters (after your favorites). Names must match public/js/fighters.js. */
 const UFCTOP=['Sean Strickland',"Sean O'Malley",'Conor McGregor','Jon Jones','Islam Makhachev','Alex Pereira'];
