@@ -118,8 +118,8 @@ async function settle(c, errors) {
   const op = (await c.from('props').select('id,game_id,subject,stat,starts_at').eq('status', 'open').lt('starts_at', new Date().toISOString()).limit(2000)).data || [];
   const team = new Map(), mma = new Map();
   for (const p of op) { const m = /^(UFC|PFL):\d+$/.test(p.game_id) ? mma : /^[A-Z0-9]+:\d+$/.test(p.game_id) ? team : null; if (!m) continue; if (!m.has(p.game_id)) m.set(p.game_id, []); m.get(p.game_id).push(p); }
-  let settled = 0, voided = 0, waiting = 0;
-  const doSettle = async (items) => { if (!items.length) return; const x = await c.rpc('settle_props', { p_items: items }); if (x.error) errors.push('settle_props: ' + x.error.message); else settled += Number(x.data) || 0; };
+  let settled = 0, voided = 0, waiting = 0, paid = 0;
+  const doSettle = async (items) => { if (!items.length) return; const x = await c.rpc('settle_props', { p_items: items }); if (x.error) errors.push('settle_props: ' + x.error.message); else { settled += items.length; paid += Number(x.data) || 0; } };
   const doVoid = async (ids) => { if (!ids.length) return; const x = await c.rpc('void_props', { p_ids: ids }); if (x.error) errors.push('void_props: ' + x.error.message); else voided += ids.length; };
   // team sports: 6 games per run
   for (const [gid, ps] of pickGames(team, 6)) {
@@ -130,6 +130,7 @@ async function settle(c, errors) {
       const box = {}, seen = new Set();
       for (const t of (j.boxscore || {}).players || []) for (const s of t.statistics || []) { const ks = s.keys || s.names || [];
         for (const a of s.athletes || []) { const n = nm((a.athlete || {}).displayName || ''); if (a.didNotPlay || !(a.stats || []).length) continue; seen.add(n); ks.forEach((k, i) => { const v = parseFloat((a.stats || [])[i]); if (!isNaN(v)) (box[k] = box[k] || {})[n] = v; }); } }
+      if (!box.points && box.goals && box.assists) { box.points = {}; for (const n of new Set([...Object.keys(box.goals), ...Object.keys(box.assists)])) box.points[n] = (box.goals[n] || 0) + (box.assists[n] || 0); } // hockey box scores have no points column
       const pay = [], dnp = [];
       for (const p of ps) { const n = nm(p.subject);
         if (!box[p.stat]) { errors.push(gid + ': ESPN box score has no "' + p.stat + '" stat (left open)'); continue; } // never guess a 0
@@ -150,7 +151,7 @@ async function settle(c, errors) {
   }
   // anything still open 5 days after it started (cancelled, no data) is voided so picks never get stuck
   await doVoid(op.filter((p) => Date.now() - Date.parse(p.starts_at) > 5 * 864e5).map((p) => p.id));
-  return { mode: 'settle', open_started: op.length, games_waiting_or_unfinished: waiting, settled, voided };
+  return { mode: 'settle', open_started: op.length, games_waiting_or_unfinished: waiting, props_settled: settled, picks_paid: paid, voided };
 }
 
 exports.run = async (opts = {}) => {
