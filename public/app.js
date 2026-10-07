@@ -28,7 +28,9 @@ try{(TEAMS||[]).forEach(t=>{if(t.lg)m[t.sp+'|'+t.n]='l'+t.lg});
 (G||[]).forEach(g=>{if(g.la)m[g.sp+'|'+g.a]='l'+g.la;if(g.lb)m[g.sp+'|'+g.b]='l'+g.lb;if(g.ia)m[g.sp+'|'+g.a]='h'+g.ia;if(g.ib)m[g.sp+'|'+g.b]='h'+g.ib;(g.ld||[]).forEach(l=>{if(l.i)m['P|'+l.p]='h'+l.i})})}catch(e){}
 IMG=m}
 const LOGOK=window.LOGOK=new Set();
-const crest=(n,sp,z=40)=>{const svg=crestSvg(n,sp,z),v=IMG[sp+'|'+n]||IMG['P|'+n];if(!v||!/^https:\/\//.test(v.slice(1)))return svg;
+/* Fighters outside today's games have no image in IMG, so look their headshot up by name once and remember it. */
+const FH=(()=>{try{return JSON.parse(localStorage.getItem('fx-fh')||'{}')||{}}catch(e){return{}}})();
+const crest=(n,sp,z=40)=>{const svg=crestSvg(n,sp,z),v=IMG[sp+'|'+n]||IMG['P|'+n]||(MMA(sp)&&FH[nm(n)]);if(!v||!/^https:\/\//.test(v.slice(1)))return MMA(sp)?svg.replace('<svg','<svg data-fn="'+esc(n)+'" data-sp="'+sp+'"'):svg;
 const u=v.slice(1),hs=v[0]==='h',dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u),src=imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs);
 const ok=LOGOK.has(src);return `<span class="cr ${hs?'hs':'lg'}" style="width:${z}px;height:${z}px">${ok?svg.replace('<svg','<svg style="visibility:hidden"'):svg}<img${ok?' class="ok"':''} src="${esc(src)}" data-o="${esc(imgUrl(u,z,hs))}"${dk?' data-d="1"':''} alt="" ${ok?'decoding="sync"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" onload="if(this.naturalWidth>8){LOGOK.add(this.getAttribute('src'));this.previousElementSibling.style.visibility='hidden';this.style.opacity=1}" onerror="if(this.dataset.d){this.removeAttribute('data-d');this.classList.add('wb');this.src=this.dataset.o}else this.remove()"></span>`};
 const nm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
@@ -463,3 +465,14 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME)loadDa
 
 document.addEventListener('click',e=>{const c=e.target.closest('[data-hc]');if(!c)return;S.hc=c.dataset.hc;go('community');if(S.hc==='daily')loadDaily()});
 (function(){var c=document.createElement('style');c.textContent='.rp-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.rp{padding:12px 0;border-top:1px solid var(--bd)}.rp:first-child{border-top:0}.rp-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}.rp-sp{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--mu)}.rp-s{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--sf2);color:var(--mu);white-space:nowrap}.rp-s.w{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.rp-s.l{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}.rp-m{font-weight:700;overflow-wrap:anywhere}.rp-p{color:var(--mu);font-size:13px;margin-top:2px}.rp-p b{color:var(--tx)}';document.head.appendChild(c)})();
+
+/* fighter photo hydrator: finds letter crests for UFC/PFL fighters and swaps in a real headshot */
+(()=>{const bad=new Set(),busy=new Set(),queue=[];let run=0,tm=0;
+const save=()=>{try{const k=Object.keys(FH);if(k.length>600)k.slice(0,k.length-600).forEach(x=>delete FH[x]);localStorage.setItem('fx-fh',JSON.stringify(FH))}catch(e){}};
+const swap=()=>document.querySelectorAll('svg[data-fn]').forEach(el=>{const n=el.dataset.fn;if(FH[nm(n)]){const h=crest(n,el.dataset.sp||'UFC',+el.getAttribute('width')||40);if(h.indexOf('data-fn')<0)el.outerHTML=h}});
+const still=n=>[...document.querySelectorAll('svg[data-fn]')].some(e=>e.dataset.fn===n);
+function pump(){while(run<4&&queue.length){const n=queue.shift(),k=nm(n);if(!still(n)){busy.delete(k);continue}run++;
+fetch('/.netlify/functions/fighter?lite=1&name='+encodeURIComponent(n)).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.headshot){FH[k]='h'+j.headshot;save();swap()}else bad.add(k)}).catch(()=>bad.add(k)).finally(()=>{run--;busy.delete(k);pump()})}}
+function scan(){document.querySelectorAll('svg[data-fn]').forEach(el=>{const n=el.dataset.fn,k=nm(n);if(FH[k]||bad.has(k)||busy.has(k))return;busy.add(k);queue.push(n)});swap();pump()}
+new MutationObserver(()=>{clearTimeout(tm);tm=setTimeout(scan,120)}).observe(document.body,{childList:true,subtree:true});
+setTimeout(scan,500)})();
