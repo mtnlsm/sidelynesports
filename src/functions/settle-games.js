@@ -5,6 +5,6 @@ let last = 0, lastRes = null;
 exports.handler = async (e) => {
   const fresh = e && e.queryStringParameters && e.queryStringParameters.fresh;
   if (!fresh && lastRes && Date.now() - last < 20000) return lastRes; // many players at once -> one run
-  lastRes = await run(); last = Date.now();
+  lastRes = await run({ diag: !!fresh }); last = Date.now();
   return lastRes;
 };
