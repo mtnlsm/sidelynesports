@@ -26,14 +26,21 @@ function teamSet(){if(theme==='og')return null;try{const out=[],seen=new Set(),a
   (S.favT||[]).forEach(n=>add(pool.find(t=>t.n===n)));
   DEFT[theme].forEach(k=>add(pool.find(t=>nm(t.n+' '+(t.full||'')).includes(nm(k)))));
   pool.forEach(add)}
- return out.length===6?out:null}catch(e){return null}}
+ if(out.length===6){preload(out);return out}return null}catch(e){return null}}
+/* Logo image for a team. We do NOT use the app's crest() here: it lazy-loads, and lazy images inside the clipped, moving reels often never load.
+   This loads eagerly, is preloaded when the machine opens, and falls back to the letter crest only if the image really fails. */
+function logoSrc(t,z){try{const v=IMG[t.sp+'|'+t.n];if(!v||!/^https:\/\//.test(v.slice(1)))return null;const hs=v[0]==='h',u=v.slice(1),dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u);return{src:imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs),o:imgUrl(u,z,hs),dk,hs}}catch(e){return null}}
+window.__slErr=im=>{if(im.dataset.d){im.removeAttribute('data-d');im.src=im.dataset.o;return}try{im.parentNode.innerHTML=crestSvg(im.dataset.n,im.dataset.sp,+im.dataset.z)}catch(e){im.remove()}};
+function logo(t,z){const L=logoSrc(t,z);if(!L)return crest(t.n,t.sp,z);
+ return `<span class="cr ${L.hs?'hd':'lg'}" style="width:${z}px;height:${z}px"><img class="ok" src="${esc(L.src)}" data-o="${esc(L.o)}" data-n="${esc(t.n)}" data-sp="${t.sp}" data-z="${z}"${L.dk?' data-d="1"':''} alt="" decoding="sync" referrerpolicy="no-referrer" onerror="__slErr(this)"></span>`}
+function preload(set){try{set.forEach(t=>[24,40].forEach(z=>{const L=logoSrc(t,z);if(L){const im=new Image();im.referrerPolicy='no-referrer';im.src=L.src}}))}catch(e){}}
 /* tier index 0 (lowest) .. 5 (highest); the first team in the set is the top tier */
 const tm=k=>TSET?TSET[5-SYM.indexOf(k)]:null;
 const tn=k=>{const t=tm(k);return t?['',t.n]:(TH().s[SYM.indexOf(k)]||['?','?'])};
 const LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1]];
 const LNAME=['Middle row','Top row','Bottom row','V shape','Peak','Step down','Step up','Arch','Bowl'];
 const PAY={nfl:[34,110,500],nba:[22,70,300],mlb:[18,50,200],nhl:[14,40,140],ufc:[10,28,100],soccer:[8,22,70]};
-const sym=(k,z=36)=>k==='S'?`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ab)"/><path d="M22 10.5h-9.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 1 0 7H10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`:(theme==='og'?ic(k,z):tm(k)?crest(tm(k).n,tm(k).sp,Math.round(z*1.1)):`<span class="sl-em" style="font-size:${Math.round(z*.85)}px">${tn(k)[0]}</span>`);
+const sym=(k,z=36)=>k==='S'?`<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ab)"/><path d="M22 10.5h-9.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 1 0 7H10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`:(theme==='og'?ic(k,z):tm(k)?logo(tm(k),Math.round(z*1.1)):`<span class="sl-em" style="font-size:${Math.round(z*.85)}px">${tn(k)[0]}</span>`);
 const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
 const rnd=()=>SYM[Math.floor(Math.random()*SYM.length)];
 const calm=()=>document.documentElement.classList.contains('rm');
@@ -141,6 +148,7 @@ function openSlots(){
   else{sfx.lose();msg.innerHTML='No luck<small class="sl-sub">Your last '+n+' SP is gone</small>'}
   busy=false;if(m.isConnected)draw()};
  $m('#slm').innerHTML=defMsg();draw();
+ if(theme!=='og'&&!TSET){let tries=0;const iv=setInterval(()=>{if(!m.isConnected||TSET||++tries>30){clearInterval(iv);return}const ts=teamSet();if(!ts)return;clearInterval(iv);TSET=ts;if(!busy){m.querySelectorAll('.sl-strip').forEach(st=>{st.innerHTML=[...st.children].map(c=>cell(c.dataset.k)).join('')});$m('#slpt').innerHTML=ptHtml()}},1000)}
  FX_DB.rpc('slots_saver_status').then(q=>{if(q.error||!q.data)return;wsv=q.data.saver_spins||0;if(q.data.chance_max>0)cl=[+q.data.chance_min,+q.data.chance_max];if(m.isConnected)draw()}).catch(()=>{});
  m.addEventListener('click',e=>{const b=e.target.closest('[data-sld],[data-sll],[data-slc],[data-slmax]');if(e.target.closest('[data-slmute]')){muted=!muted;try{localStorage.setItem('fx-slm',muted?'1':'0')}catch(x){}if(!muted)sfx.click();draw();return}
   const tg=e.target.closest('[data-sltg]');if(tg){if(tg.dataset.sltg==='bonus')stopBonus=!stopBonus;else stopBig=!stopBig;draw();return}
