@@ -75,18 +75,14 @@ function brass(f,t0,d,g){const c=ac(),o=out();if(!c||!o)return;const t=c.current
 const SCALE=[0,2,4,7,9,12,14,16,19,21,24];
 const note=i=>TH().root*Math.pow(2,SCALE[Math.min(i,SCALE.length-1)]/12);
 const sfx={
- /* SPINNING REELS: no low motor rumble. A fast ratchet of crisp ticks (reels passing symbols) over a bright, fluttering whir, with a lever clack at the start. */
- spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();const t=c.currentTime;
-  nz(0,.06,'bandpass',1100,500,2,.16,.002);tone(210,0,.07,'triangle',.08,120);
-  const hs=c.createBufferSource(),hf=c.createBiquadFilter(),hg=c.createGain(),lfo=c.createOscillator(),lg=c.createGain();
-  hs.buffer=nbuf(c);hs.loop=true;hf.type='bandpass';hf.Q.value=1.1;hf.frequency.setValueAtTime(700,t);hf.frequency.exponentialRampToValueAtTime(1900,t+.6);
-  hg.gain.setValueAtTime(.0001,t);hg.gain.linearRampToValueAtTime(.035,t+.2);
-  lfo.frequency.value=26;lg.gain.value=.018;lfo.connect(lg);lg.connect(hg.gain);
-  hs.connect(hf);hf.connect(hg);hg.connect(o);hs.start(t);lfo.start(t);mot={hs,lfo,hg};
-  let n=0;clearInterval(tickT);tickT=setInterval(()=>{n++;const hi=n%2;nz(0,.016,'bandpass',hi?2900:2100,0,6,.07,.001);tone(hi?1250:980,0,.03,'triangle',.028)},46)},
- spinOff(){clearInterval(tickT);tickT=null;if(!mot)return;const c=actx,t=c.currentTime,k=mot;mot=null;try{k.hg.gain.cancelScheduledValues(t);k.hg.gain.setValueAtTime(Math.max(k.hg.gain.value,.0001),t);k.hg.gain.exponentialRampToValueAtTime(.0001,t+.15);[k.hs,k.lfo].forEach(x=>x.stop(t+.2))}catch(e){}},
- /* each reel locking in: a short mechanical clack-thunk */
- stop(i){nz(0,.045,'bandpass',1500+i*120,600,1.5,.2,.001);tone(260+i*18,0,.08,'triangle',.12,130);nz(0,.012,'highpass',4000,0,1,.08,.001)},
+ /* SPINNING REELS: only short, bright, pitched ticks (no continuous noise, nothing low, so no buzz). A rapid "tik-tik-tik" that climbs a pentatonic run, like a slot machine's reels clicking past symbols. */
+ spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();
+  nz(0,.012,'highpass',4500,0,.8,.12,.001);tone(1500,0,.05,'sine',.05,2200);
+  const RUN=[784,880,988,1175,1319,1568,1319,1175,988,880];let n=0;
+  clearInterval(tickT);tickT=setInterval(()=>{const f=RUN[n++%RUN.length];nz(0,.008,'highpass',5000,0,.8,.06,.001);tone(f,0,.045,'sine',.04)},58)},
+ spinOff(){clearInterval(tickT);tickT=null;mot=null},
+ /* each reel locking in: a crisp click plus a short bright "bip" that rises with each reel */
+ stop(i){nz(0,.01,'highpass',3500,0,.8,.16,.001);tone(660+i*110,0,.11,'sine',.1);tone((660+i*110)*2,0,.06,'sine',.03)},
  /* line win: coins in the tray + a bell run; bigger wins get a bigger shower, more bells and brass */
  win(l){if(l<=0){shower(3,.25,.05);bell(note(5),.05,.7,.08);return}
   if(l===1){shower(8,.7,.05);[5,7,9].forEach((s,i)=>bell(note(s),i*.11,.8,.08));return}
