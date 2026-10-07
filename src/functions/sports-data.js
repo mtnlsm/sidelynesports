@@ -37,6 +37,17 @@ function normOdds(c) {
   const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' };
   return out.a || out.b || out.d || out.ou ? out : undefined;
 }
+// Live situation (ESPN scoreboard/summary "situation"): baseball = count/outs/runners/batter/pitcher, football = down & distance/possession, others = last play.
+const pn = (o) => { if (!o) return ''; const a = o.athlete || o; return String(a.shortName || a.displayName || a.fullName || '').slice(0, 30); };
+function normSit(sp, s, ids) {
+  if (!s || typeof s !== 'object') return undefined;
+  const lg = LEAGUES[sp] || '', lp = s.lastPlay && s.lastPlay.text ? String(s.lastPlay.text).slice(0, 200) : '';
+  if (lg.startsWith('baseball')) return { k: 'b', ba: Number(s.balls) || 0, sk: Number(s.strikes) || 0, o: Number(s.outs) || 0, r1: !!s.onFirst, r2: !!s.onSecond, r3: !!s.onThird, bt: pn(s.batter), pt: pn(s.pitcher), lp };
+  if (lg.startsWith('football')) { const p = s.possession != null ? String(s.possession) : '';
+    return { k: 'f', dd: String(s.downDistanceText || s.shortDownDistanceText || '').slice(0, 40), pt: String(s.possessionText || '').slice(0, 30), po: ids && p === ids.a ? 'a' : ids && p === ids.b ? 'b' : '', rz: !!s.isRedZone,
+      ta: s.awayTimeouts != null ? Number(s.awayTimeouts) : undefined, tb: s.homeTimeouts != null ? Number(s.homeTimeouts) : undefined, lp }; }
+  return lp ? { k: 'g', lp } : undefined;
+}
 function normTeam(sp, ev) {
   const c = ev.competitions && ev.competitions[0]; if (!c) return null;
   const home = c.competitors.find((x) => x.homeAway === 'home'), away = c.competitors.find((x) => x.homeAway === 'away');
@@ -48,6 +59,7 @@ function normTeam(sp, ev) {
   return { id: sp + ':' + ev.id, sp, a: tn(sp, away.team), b: tn(sp, home.team), la: lgo(away.team), lb: lgo(home.team),
     sa: st === 'up' ? '' : sa, sb: st === 'up' ? '' : sb, st, date: ev.date,
     od: st === 'up' ? normOdds(c) : undefined,
+    sit: st === 'live' ? normSit(sp, c.situation, { a: String(away.team.id), b: String(home.team.id) }) : undefined,
     ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, p: o.athlete.displayName, v: Number(o.value), i: hs(o.athlete, sp) } : null; }).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
@@ -89,6 +101,7 @@ async function loadTeams(sp) {
     .map((t) => ({ n: tn(sp, t), full: t.displayName, ab: t.abbreviation, sp, c: hexc(t.color), c2: hexc(t.alternateColor), lg: lgo(t) })).sort((a, b) => a.n.localeCompare(b.n));
 }
 exports.LEAGUES = LEAGUES;
+exports.normSit = normSit; // used by game-detail.js
 exports.load = load; // used by _settle.js to fetch only the leagues that have unpaid picks
 exports.handler = async (event) => {
   const { sport = 'ALL', type = 'games' } = event.queryStringParameters || {};
