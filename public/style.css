@@ -405,17 +405,20 @@ html.nopop .pop{display:none}
 .cr.hs img{object-fit:cover!important;object-position:50% 18%}
 .cr svg{max-width:100%}
 
-/* Slots: wager saver popup */
-.sl-svp{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:12px;border-radius:18px;background:rgba(0,0,0,.62);backdrop-filter:blur(3px);animation:fd .25s}
+/* Slots: wager saver popup (sits over the reels) */
+.sl-rw{position:relative}
+.sl-svp{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:8px;border-radius:18px;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);animation:fd .25s}
 .sl-svp[hidden],.sl-svre[hidden]{display:none}
-.sl-svc{width:100%;max-width:320px;padding:18px 16px;border-radius:18px;background:var(--sf);border:1px solid var(--bd);box-shadow:0 10px 40px rgba(0,0,0,.4);text-align:center}
-.sl-svt{font:800 12px var(--fd,inherit);letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
-.sl-svs{font:800 20px var(--fd,inherit);margin:4px 0 12px;line-height:1.15}
-.sl-svo{display:flex;gap:4px;margin-bottom:12px;font:800 12px var(--fd,inherit);letter-spacing:.04em}
-.sl-svo span{padding:7px 4px;text-align:center;min-width:64px;color:#fff}
-.sl-svo .w{background:#1f9d55;border-radius:10px 4px 4px 10px}
-.sl-svo .l{background:#c0392b;border-radius:4px 10px 10px 4px}
-.sl-svc p{font-size:13px;line-height:1.5;color:var(--mu);margin:0 0 14px}
+.sl-svc{width:100%;max-width:290px;padding:10px 12px;border-radius:14px;background:var(--sf);border:1px solid var(--bd);box-shadow:0 6px 24px rgba(0,0,0,.4);text-align:center}
+.sl-svh{font:800 14px var(--fd,inherit);margin-bottom:7px;line-height:1.2}
+.sl-svh span{color:var(--mu);font-weight:700}
+.sl-svo{display:flex;gap:3px;margin-bottom:7px;font:800 11px var(--fd,inherit);letter-spacing:.04em}
+.sl-svo span{padding:5px 4px;text-align:center;min-width:56px;color:#fff}
+.sl-svo .w{background:#1f9d55;border-radius:8px 3px 3px 8px}
+.sl-svo .l{background:#c0392b;border-radius:3px 8px 8px 3px}
+.sl-svc p{font-size:11.5px;line-height:1.35;color:var(--mu);margin:0 0 8px}
 .sl-svc p b{color:var(--tx)}
-.sl-svc .pri{width:100%;min-height:46px;margin-bottom:8px}
+.sl-svb{display:flex;gap:6px}
+.sl-svb .pri{flex:1;min-height:38px;font-size:14px}
+.sl-svb .chip{min-height:38px}
 .sl-svre{margin:8px auto 0;display:block}
