@@ -8,6 +8,8 @@ const json = (statusCode, body) => ({ statusCode, headers: { 'content-type': 'ap
 const https = (u) => String(u || '').replace(/^http:/, 'https:');
 const logo = (t) => https(t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href)));
 const nm = (a) => (a ? a.shortName || a.displayName || '' : '');
+// Player photo: ESPN's own headshot link when it sends one, else the standard ESPN headshot URL for that player id (the app hides it if it doesn't load).
+const pic = (sp, a) => { if (!a) return ''; const h = a.headshot, u = typeof h === 'string' ? h : (h && h.href) || ''; if (u) return https(u); const seg = (LEAGUES[sp] || '').split('/').pop(); return a.id && seg && !(LEAGUES[sp] || '').startsWith('soccer') ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + a.id + '.png' : ''; };
 const posOf = (r) => (r.athlete && r.athlete.position && r.athlete.position.abbreviation) || (r.positions && r.positions[0] && r.positions[0].abbreviation) || (r.position && r.position.abbreviation) || '';
 const state = (s) => (s === 'in' ? 'live' : s === 'post' ? 'final' : 'up');
 
@@ -35,7 +37,7 @@ function normBox(sp, j) {
       n: String(s.text || s.name || s.type || ''), k: String(s.type || s.name || ''),
       labels: (s.labels || []).map(String),
       rows: (s.athletes || []).filter((a) => a.athlete).map((a) => ({
-        n: nm(a.athlete), jn: String(a.athlete.jersey || ''), pos: posOf(a), s: (a.stats || []).map(String),
+        n: nm(a.athlete), i: pic(sp, a.athlete), jn: String(a.athlete.jersey || ''), pos: posOf(a), s: (a.stats || []).map(String),
         st: !!a.starter, bo: a.batOrder != null ? Number(a.batOrder) : undefined, dnp: !!a.didNotPlay })),
       tot: (s.totals || []).map(String) })).filter((g) => g.rows.length);
     out[id] = fb ? groups.slice(0, 5) : groups;
