@@ -1,4 +1,4 @@
--- Sidelyne Sports: DAILY SP. Everyone can claim 25 SP once every 24 hours (so a busted account can always get back in).
+-- Sidelyne Sports: DAILY SP. Everyone can claim 500 SP once every 24 hours (so a busted account can always get back in).
 -- Run in Supabase SQL Editor AFTER schema.sql, saves.sql and stake.sql. Safe to re-run.
 -- Change the amount in c_amt below if you want a different daily gift.
 
@@ -8,7 +8,7 @@ alter table profiles add column if not exists last_daily_at timestamptz;
 create or replace function claim_daily() returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
-  c_amt constant int:=25;            -- <== TUNE: daily SP
+  c_amt constant int:=500;           -- <== TUNE: daily SP
   l timestamptz; ok boolean; nv int; ref text:=to_char(clock_timestamp() at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.US');
 begin
   if uid is null then raise exception 'Not signed in'; end if;
