@@ -46,7 +46,7 @@ window.UFC_FIGHTERS = [
   ['Joe Lauzon','Lightweight'],['Kevin Lee','Lightweight'],['Gray Maynard','Lightweight'],['Diego Sanchez','Lightweight'],
   ['Sean Sherk','Lightweight'],['Kenny Florian','Lightweight'],['Evan Dunham','Lightweight'],['Grant Dawson','Lightweight'],
   ['Ilia Topuria','Lightweight'],['Chase Hooper','Lightweight'],['Ludovit Klein','Lightweight'],['Jalin Turner','Lightweight'],
-  ['Bobby Green','Lightweight'],['Terrance McKinney','Lightweight'],['Mauricio Ruffy','Lightweight'],['Gilbert Urbina','Lightweight'],
+  ['King Green','Lightweight'],['Terrance McKinney','Lightweight'],['Mauricio Ruffy','Lightweight'],['Gilbert Urbina','Lightweight'],
   // Featherweight
   ['Jose Aldo','Featherweight'],['Alexander Volkanovski','Featherweight'],['Max Holloway','Featherweight'],
   ['Brian Ortega','Featherweight'],['Yair Rodriguez','Featherweight'],['Diego Lopes','Featherweight'],['Movsar Evloev','Featherweight'],
@@ -84,6 +84,8 @@ window.UFC_FIGHTERS = [
   ['Royce Gracie','Legend'],['Ken Shamrock','Legend'],['Mark Coleman','Legend'],['Dan Severn','Legend'],['Don Frye','Legend'],
   ['Pat Miletich','Legend'],['Tank Abbott','Legend'],['Kimbo Slice','Legend'],['Gina Carano','Legend'],['Pete Williams','Legend']
 ];
+// Old name -> name ESPN uses now. Add a line here whenever a fighter's name changes.
+window.UFC_ALIASES = { 'Bobby Green':'King Green' };
 // Back-compat for older code
 window.UFC_TOP100 = window.UFC_FIGHTERS;
 
