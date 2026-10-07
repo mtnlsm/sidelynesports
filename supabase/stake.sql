@@ -4,7 +4,7 @@
 -- (those files redefine save_pick / settle_game / settle_prop and would undo the stake rules).
 --
 -- RULES (change the three numbers marked  <== TUNE  in the functions below if you want different ones)
---   Stake:   minimum 5 SP (default 10), maximum 1,000,000 SP per pick (effectively: all-in). You must have the SP. It is taken the moment you pick.
+--   Stake:   minimum 1 SP (default 10), maximum 1,000,000 SP per pick (effectively: all-in). You must have the SP. It is taken the moment you pick.
 --   Raise:   you can raise your stake on a pick before the game starts (you pay the difference). You can't lower it.
 --   Win:     you get stake x 2 back (stake back + the same amount again as profit).
 --   Loss:    you lose the stake.
@@ -52,7 +52,7 @@ drop function if exists save_pick(text,text,text,text);
 create or replace function save_pick(p_game text,p_sport text,p_pick text,p_matchup text,p_stake int default 10) returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
-  c_min constant int:=5;      -- <== TUNE: minimum stake
+  c_min constant int:=1;      -- <== TUNE: minimum stake
   c_max constant int:=1000000;   -- <== TUNE: maximum stake (balance is the real limit, so all-in always works)
   bal int; ex user_picks%rowtype; have boolean; eff int; diff int; nv int;
 begin
@@ -124,7 +124,7 @@ drop function if exists save_prop_pick(text,text);
 create or replace function save_prop_pick(p_prop text,p_choice text,p_stake int default 10) returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
-  c_min constant int:=5;      -- <== TUNE: minimum stake
+  c_min constant int:=1;      -- <== TUNE: minimum stake
   c_max constant int:=1000000;   -- <== TUNE: maximum stake (balance is the real limit, so all-in always works)
   pr props; bal int; ex prop_picks%rowtype; have boolean; eff int; diff int; nv int;
 begin
