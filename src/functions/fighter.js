@@ -32,22 +32,40 @@ async function get(url, ctx) {
 const tryGet = (url, ctx, label) => get(url, ctx).catch((e) => { ctx.warn.push(label + ': ' + e.message); return null; });
 
 // ---- name -> ESPN athlete id (remembered for a week) ----
+// ESPN's search is picky, so we try a few different versions of the request until one finds the fighter.
+function pickFighter(j, want) {
+  let list = (j && j.items) || [];
+  if (!list.length && j && Array.isArray(j.results)) list = j.results.flatMap((x) => x.contents || x.items || []);
+  const cands = list.map((c) => {
+    const uid = String(c.uid || '');
+    const id = String(c.id || (uid.match(/~a:(\d+)/) || [])[1] || '');
+    const mma = /mma/i.test(String(c.sport || '')) || /s:3301/.test(uid) || /\/mma\//i.test(JSON.stringify(c.link || c.links || ''));
+    return { id, mma, same: norm(c.displayName || c.name || '') === want, type: String(c.type || '') };
+  }).filter((c) => /^\d+$/.test(c.id) && (!c.type || /player|athlete/i.test(c.type)));
+  return { n: list.length, hit: cands.find((c) => c.mma && c.same) || cands.find((c) => c.mma) || cands.find((c) => c.same) };
+}
+
 async function findId(name, ctx) {
   const key = 'FSEARCH:' + norm(name);
+  const want = norm(name);
+  const last = want.split(' ').pop();
+  const q = encodeURIComponent(name), ql = encodeURIComponent(last);
+  const tries = [
+    `${SEARCH}?region=us&lang=en&limit=10&type=player&query=${q}`,
+    `${SEARCH}?region=us&lang=en&limit=20&mode=prefix&type=player&query=${ql}`,
+    `${SEARCH}?region=us&lang=en&limit=20&query=${ql}`,
+    `https://site.web.api.espn.com/apis/search/v2?region=us&lang=en&limit=20&page=1&type=player&query=${q}`,
+    `${SEARCH}?region=us&lang=en&limit=10&mode=prefix&query=${q}`
+  ];
   const r = await cached(key, TTL.history, async () => {
-    const j = await get(`${SEARCH}?region=us&lang=en&limit=10&mode=prefix&query=${encodeURIComponent(name)}`, ctx);
-    let list = j.items || [];
-    if (!list.length && Array.isArray(j.results)) list = j.results.flatMap((x) => x.contents || x.items || []);
-    const want = norm(name);
-    const cands = list.map((c) => {
-      const uid = String(c.uid || '');
-      const id = String(c.id || (uid.match(/~a:(\d+)/) || [])[1] || '');
-      const mma = /mma/i.test(String(c.sport || '')) || /s:3301/.test(uid) || /\/mma\//i.test(JSON.stringify(c.link || c.links || ''));
-      return { id, mma, same: norm(c.displayName || c.name || '') === want, type: String(c.type || '') };
-    }).filter((c) => /^\d+$/.test(c.id) && (!c.type || /player|athlete/i.test(c.type)));
-    const hit = cands.find((c) => c.mma && c.same) || cands.find((c) => c.mma) || cands.find((c) => c.same);
-    if (!hit) throw new Error('no match'); // thrown on purpose so a miss is not cached
-    return { id: hit.id };
+    for (let i = 0; i < tries.length; i++) {
+      let j = null;
+      try { j = await get(tries[i], ctx); } catch (e) { ctx.warn.push('search ' + (i + 1) + ': ' + e.message); continue; }
+      const f = pickFighter(j, want);
+      ctx.warn.push('search ' + (i + 1) + ': ' + f.n + ' results' + (f.hit ? ', matched' : ''));
+      if (f.hit) return { id: f.hit.id };
+    }
+    throw new Error('no match'); // thrown on purpose so a miss is not cached
   }, { provider: 'espn' }).catch(() => null);
   return r && r.id ? String(r.id) : '';
 }
