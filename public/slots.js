@@ -75,14 +75,15 @@ function brass(f,t0,d,g){const c=ac(),o=out();if(!c||!o)return;const t=c.current
 const SCALE=[0,2,4,7,9,12,14,16,19,21,24];
 const note=i=>TH().root*Math.pow(2,SCALE[Math.min(i,SCALE.length-1)]/12);
 const sfx={
- /* SPINNING REELS: only short, bright, pitched ticks (no continuous noise, nothing low, so no buzz). A rapid "tik-tik-tik" that climbs a pentatonic run, like a slot machine's reels clicking past symbols. */
+ /* SPINNING REELS: a mechanical ratchet. Mid-range wooden "clack-clack-clack" ticks (short filtered-noise knocks with a little body), slightly irregular like real reels. No pitched beeps, no continuous noise, nothing shrill or low. */
  spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();
-  nz(0,.012,'highpass',4500,0,.8,.12,.001);tone(1500,0,.05,'sine',.05,2200);
-  const RUN=[784,880,988,1175,1319,1568,1319,1175,988,880];let n=0;
-  clearInterval(tickT);tickT=setInterval(()=>{const f=RUN[n++%RUN.length];nz(0,.008,'highpass',5000,0,.8,.06,.001);tone(f,0,.045,'sine',.04)},58)},
- spinOff(){clearInterval(tickT);tickT=null;mot=null},
- /* each reel locking in: a crisp click plus a short bright "bip" that rises with each reel */
- stop(i){nz(0,.01,'highpass',3500,0,.8,.16,.001);tone(660+i*110,0,.11,'sine',.1);tone((660+i*110)*2,0,.06,'sine',.03)},
+  nz(0,.07,'bandpass',800,400,1.4,.3,.001);tone(190,0,.08,'sine',.12,110);
+  let n=0;const go=()=>{const acc=n++%3===0;
+   nz(0,.022,'bandpass',acc?1000:1250+Math.random()*250,0,3,acc?.3:.22,.001);tone(acc?300:380,0,.03,'sine',acc?.09:.05,acc?200:260);
+   tickT=setTimeout(go,60+Math.random()*14)};go()},
+ spinOff(){clearTimeout(tickT);tickT=null;mot=null},
+ /* each reel locking in: a solid mechanical clunk */
+ stop(i){nz(0,.055,'bandpass',750,320,1.3,.36,.001);tone(200,0,.1,'sine',.2,95);nz(0,.012,'bandpass',1800,0,2,.12,.001)},
  /* line win: coins in the tray + a bell run; bigger wins get a bigger shower, more bells and brass */
  win(l){if(l<=0){shower(3,.25,.05);bell(note(5),.05,.7,.08);return}
   if(l===1){shower(8,.7,.05);[5,7,9].forEach((s,i)=>bell(note(s),i*.11,.8,.08));return}
