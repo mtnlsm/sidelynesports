@@ -1,6 +1,7 @@
 // Cloudflare Worker: serves the site (static files from ./public) and runs the same functions the Netlify version had,
 // at the same URLs (/.netlify/functions/<name>, or /api/<name>), plus the three scheduled jobs.
 import sportsData from './functions/sports-data.js';
+import gameDetail from './functions/game-detail.js';
 import mma from './functions/mma.js';
 import fighter from './functions/fighter.js';
 import props from './functions/props.js';
@@ -14,7 +15,7 @@ import propsCron from './functions/props-cron.js';
 import propsSettleCron from './functions/props-settle-cron.js';
 import settleGamesCron from './functions/settle-games-cron.js';
 
-const FN = { 'sports-data': sportsData, mma, fighter, props, login, config, settle, 'settle-games': settleGames, 'bots-tick': botsTick };
+const FN = { 'sports-data': sportsData, 'game-detail': gameDetail, mma, fighter, props, login, config, settle, 'settle-games': settleGames, 'bots-tick': botsTick };
 const CRON = { '*/5 * * * *': settleGamesCron, '*/20 * * * *': botsCron, '*/15 * * * *': propsCron, '*/10 * * * *': propsSettleCron };
 
 // Cloudflare passes secrets/variables in `env`; the functions read process.env, so copy them across (a no-op when nodejs_compat already did it).
