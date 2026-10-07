@@ -525,3 +525,25 @@ html.nopop .pop{display:none}
 .od-line{margin-top:6px;text-align:center;font-size:12px;font-weight:600;color:var(--mu)}.od-line span{font-weight:500;opacity:.8}
 .pf-n{display:inline-block;min-width:18px;margin-left:4px;padding:0 6px;border-radius:999px;background:var(--sf);color:var(--mu);font-size:11px;font-weight:800;line-height:18px}
 .chip.on .pf-n{background:rgba(255,255,255,.25);color:inherit}
+
+/* ===== Profile borders (shop) ===== */
+.bdr{position:relative;display:inline-block;flex:none;line-height:0;border-radius:50%;box-sizing:content-box;isolation:isolate;vertical-align:middle}
+.bdr>img.pav{display:block}
+.bdr>.pav{position:relative;z-index:1}
+.bdr::before{content:"";position:absolute;inset:0;border-radius:50%;z-index:0;background:var(--bd1,#888)}
+.bdr-sky{--bd1:#38bdf8}
+.bdr-ember{--bd1:linear-gradient(135deg,#fb923c,#dc2626)}
+.bdr-neon{--bd1:#22e07a}.bdr-neon::before{box-shadow:0 0 10px 1px #22e07aaa}
+.bdr-frost{--bd1:linear-gradient(135deg,#e0f2fe,#38bdf8 55%,#bae6fd)}.bdr-frost::before{box-shadow:0 0 12px #7dd3fc99}
+.bdr-royal{--bd1:linear-gradient(135deg,#a855f7,#6366f1 50%,#ec4899)}
+.bdr-gold::before{background:conic-gradient(#f5c542,#fff3b0,#e8a317,#fff3b0,#f5c542);animation:bdspin 4s linear infinite;box-shadow:0 0 10px #f5c54288}
+.bdr-rainbow::before{background:conic-gradient(#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#6366f1,#d946ef,#ef4444);animation:bdspin 3s linear infinite}
+.bdr-legend::before{background:conic-gradient(#f5c542,#ff4fa3,#22d3ee,#a855f7,#f5c542);animation:bdspin 2s linear infinite,bdglow 2s ease-in-out infinite}
+@keyframes bdspin{to{transform:rotate(360deg)}}
+@keyframes bdglow{0%,100%{box-shadow:0 0 6px #f5c54266}50%{box-shadow:0 0 16px 2px #ff4fa388}}
+.rm .bdr::before{animation:none!important}
+@media(prefers-reduced-motion:reduce){.bdr::before{animation:none!important}}
+
+/* bet / refund buttons in the game sheet */
+.bet-btn{margin-top:12px}.bet-btn:disabled{opacity:.55}
+.bet-rf{display:block;width:100%;margin-top:12px;min-height:44px;border-radius:14px;font-size:14px}
