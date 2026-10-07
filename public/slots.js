@@ -43,12 +43,16 @@ const TH=()=>THEMES[theme];
 const SPF={nfl:['NFL'],nba:['NBA'],nhl:['NHL'],mlb:['MLB'],soccer:['EPL','LALIGA','BUND','SERIEA','LIGUE1','MLS','UCL','UEL','WC','LIGAMX','ERED','PORT']};
 const DEFT={nfl:['Chiefs','Cowboys','49ers','Eagles','Packers','Steelers'],nba:['Lakers','Warriors','Celtics','Knicks','Bulls','Heat'],nhl:['Rangers','Bruins','Maple Leafs','Blackhawks','Canadiens','Penguins'],mlb:['Yankees','Dodgers','Red Sox','Cubs','Braves','Mets'],soccer:['Real Madrid','Barcelona','Manchester United','Liverpool','Bayern','Manchester City']};
 let TSET=null;
+/* UFC default fighters (after your favorites). Names must match public/js/fighters.js. */
+const UFCTOP=['Sean Strickland',"Sean O'Malley",'Conor McGregor','Jon Jones','Islam Makhachev','Alex Pereira'];
+/* NFL: all 32 teams are in the draw. Only 6 symbol tiers exist, so each time the machine opens (or you tap the NFL theme) your favorite teams take the top tiers and the rest are picked at random from the 32. */
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function teamSet(){if(theme==='og')return null;try{const out=[],seen=new Set(),add=t=>{if(t&&t.n&&!seen.has(t.n)&&out.length<6){seen.add(t.n);out.push(t)}};
- if(theme==='ufc'){(S.favF||[]).forEach(n=>add({n,sp:'UFC'}));(typeof FIGHTERS!=='undefined'?FIGHTERS:[]).forEach(f=>add({n:f.n,sp:'UFC'}))}
+ if(theme==='ufc'){(S.favF||[]).forEach(n=>add({n,sp:'UFC'}));UFCTOP.forEach(k=>{const f=typeof fighterOf==='function'?fighterOf(k):null;if(f)add({n:f.n,sp:'UFC'})});(typeof FIGHTERS!=='undefined'?FIGHTERS:[]).forEach(f=>add({n:f.n,sp:'UFC'}))}
  else{const pool=(typeof TEAMS!=='undefined'?TEAMS:[]).filter(t=>SPF[theme].includes(t.sp));if(pool.length<6)return null;
   (S.favT||[]).forEach(n=>add(pool.find(t=>t.n===n)));
-  DEFT[theme].forEach(k=>add(pool.find(t=>nm(t.n+' '+(t.full||'')).includes(nm(k)))));
-  pool.forEach(add)}
+  if(theme==='nfl')shuf(pool.slice()).forEach(add);
+  else{DEFT[theme].forEach(k=>add(pool.find(t=>nm(t.n+' '+(t.full||'')).includes(nm(k)))));pool.forEach(add)}}
  if(out.length===6){preload(out);return out}return null}catch(e){return null}}
 /* Logo image for a team. We do NOT use the app's crest() here: it lazy-loads, and lazy images inside the clipped, moving reels often never load.
    This loads eagerly, is preloaded when the machine opens, and falls back to the letter crest only if the image really fails. */
