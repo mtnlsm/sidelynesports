@@ -558,3 +558,46 @@ html.nopop .pop{display:none}
 .oa-btn[disabled]{opacity:.55;pointer-events:none}
 .oa-gh{background:#24292f}
 .oa-dc{background:#5865f2}
+
+/* ===== SPACING PASS (all screens): one 4/8/12/16/24 rhythm, profile fixes ===== */
+:root{--sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:24px}
+/* profile header: photo + buttons wrap instead of squeezing on small phones, and the info block now has bottom room before the level card */
+.pf{margin-bottom:var(--sp3)}
+.pf-top{gap:var(--sp3);flex-wrap:wrap;align-items:flex-end}
+.pf-top>.row{flex-wrap:wrap;justify-content:flex-end;gap:var(--sp2)!important;margin-left:auto;padding-bottom:var(--sp1)}
+.pf-info{padding:var(--sp3) var(--sp4) var(--sp4)}
+.pf-info h2{line-height:1.15;row-gap:var(--sp1)}
+.pf-info>.mu{margin-top:2px}
+.pf-info p{margin:10px 0 var(--sp2)}
+.pf-info>.row{margin-top:var(--sp3)!important;gap:var(--sp2)!important}
+.pf-counts{margin:14px 0 0;gap:var(--sp2) var(--sp5)}
+.pf-lv{margin:0 var(--sp4);padding:14px var(--sp4)}
+.pf-lv .bar{margin:10px 0}
+.pf-lv>.mu{display:block}
+.pf-tabs{margin-top:var(--sp4)}
+.page>.row:has(>#lo){margin-top:var(--sp3)!important;margin-bottom:var(--sp2)}
+/* profile > Picks tab: these rows had no styling at all */
+.rp-h{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2);padding-bottom:var(--sp2)}
+.rp{padding:var(--sp3) 0;border-top:1px solid var(--bd)}
+.rp:first-child{border-top:0;padding-top:var(--sp1)}
+.rp-top{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2);margin-bottom:var(--sp1)}
+.rp-sp{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}
+.rp-s{font-size:13px;font-weight:700;color:var(--mu);text-align:right}
+.rp-s.w{color:var(--ab)}.rp-s.l{color:var(--bad)}
+.rp-m{font-weight:600;overflow-wrap:anywhere}
+.rp-p{font-size:13px;color:var(--mu);margin-top:2px}.rp-p b{color:var(--tx)}
+/* profile > Stats and Badges */
+.stats,.bgs{gap:10px}
+.bdg{padding:16px 8px}
+/* general: gaps so neighbours never touch */
+.row.sp{gap:var(--sp3)}
+.page>.row.sp{margin-bottom:var(--sp3)}
+.card>.row.sp+.row,.card>.row+.row{margin-top:var(--sp2)}
+.card>b+.mu,.card>.row.sp+.mu{margin-top:var(--sp1)}
+.cat-row{margin-bottom:var(--sp3);padding-bottom:2px}
+/* dialogs and settings */
+.modal>.glass>h3{margin:0 0 var(--sp3)}
+.st-row{padding:var(--sp3) 0}
+.sec{margin:20px 0 var(--sp2)}
+.modal .sec:first-child,.modal h3+.sec,#stg>.sec:first-child{margin-top:var(--sp1)}
+.modal .row{gap:var(--sp2)}
