@@ -29,6 +29,14 @@ const hs = (a, sp, cid) => {
 const lgo = (t) => String((t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href))) || '').replace(/^http:/, 'https:');
 const state = (s) => (s === 'in' ? 'live' : s === 'post' ? 'final' : 'up');
 
+// Betting odds shown for information only (ESPN lists them on upcoming team games; not every game has them). a = away team, b = home team.
+function normOdds(c) {
+  const o = c && c.odds && c.odds[0]; if (!o) return undefined;
+  const fmt = (v) => { if (v == null || v === '') return ''; let t = String(v).trim(); if (/^even$/i.test(t)) return '+100'; if (/^\d/.test(t)) t = '+' + t; return /^[+-]\d+$/.test(t) ? t : ''; };
+  const ml = (side) => { const t = o[side + 'TeamOdds'] || {}; const m = o.moneyline && o.moneyline[side] && o.moneyline[side].close && o.moneyline[side].close.odds; return fmt(t.moneyLine != null ? t.moneyLine : m); };
+  const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' };
+  return out.a || out.b || out.d || out.ou ? out : undefined;
+}
 function normTeam(sp, ev) {
   const c = ev.competitions && ev.competitions[0]; if (!c) return null;
   const home = c.competitors.find((x) => x.homeAway === 'home'), away = c.competitors.find((x) => x.homeAway === 'away');
@@ -39,6 +47,7 @@ function normTeam(sp, ev) {
   if (st === 'final' && ev.status.type.completed === false) return null; // postponed / canceled: never a result (it used to settle as a 0-0 draw)
   return { id: sp + ':' + ev.id, sp, a: tn(sp, away.team), b: tn(sp, home.team), la: lgo(away.team), lb: lgo(home.team),
     sa: st === 'up' ? '' : sa, sb: st === 'up' ? '' : sb, st, date: ev.date,
+    od: st === 'up' ? normOdds(c) : undefined,
     ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, p: o.athlete.displayName, v: Number(o.value), i: hs(o.athlete, sp) } : null; }).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
