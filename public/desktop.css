@@ -165,3 +165,15 @@ input:focus,textarea:focus{border-color:var(--ab);box-shadow:0 0 0 3px color-mix
 .sl-wrap .sl-reels{gap:10px;padding:14px 18px;width:max-content;max-width:100%;margin:0 auto;box-sizing:border-box}
 .sl-th{gap:6px}.sl-th .chip{padding:6px 10px;font-size:12.5px}
 .ps-g{gap:10px}.ps-t b{font-family:var(--fb);font-size:22px}
+
+/* ===== SPACING PASS (desktop) ===== */
+.pf{margin-bottom:var(--sp4)}
+.pf-top{padding:0 28px;gap:var(--sp4)}
+.pf-info{padding:var(--sp4) 28px 20px}
+.pf-counts{margin-top:var(--sp4)}
+.pf-lv{margin:0 28px;padding:var(--sp4) 20px}
+.pf-tabs{margin-top:22px}
+.page:has(.pf) .card,.page:has(#lb) .card,.page:has(#feed) .card{margin-bottom:var(--sp4)}
+.rp{padding:14px 0}
+.stats,.bgs{gap:var(--sp3)}
+.page>.row.sp{margin-bottom:var(--sp4)}
