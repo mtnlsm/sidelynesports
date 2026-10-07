@@ -10,7 +10,7 @@ const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
 const rnd=()=>SYM[Math.floor(Math.random()*SYM.length)];
 const calm=()=>document.documentElement.classList.contains('rm');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-let bet=25,busy=false;
+let bet=25,busy=false,wsv=0,wsw=.35,declined=false;
 const col3=a=>a.map(cell).join('');
 const mini=l=>`<svg width="60" height="36" viewBox="0 0 60 36" aria-hidden="true">${[0,1,2,3,4].map(c=>[0,1,2].map(r=>`<rect x="${c*12+1}" y="${r*12+1}" width="10" height="10" rx="2" fill="var(--bd)"/>`).join('')).join('')}<polyline fill="none" stroke="var(--ab)" stroke-width="2.4" stroke-linejoin="round" points="${l.map((r,c)=>`${c*12+6},${r*12+6}`).join(' ')}"/></svg>`;
 
@@ -27,18 +27,30 @@ function runReel(reel,final,dur){return new Promise(res=>{const st=reel.firstEle
 function openSlots(){
  if(!ME)return;
  const start=Array.from({length:NR},()=>[rnd(),rnd(),rnd()]);
- const m=modal(`<div class="sl-wrap"><h3>Slots</h3><div class="sl-bal mu">Balance <b id="slb"></b> SP</div><div class="sl-fs" id="slfs" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-msg" id="slm">9 paylines · 3 Sidelynes = 6 FREE SPINS!</div><div class="sl-bets"><div class="seg" id="slbet"></div></div><button class="pri sl-go" id="slgo"></button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden><div class="sl-pth">Line pays (x line stake, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${SPN[k]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} Sidelyne ×3 anywhere</span><b>6 free spins</b></div><div class="sl-pth" style="margin-top:12px">Free spins bonus</div><div class="sl-note">3 Sidelynes anywhere = 6 free spins at your bet, and they cost nothing. Every line win in free spins pays ×2. Land 3 more Sidelynes during the bonus for +6 free spins (up to 36). Bigger bet = bigger win: every prize is a multiple of your bet.</div><div class="sl-pth" style="margin-top:12px">Paylines · your bet is split over all 9</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div></div></div>`);
+ const m=modal(`<div class="sl-wrap"><h3>Slots</h3><div class="sl-bal mu">Balance <b id="slb"></b> SP</div><div class="sl-fs" id="slfs" hidden></div><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-msg" id="slm">9 paylines · 3 Sidelynes = 6 FREE SPINS!</div><div class="sl-bets"><div class="seg" id="slbet"></div></div><button class="pri sl-go" id="slgo"></button><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of SP? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden><div class="sl-pth">Line pays (x line stake, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${SPN[k]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} Sidelyne ×3 anywhere</span><b>6 free spins</b></div><div class="sl-pth" style="margin-top:12px">Free spins bonus</div><div class="sl-note">3 Sidelynes anywhere = 6 free spins at your bet, and they cost nothing. Every line win in free spins pays ×2. Land 3 more Sidelynes during the bonus for +6 free spins (up to 36). Bigger bet = bigger win: every prize is a multiple of your bet.</div><div class="sl-pth" style="margin-top:12px">Paylines · your bet is split over all 9</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div></div></div>`);
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=Number(v).toLocaleString()};
  const draw=()=>{if(!BETS.includes(bet)||bet>S.novas&&S.novas>=25)bet=[...BETS].reverse().find(b=>b<=S.novas)||25;
   $m('#slbet').innerHTML=BETS.map(b=>`<button data-slbet="${b}" class="${b===bet?'on':''}" ${b>S.novas||busy?'disabled':''}>${b}</button>`).join('');
-  const g=$m('#slgo');g.disabled=busy||S.novas<bet;g.textContent=busy?'Spinning…':S.novas<bet?'Not enough SP':'Spin · '+bet+' SP';bal(S.novas)};
+  const g=$m('#slgo');if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{g.disabled=busy||S.novas<bet;g.textContent=busy?'Spinning…':S.novas<bet?'Not enough SP':'Spin · '+bet+' SP'}bal(S.novas);saverUI()};
+ /* wager saver: out of SP (1 to 24) = stake your last SP for a chance at 1 free spin. The server decides (supabase/wager_saver.sql) */
+ function saverUI(){const p=$m('#slsv'),n=S.novas,low=n>=1&&n<BETS[0]&&!busy&&wsv===0;$m('#slsvre').hidden=!(low&&declined);
+  if(!low||declined){p.hidden=true;return}
+  const w=Math.round(wsw*100);p.hidden=false;
+  p.innerHTML=`<div class="sl-svc"><div class="sl-svt">Out of SP?</div><div class="sl-svs">Take your luck on a wager saver</div><div class="sl-svo"><span class="w" style="flex:${w}">Win ${w}%</span><span class="l" style="flex:${100-w}">Lose ${100-w}%</span></div><p><b>Win:</b> you lose your ${n} SP but get <b>1 free spin</b> (${BETS[0]} SP bet, keep what it wins).<br><b>Lose:</b> you lose your ${n} SP and get nothing.</p><button class="pri" data-svgo>Gamble ${n} SP</button><button class="chip" data-svno>No thanks</button></div>`}
+ async function gamble(){if(busy)return;busy=true;const n=S.novas,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();let r;
+  try{const q=await FX_DB.rpc('slots_saver_gamble');if(q.error)throw q.error;r=q.data}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?'Wager saver not set up yet (run supabase/wager_saver.sql)':t;toast(msg.textContent);draw();return}
+  wsv=r.saver_spins||0;applyNovas(r.novas,null);
+  if(r.won){reels.classList.add('win');msg.innerHTML='WAGER SAVED!<small class="sl-sub">You won 1 free spin</small>';try{navigator.vibrate&&navigator.vibrate([40,30,40])}catch(e){}}
+  else msg.innerHTML='No luck<small class="sl-sub">Your last '+n+' SP is gone</small>';
+  busy=false;if(m.isConnected)draw()};
  draw();
- m.addEventListener('click',e=>{const b=e.target.closest('[data-slbet]');if(b&&!busy){bet=+b.dataset.slbet;draw();return}if(e.target.closest('#slinfo')){const p=$m('#slpt');p.hidden=!p.hidden;return}if(e.target.closest('#slgo'))spin()});
+ FX_DB.rpc('slots_saver_status').then(q=>{if(q.error||!q.data)return;wsv=q.data.saver_spins||0;if(q.data.win_chance>0)wsw=+q.data.win_chance;if(m.isConnected)draw()}).catch(()=>{});
+ m.addEventListener('click',e=>{const b=e.target.closest('[data-slbet]');if(b&&!busy){bet=+b.dataset.slbet;draw();return}if(e.target.closest('#slinfo')){const p=$m('#slpt');p.hidden=!p.hidden;return}if(e.target.closest('[data-svgo]')){gamble();return}if(e.target.closest('[data-svno]')){declined=true;draw();return}if(e.target.closest('[data-svre]')){declined=false;draw();return}if(e.target.closest('#slgo'))spin(wsv>0)});
  const clearHi=()=>m.querySelectorAll('.sl-c.hit,.sl-c.dim').forEach(c=>c.classList.remove('hit','dim'));
  const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=0;c<w.count;c++)keep.add(c+','+LINES[w.line][c])});
   rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')))};
- async function spin(){if(busy||S.novas<bet)return;busy=true;const stake=bet,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.novas-stake);
-  let r;try{const q=await FX_DB.rpc('slots_spin',{p_bet:stake});if(q.error)throw q.error;r=q.data;if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?'Slots not set up yet (run supabase/slots.sql)':t;toast(msg.textContent);bal(S.novas);draw();return}
+ async function spin(free){if(busy||(!free&&S.novas<bet))return;busy=true;const stake=free?BETS[0]:bet,off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.novas-off);
+  let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_bet:stake}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.novas);draw();return}
   const rs=[...reels.children];await Promise.all(rs.map((el,i)=>runReel(el,r.reels[i],900+i*300)));
   if(!m.isConnected){applyNovas(r.novas,null);busy=false;return}
   const wins=r.wins||[];
@@ -47,7 +59,7 @@ function openSlots(){
    reels.classList.add('bonus');msg.innerHTML='SIDELYNE BONUS!<small class="sl-sub">'+r.free.start+' FREE SPINS</small>';try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}
    await wait(calm()?400:1700);reels.classList.remove('bonus');
    if(!m.isConnected){applyNovas(r.novas,null);busy=false;return}
-   const ok=await freeSpins(r,stake);
+   const ok=await freeSpins(r,off);
    if(!ok){applyNovas(r.novas,null);busy=false;return}
    $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;reels.classList.add('win');
    msg.innerHTML='<span id="slct">+0 SP</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+r.line_pay.toLocaleString()+' SP from lines':'')+'</small>';
