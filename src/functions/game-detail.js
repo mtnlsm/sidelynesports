@@ -46,17 +46,17 @@ function normBox(sp, j) {
 }
 
 // Lineups: soccer-style rosters if ESPN sends them, otherwise built from the box score (MLB batting order, NBA/NHL starters).
-function normLineups(j, box) {
+function normLineups(sp, j, box) {
   const out = {};
   if (Array.isArray(j.rosters) && j.rosters.length) {
     for (const r of j.rosters) {
       const id = String((r.team || {}).id);
-      const list = (r.roster || []).map((p) => ({ n: nm(p.athlete), jn: String(p.jersey || (p.athlete && p.athlete.jersey) || ''), pos: posOf(p), st: !!p.starter }));
+      const list = (r.roster || []).map((p) => ({ n: nm(p.athlete), i: pic(sp, p.athlete), jn: String(p.jersey || (p.athlete && p.athlete.jersey) || ''), pos: posOf(p), st: !!p.starter }));
       out[id] = { f: r.formation || '', s: list.filter((p) => p.st), b: list.filter((p) => !p.st) };
     }
     return out;
   }
-  const slim = (r) => ({ n: r.n, jn: r.jn, pos: r.pos, bo: r.bo, st: r.st });
+  const slim = (r) => ({ n: r.n, i: r.i, jn: r.jn, pos: r.pos, bo: r.bo, st: r.st });
   for (const id of Object.keys(box)) {
     const gs = box[id], bat = gs.find((g) => g.rows.some((r) => r.bo !== undefined));
     if (bat) {
@@ -95,7 +95,7 @@ function build(sp, id, j) {
   const away = side(aw), home = side(ho), lab = labels(sp, Math.max(away.ls.length, home.ls.length));
   while (away.ls.length < lab.length) away.ls.push('');
   while (home.ls.length < lab.length) home.ls.push('');
-  const t = (hc.status && hc.status.type) || {}, box = normBox(sp, j), lu = normLineups(j, box), plays = normPlays(j);
+  const t = (hc.status && hc.status.type) || {}, box = normBox(sp, j), lu = normLineups(sp, j, box), plays = normPlays(j);
   const sit = normSit(sp, j.situation || hc.situation, ids) || (plays[0] ? { k: 'g', lp: plays[0].t } : undefined);
   return { id, sp, st: state(t.state), clk: t.shortDetail || t.detail || '', away, home, lab, sit,
     box: [box[ids.a] || [], box[ids.b] || []], lu: [lu[ids.a] || null, lu[ids.b] || null], ts: normTS(j, ids), plays, updated: new Date().toISOString() };
