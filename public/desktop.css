@@ -5,7 +5,7 @@
 
 :root{--side-w:232px;--top-h:64px}
 html{scroll-padding-top:calc(var(--top-h) + 16px)}
-body{padding-left:var(--side-w)}
+body{padding-left:var(--side-w);background:var(--bg)}
 
 /* ---- top bar: full-width scoreboard strip ---- */
 header{position:fixed;top:0;left:0;right:0;z-index:7;height:var(--top-h);margin:0;padding:0 28px;border-bottom:3px solid var(--ab)}
