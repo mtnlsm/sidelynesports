@@ -196,6 +196,11 @@ exports.handler = async (event) => {
   try {
     if (!id) id = await findId(name, ctx);
     if (!id) return json(404, { error: 'fighter not found', name, ...(debug ? { _trace: ctx.trace, _warn: ctx.warn } : {}) });
+    // lite=1: just the id + headshot link (no record/fight history), so lists of fighters can show photos fast
+    if (q.lite === '1') {
+      return { statusCode: 200, headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=86400' },
+        body: JSON.stringify({ id, name, headshot: 'https://a.espncdn.com/i/headshots/mma/players/full/' + id + '.png' }) };
+    }
     const data = debug ? await buildProfile(id, ctx) : await cached('FIGHTER:' + id, PROFILE_TTL, () => buildProfile(id, { ...ctx, warn: [] }), { provider: 'espn' });
     return json(200, debug ? { ...data, _trace: ctx.trace, _warn: ctx.warn, _raw: ctx.raw } : data);
   } catch (e) {
