@@ -122,6 +122,7 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-wrap.fs .sl-reels{box-shadow:0 0 0 2px var(--sla),0 0 22px color-mix(in srgb,var(--sla) 55%,transparent),inset 0 2px 10px rgba(0,0,0,.18)}
 .sl-wrap .sl-go{background:var(--sla);border-color:var(--sla);color:#fff}.sl-wrap .sl-go:disabled{opacity:.55}
 .sl-wrap[data-th="og"] .sl-reels{background:var(--sf2);border-color:var(--bd)}.sl-wrap[data-th="og"] .sl-fs{background:linear-gradient(90deg,#f5c542,#e8a317);color:#3a2a00}.sl-wrap[data-th="og"].fs .sl-reels{box-shadow:0 0 0 2px #f5c542,0 0 20px rgba(245,197,66,.45),inset 0 2px 10px rgba(0,0,0,.18)}.sl-wrap[data-th="og"] .sl-th .chip.on,.sl-wrap[data-th="og"] .sl-auto .chip.on,.sl-wrap[data-th="og"] .sl-go{color:var(--abx,#fff)}.sl-c .cr{display:block}.sl-ptr .cr{flex:none}.sl-em{display:block;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.sl-reels{position:relative}.sl-pl{position:absolute;left:0;top:0;pointer-events:none;z-index:3;overflow:visible}
 .sl-auto{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px}.sl-ar{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}.sl-th .chip{white-space:nowrap}.sl-auto .mu{font-size:12px}.sl-auto .chip.on{background:var(--sla);border-color:var(--sla);color:#fff}`;
  document.head.appendChild(st)}
 
@@ -164,9 +165,17 @@ function openSlots(){
   const au=e.target.closest('[data-slau]');if(au&&!busy&&!autoOn){autoLeft=+au.dataset.slau;autoOn=true;ac();draw();autoLoop();return}
   if(e.target.closest('#slgo')&&autoOn){autoOn=false;autoLeft=0;draw();return}
   if(b&&!busy&&!autoOn){if(b.dataset.sld)denom=+b.dataset.sld;else if(b.dataset.sll)lines=+b.dataset.sll;else if(b.dataset.slc)cpl=+b.dataset.slc;else{lines=9;cpl=10}draw();return}if(e.target.closest('#slinfo')){const p=$m('#slpt');if(p.hidden)p.innerHTML=ptHtml();p.hidden=!p.hidden;return}if(e.target.closest('[data-svgo]')){gamble();return}if(e.target.closest('[data-svno]')){declined=true;draw();return}if(e.target.closest('[data-svre]')){declined=false;draw();return}if(e.target.closest('#slgo'))spin(wsv>0)});
- const clearHi=()=>m.querySelectorAll('.sl-c.hit,.sl-c.dim').forEach(c=>c.classList.remove('hit','dim'));
+ const clearHi=()=>{m.querySelectorAll('.sl-c.hit,.sl-c.dim').forEach(c=>c.classList.remove('hit','dim'));m.querySelectorAll('.sl-pl').forEach(e=>e.remove())};
+ /* draw each winning payline across the reels, so you can see exactly which line paid and how far it ran */
+ const PLC=['#ffd43b','#4dabf7','#ff6b6b','#69db7c','#da77f2','#ffa94d','#3bc9db','#f783ac','#a9e34b'];
+ const drawLines=(wins,reels)=>{try{const rs=[...reels.children];if(!rs.length)return;const W=reels.clientWidth,Ht=reels.clientHeight,ch=rs[0].clientHeight/3;
+  const pts=(w)=>{const a=[];for(let c=0;c<w.count;c++){const r=rs[c];a.push((r.offsetLeft+r.offsetWidth/2).toFixed(1)+','+(r.offsetTop+(LINES[w.line][c]+.5)*ch).toFixed(1))}return a.join(' ')};
+  const g=wins.map(w=>{const col=PLC[w.line%PLC.length],p=pts(w);return `<polyline points="${p}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${p}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`}).join('');
+  reels.insertAdjacentHTML('beforeend',`<svg class="sl-pl" width="${W}" height="${Ht}" viewBox="0 0 ${W} ${Ht}" aria-hidden="true">${g}</svg>`)}catch(e){}};
+ /* a line that matched 3+ from the left but was not active (you played fewer than 9 lines) pays nothing: tell the player so it does not look like a missed win */
+ const missHint=(g,ln)=>{if(!Array.isArray(g)||ln>=9)return'';const out=[];for(let i=ln;i<9;i++){const L=LINES[i],b=g[0]&&g[0][L[0]];if(!b||b==='S')continue;let n=1;while(n<5&&g[n]&&g[n][L[n]]===b)n++;if(n>=3)out.push(LNAME[i]+' '+n+'×')}return out.length?'<small class="sl-sub" style="color:var(--sla);font-weight:800">Not paid, line not active: '+out.join(', ')+'. Play 9 lines to cover them.</small>':''};
  const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=0;c<w.count;c++)keep.add(c+','+LINES[w.line][c])});
-  rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')))};
+  rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')));drawLines(wins,reels)};
  async function spin(free){if(busy||(!free&&S.novas<total()))return null;busy=true;lastAt=Date.now();const stake=free?SAVER_STAKE:total(),off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.novas-off);
   let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_denom:denom,p_lines:lines,p_cpl:cpl,p_theme:theme}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.novas);draw();return{ok:false}}
   const rs=[...reels.children];sfx.spinOn();await Promise.all(rs.map((el,i)=>runReel(el,r.reels[i],900+i*300).then(()=>sfx.stop(i))));sfx.spinOff();
@@ -184,6 +193,7 @@ function openSlots(){
    sfx.bonusWin();await countUp($m('#slct'),r.payout,calm()?0:1400,true);await wait(calm()?200:700)}
   else if(r.payout>0){reels.classList.add('win');sfx.win(lvl(r.payout,stake));msg.innerHTML=winMsg(wins,r.payout,stake);try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}}
   else msg.textContent=r.scatters===2?'So close! Two '+SCP()+'…':'No luck. Spin again!';
+  if(r.kind!=='bonus'&&!free){const mh=missHint(r.reels,r.lines||lines);if(mh)msg.insertAdjacentHTML('beforeend',mh)}
   applyNovas(r.novas,r.payout>stake?'Slots win':null);busy=false;if(m.isConnected)draw();
   return{ok:true,payout:r.payout,stake,bonus:r.kind==='bonus'}}
 
