@@ -80,6 +80,7 @@ async function loadTeams(sp) {
     .map((t) => ({ n: tn(sp, t), full: t.displayName, ab: t.abbreviation, sp, c: hexc(t.color), c2: hexc(t.alternateColor), lg: lgo(t) })).sort((a, b) => a.n.localeCompare(b.n));
 }
 exports.LEAGUES = LEAGUES;
+exports.load = load; // used by _settle.js to fetch only the leagues that have unpaid picks
 exports.handler = async (event) => {
   const { sport = 'ALL', type = 'games' } = event.queryStringParameters || {};
   const S = sport.toUpperCase();
