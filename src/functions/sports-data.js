@@ -119,7 +119,7 @@ function normTeam(sp, ev) {
   const home = c.competitors.find((x) => x.homeAway === 'home'), away = c.competitors.find((x) => x.homeAway === 'away');
   if (!home || !away) return null;
   const st = state(ev.status.type.state), sa = Number(away.score || 0), sb = Number(home.score || 0);
-  if (st === 'up' && (/TBD|TBA/i.test(ev.status.type.shortDetail || '') || (c.timeValid === false && Date.parse(ev.date) - Date.now() > 864e5))) return null; // placeholder time: only hidden when it is more than a day away, so today's games always show // no confirmed start time
+  if (st === 'up' && /TBD|TBA/i.test(ev.status.type.shortDetail || '') && sp !== 'NFL') return null; // placeholder time: only hidden when it is more than a day away, so today's games always show // no confirmed start time
   if (!fresh(st, ev.date)) return null;
   if (st === 'final' && ev.status.type.completed === false) return null; // postponed / canceled: never a result (it used to settle as a 0-0 draw)
   return { id: sp + ':' + ev.id, sp, a: tn(sp, away.team), b: tn(sp, home.team), la: lgo(away.team), lb: lgo(home.team),
@@ -165,7 +165,7 @@ async function load(sp) {
       if (ranged.length) err = null;
     }
     const hasUp = ranged.some((ev) => ev && ev.status && ev.status.type && ev.status.type.state === 'pre');
-    if (!hasUp) { try { plain = await get(x ? '?' + x.slice(1) : ''); } catch (e) { err = err || e; } }
+    if (!hasUp || sp === 'NFL') { try { plain = await get(x ? '?' + x.slice(1) : ''); } catch (e) { err = err || e; } }
     if (!ranged.length && !plain.length && err) throw err;
     const seen = new Set();
     events = ranged.concat(plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
