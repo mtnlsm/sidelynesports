@@ -37,6 +37,22 @@ function normOdds(c) {
   const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' };
   return out.a || out.b || out.d || out.ou ? out : undefined;
 }
+// UFC / PFL fight odds: ESPN lists a moneyline per fighter on upcoming bouts (awayAthleteOdds / homeAthleteOdds). We match each line to the right fighter
+// by athlete id (or home/away) and never guess: if a line cannot be matched, no odds are shown and the bet pays the flat 2x like before.
+function normMmaOdds(c, f) {
+  const o = c && c.odds && c.odds[0]; if (!o) return undefined;
+  const fmt = (v) => { if (v == null || v === '') return ''; let t = String(v).trim(); if (/^even$/i.test(t)) return '+100'; if (/^\d/.test(t)) t = '+' + t; return /^[+-]\d+$/.test(t) ? t : ''; };
+  const idOf = (n) => { if (!n) return ''; const a = n.athlete || n; if (a.id != null) return String(a.id); const m = String(a.$ref || '').match(/athletes\/(\d+)/); return m ? m[1] : ''; };
+  const side = (k) => { const n = o[k + 'AthleteOdds'] || o[k + 'TeamOdds'] || {}; const m = o.moneyline && o.moneyline[k] && o.moneyline[k].close && o.moneyline[k].close.odds;
+    return { id: idOf(n), ml: fmt(n.moneyLine != null ? n.moneyLine : m) }; };
+  const S = { away: side('away'), home: side('home') };
+  const pick = (x) => { const ids = [String(x.id || ''), String((x.athlete && x.athlete.id) || '')].filter(Boolean);
+    const k = ['away', 'home'].find((s) => S[s].id && ids.includes(S[s].id)) || (x.homeAway === 'away' || x.homeAway === 'home' ? x.homeAway : '');
+    return k ? S[k].ml : ''; };
+  const a = pick(f[0]), b = pick(f[1]);
+  if (a && b && a === b && a !== '+100') return undefined; // same line twice = a bad match, do not show it
+  return a || b ? { a, b, d: '', ou: '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' } : undefined;
+}
 // Live situation (ESPN scoreboard/summary "situation"): baseball = count/outs/runners/batter/pitcher, football = down & distance/possession, others = last play.
 const pn = (o) => { if (!o) return ''; const a = o.athlete || o; return String(a.shortName || a.displayName || a.fullName || '').slice(0, 30); };
 function normSit(sp, s, ids) {
@@ -74,6 +90,7 @@ function normUfc(ev, sp = 'UFC') {
     if (!fresh(st, c.date || ev.date)) return null;
     return { id: sp + ':' + c.id, sp, a: f[0].athlete.displayName, b: f[1].athlete.displayName, ia: hs(f[0].athlete, sp, f[0].id), ib: hs(f[1].athlete, sp, f[1].id),
       sa: st === 'final' ? (f[0].winner ? 'W' : f[1].winner ? 'L' : 'D') : '', sb: st === 'final' ? (f[1].winner ? 'W' : f[0].winner ? 'L' : 'D') : '', st, date: c.date || ev.date,
+      od: st === 'up' ? normMmaOdds(c, f) : undefined,
       clk: st === 'final' ? 'Final' : st === 'live' ? ((c.status && c.status.type && c.status.type.shortDetail) || 'Live') : '' };
   }).filter(Boolean).reverse().slice(0, 8);
 }
