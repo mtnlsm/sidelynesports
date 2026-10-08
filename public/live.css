@@ -66,3 +66,7 @@
 .lv-lu li{padding:8px 0;font-size:14px;gap:10px}
 .lv-tt{gap:8px;flex-wrap:wrap}
 @media(max-width:899px){.modal>.glass:has(.lvd){max-height:94vh;padding-left:14px;padding-right:14px}.lv-tb{font-size:14px}.lv-tb td,.lv-bx td,.lv-bx th{padding:9px 10px}.lv-tb .n{min-width:116px}}
+
+/* player photos in box score */
+.lv-nc{display:flex;align-items:center;gap:8px}
+.lv-bx .lv-ph{width:30px;height:30px}
