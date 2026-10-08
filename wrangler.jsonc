@@ -13,5 +13,6 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/.netlify/functions/*", "/api/*"]
   },
+  "observability": { "enabled": true },
   "triggers": { "crons": ["*/5 * * * *", "*/15 * * * *", "*/10 * * * *"] }
 }
