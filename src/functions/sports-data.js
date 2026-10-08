@@ -173,7 +173,7 @@ async function load(sp) {
   }
   const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   DBG[sp] = { range_error: rangeErr || undefined, espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
-    kept: out.length, kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
+    kept: out.length, games: events.filter((e) => e && sp !== 'UFC').map((e) => (e.shortName || e.name) + ' | ' + (e.status && e.status.type && e.status.type.state) + ' | ' + e.date), kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
     next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && sp !== 'UFC' && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
   if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
   return out;
