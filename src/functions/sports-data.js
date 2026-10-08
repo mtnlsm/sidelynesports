@@ -138,7 +138,7 @@ function normUfc(ev, sp = 'UFC') {
     const st = state(c.status && c.status.type ? c.status.type.state : ev.status.type.state);
     if (st === 'up' && /TBD|TBA/i.test(((c.status && c.status.type && c.status.type.shortDetail) || '') + ' ' + ((ev.status && ev.status.type && ev.status.type.shortDetail) || ''))) return null; // no confirmed start time
     if (!fresh(st, c.date || ev.date)) return null;
-    return { id: sp + ':' + c.id, sp, a: f[0].athlete.displayName, b: f[1].athlete.displayName, ia: hs(f[0].athlete, sp, f[0].id), ib: hs(f[1].athlete, sp, f[1].id),
+    return { id: sp + ':' + c.id, sp, ev: String(ev.name || ev.shortName || '').slice(0, 80), evi: String(ev.id || ''), a: f[0].athlete.displayName, b: f[1].athlete.displayName, ia: hs(f[0].athlete, sp, f[0].id), ib: hs(f[1].athlete, sp, f[1].id),
       sa: st === 'final' ? (f[0].winner ? 'W' : f[1].winner ? 'L' : 'D') : '', sb: st === 'final' ? (f[1].winner ? 'W' : f[0].winner ? 'L' : 'D') : '', st, date: c.date || ev.date,
       od: st === 'up' ? normMmaOdds(c, f) : undefined,
       clk: st === 'final' ? 'Final' : st === 'live' ? ((c.status && c.status.type && c.status.type.shortDetail) || 'Live') : '' };
