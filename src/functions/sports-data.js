@@ -144,6 +144,7 @@ function normUfc(ev, sp = 'UFC') {
 }
 // ESPN's default scoreboard only covers "today"/the current week, so ask for an explicit window (yesterday .. +7 days; UFC +14).
 const ymd = (o) => new Date(Date.now() + o * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
+const DBG = {};
 async function load(sp) {
   // Ranged request first (yesterday .. +7 days, UFC +14). For team leagues we ALSO read ESPN's plain default scoreboard and merge the two, so a flaky range query can never leave the upcoming list empty or stuck.
   const get = async (q) => { const r = await espn(BASE + PATHS[sp] + q); return (await r.json()).events || []; };
@@ -160,6 +161,9 @@ async function load(sp) {
     events = ranged.concat(plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
   }
   const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
+  DBG[sp] = { espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
+    kept: out.length, kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
+    next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && sp !== 'UFC' && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
   if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
   return out;
 }
@@ -194,6 +198,10 @@ exports.handler = async (event) => {
   }
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
   const list = S === 'ALL' ? Object.keys(PATHS) : [S];
+  if ((event.queryStringParameters || {}).debug) { // /sports-data?sport=ALL&type=games&debug=1 : live look, no cache, shows why games are kept or dropped
+    oddsBudget = 0; const res = await Promise.allSettled(list.map(load));
+    return { statusCode: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify({ now: new Date().toISOString(), window: ymd(-1) + '-' + ymd(7), leagues: Object.fromEntries(list.map((k, i) => [k, res[i].status === 'fulfilled' ? DBG[k] : { error: String((res[i].reason && res[i].reason.message) || res[i].reason) }])) }, null, 1) };
+  }
   try {
     const data = await cached('games6:' + S, TTL.live, async () => {
       oddsBudget = S === 'ALL' ? 6 : 20;
