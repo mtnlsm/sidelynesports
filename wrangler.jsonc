@@ -3,6 +3,10 @@
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "sidelynesports.fyi", "custom_domain": true },
+    { "pattern": "www.sidelynesports.fyi", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
