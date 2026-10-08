@@ -24,7 +24,7 @@ let IMG={};
 const isDark=()=>{const d=document.documentElement.dataset.theme;return d?d==='dark':matchMedia('(prefers-color-scheme:dark)').matches};
 /* ask ESPN for enough pixels for big screens: at least 240px, and scaled up for high-DPI / zoomed desktop monitors */
 const IMGK=()=>Math.min(3,Math.max(1.5,window.devicePixelRatio||1));
-const imgUrl=(u,z,hs)=>/^https:\/\/a\.espncdn\.com\/i\//.test(u)?u.replace('https://a.espncdn.com/i/','https://a.espncdn.com/combiner/i?img=/i/')+'&w='+Math.max(240,Math.round(z*(hs?4.14:3)*IMGK()))+'&h='+Math.max(240,Math.round(z*3*IMGK())):u;
+const imgUrl=(u,z,hs)=>{if(hs||!/^https:\/\/a\.espncdn\.com\/i\//.test(u))return u;/* headshots: use ESPN's original file (sharpest, never stretched); logos: square, sized for the screen */const n=Math.max(240,Math.round(z*3*IMGK()));return u.replace('https://a.espncdn.com/i/','https://a.espncdn.com/combiner/i?img=/i/')+'&w='+n+'&h='+n};
 function indexImgs(){const m={};
 try{(TEAMS||[]).forEach(t=>{if(t.lg)m[t.sp+'|'+t.n]='l'+t.lg});
 (G||[]).forEach(g=>{if(g.la)m[g.sp+'|'+g.a]='l'+g.la;if(g.lb)m[g.sp+'|'+g.b]='l'+g.lb;if(g.ia)m[g.sp+'|'+g.a]='h'+g.ia;if(g.ib)m[g.sp+'|'+g.b]='h'+g.ib;(g.ld||[]).forEach(l=>{if(l.i)m['P|'+l.p]='h'+l.i})})}catch(e){}
