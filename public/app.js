@@ -6,7 +6,8 @@ const cfBar=codes=>{if(S.sel!=='CFB')return'';const ed=S.pv!=='p'&&S.pf==='ended
 G.filter(g=>codes.includes(g.sp)&&(ed?g.st==='final':g.st!=='final')).forEach(g=>{new Set([g.ca,g.cb].filter(Boolean)).forEach(k=>m.set(k,(m.get(k)||0)+1))});if(!m.size)return'';
 const ks=[...m.keys()].sort((a,b)=>cfRank(a)-cfRank(b)||cfName(a).localeCompare(cfName(b)));
 return`<div class="row hs">${['ALL',...ks].map(k=>`<button class="chip ${(S.cf||'ALL')===k?'on':''}" data-cf="${k}">${k==='ALL'?'All conferences':esc(cfName(k))+' <span class="pf-n">'+m.get(k)+'</span>'}</button>`).join('')}</div>`};
-const gridG=(list,empty)=>{if(!list.length)return`<div class="grid">${empty}</div>`;if(S.sel!=='CFB'||cfOn())return`<div class="grid">${list.map(gc).join('')}</div>`;
+const gridG=(list,empty)=>{if(!list.length)return`<div class="grid">${empty}</div>`;if(S.sel==='UFC'){const m=new Map();list.forEach(g=>{const k=g.evi||g.ev||'x';if(!m.has(k))m.set(k,{n:g.ev||'UFC',a:[]});m.get(k).a.push(g)});return[...m.values()].map(e=>`<h2 style="margin:16px 0 10px">${esc(e.n)} <span class="mu">${e.a.length}</span></h2><div class="grid">${e.a.map(gc).join('')}</div>`).join('')}
+if(S.sel!=='CFB'||cfOn())return`<div class="grid">${list.map(gc).join('')}</div>`;
 const m=new Map();list.forEach(g=>{const k=cfOf(g);if(!m.has(k))m.set(k,[]);m.get(k).push(g)});
 return[...m].map(([k,a])=>`<h2 style="margin:16px 0 10px">${esc(cfName(k))} <span class="mu">${a.length}</span></h2><div class="grid">${a.map(gc).join('')}</div>`).join('')};
 let G=[];let GSTAT='loading';let TEAMS=[],TSTAT='loading';
