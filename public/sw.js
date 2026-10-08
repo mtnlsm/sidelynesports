@@ -1,6 +1,6 @@
 // Sidelyne Sports service worker: makes the site installable and keeps the app shell available offline.
 // Network-first, so you always get the newest deploy when online. Live data (/api, /.netlify/functions) is never cached.
-const CACHE = 'sidelyne-v2';
+const CACHE = 'sidelyne-v3';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/icons/icon-192.png'])).then(() => self.skipWaiting()));
 });
