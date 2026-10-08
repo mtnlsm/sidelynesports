@@ -18,6 +18,19 @@ const HOCKEY = { // ESPN's hockey leader categories -> skater stats (no rebounds
   goals: [['goals', 'Goals', 0.5], ['points', 'Points', 0.5]],
   assists: [['assists', 'Assists', 0.5], ['points', 'Points', 0.5]],
 };
+// ESPN names leader categories differently per sport/endpoint (passingYards vs passingLeader, points vs pointsPerGame...), so match loosely on name + abbreviation.
+const MLBH = [['batting.hits', 'Hits', 0.5], ['batting.RBIs', 'RBIs', 0.5], ['batting.homeRuns', 'Home runs', 0.5]];
+const MLBP = [['pitching.strikeouts', 'Strikeouts', 4.5], ['pitching.earnedRuns', 'Earned runs', 2.5]];
+function famFor(sp, n, ab) {
+  const s = (String(n || '') + ' ' + String(ab || '')).toLowerCase(), key = (re) => re.test(s);
+  if (sp === 'NHL') { const k = key(/goal/) ? 'goals' : key(/assist/) ? 'assists' : key(/point|pts/) ? 'points' : ''; return { k, fam: HOCKEY[k] }; }
+  if (sp === 'MLB' || sp === 'CBASE') return { k: 'mlb', fam: sp === 'MLB' ? (key(/strikeout|era|win|pitch/) ? MLBP : MLBH) : null };
+  const k = key(/pass/) ? 'passingYards' : key(/rush/) ? 'rushingYards' : key(/receiv/) ? 'receivingYards' : key(/reb/) ? 'rebounds' : key(/assist|apg/) ? 'assists' : key(/point|pts|ppg/) ? 'points' : '';
+  return { k, fam: FAM[k] };
+}
+// Game-level Higher/Lower (combined score) works for EVERY league, with no player data needed. Line = sportsbook over/under when ESPN lists one, else a typical default.
+const TOTAL = { NFL: [44.5, 'points'], CFB: [52.5, 'points'], CFL: [46.5, 'points'], NBA: [224.5, 'points'], WNBA: [163.5, 'points'], CBB: [140.5, 'points'], MLB: [8.5, 'runs'], CBASE: [11.5, 'runs'], NHL: [5.5, 'goals'] };
+const totalFor = (g) => { const d = TOTAL[g.sp] || [2.5, 'goals'], ou = g.od && Number(g.od.ou); return { line: ou > 0 ? Math.floor(ou) + 0.5 : d[0], unit: d[1] }; };
 const MMA = [['sigStrikes', 'Significant strikes', 44.5], ['takedowns', 'Takedowns', 1.5], ['knockdowns', 'Knockdowns', 0.5], ['submissionAttempts', 'Submission attempts', 0.5]];
 
 // ---- UFC / PFL: find a fight's final stats on ESPN (no key needed) ----
@@ -101,13 +114,16 @@ async function create(c, errors, group) {
   // games whose scoreboard had no team leaders: ask the game summary (max 8 per run)
   await Promise.all(up.filter((g) => !isM(g) && !(g.ld && g.ld.length) && sports.LEAGUES[g.sp]).slice(0, 8).map(async (g) => {
     try { const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/' + sports.LEAGUES[g.sp] + '/summary?event=' + g.id.split(':')[1]); if (!r.ok) return;
-      g.ld = ((await r.json()).leaders || []).flatMap((t) => (t.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, p: o.athlete.displayName, v: Number(o.value) } : null; }).filter(Boolean));
+      g.ld = ((await r.json()).leaders || []).flatMap((t) => (t.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value) } : null; }).filter(Boolean));
     } catch (e) { errors.push('leaders ' + g.id + ': ' + String(e.message || e)); } }));
   const rows = new Map();
   for (const g of up) {
     const add = (subject, k, label, line) => { const id = g.id + '|' + k + '|' + nm(subject); rows.set(id, { id, game_id: g.id, sport: g.sp, matchup: g.a + ' vs ' + g.b, subject, stat: k, stat_label: label, line, starts_at: g.date }); };
     if (isM(g)) [g.a, g.b].forEach((f) => MMA.forEach(([k, l, d]) => add(f, k, l, d)));
-    else for (const l of g.ld || []) for (const [k, lab, d] of (g.sp === 'NHL' ? HOCKEY : FAM)[l.n] || []) add(l.p, k, lab, BB.has(g.sp) && k === l.n && l.v > 0 && l.v < 60 ? Math.floor(l.v) + 0.5 : d);
+    else {
+      const t = totalFor(g); add('Game total', 'gameTotal', 'Combined ' + t.unit, t.line); // one total-score prop per game, every league
+      for (const l of g.ld || []) { const f = famFor(g.sp, l.n, l.a); for (const [k, lab, d] of f.fam || []) add(l.p, k, lab, BB.has(g.sp) && k === f.k && l.v > 0 && l.v < 60 ? Math.floor(l.v) + 0.5 : d); }
+    }
   }
   const all = [...rows.values()];
   for (let i = 0; i < all.length; i += 500) { const r = await c.from('props').upsert(all.slice(i, i + 500), { onConflict: 'id', ignoreDuplicates: true }); if (r.error) { errors.push('props: ' + r.error.message); break; } }
@@ -121,18 +137,20 @@ async function settle(c, errors) {
   let settled = 0, voided = 0, waiting = 0, paid = 0;
   const doSettle = async (items) => { if (!items.length) return; const x = await c.rpc('settle_props', { p_items: items }); if (x.error) errors.push('settle_props: ' + x.error.message); else { settled += items.length; paid += Number(x.data) || 0; } };
   const doVoid = async (ids) => { if (!ids.length) return; const x = await c.rpc('void_props', { p_ids: ids }); if (x.error) errors.push('void_props: ' + x.error.message); else voided += ids.length; };
-  // team sports: 6 games per run
-  for (const [gid, ps] of pickGames(team, 6)) {
+  // team sports: 8 games per run (college football has a lot of games)
+  for (const [gid, ps] of pickGames(team, 8)) {
     const m = /^([A-Z0-9]+):(\d+)$/.exec(gid), path = m && sports.LEAGUES[m[1]]; if (!path) continue;
     try {
       const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/' + path + '/summary?event=' + m[2]); if (!r.ok) { waiting++; continue; }
       const j = await r.json(); if (!(((j.header || {}).competitions || [])[0] || {}).status?.type?.completed) { waiting++; continue; }
       const box = {}, seen = new Set();
       for (const t of (j.boxscore || {}).players || []) for (const s of t.statistics || []) { const ks = s.keys || s.names || [];
-        for (const a of s.athletes || []) { const n = nm((a.athlete || {}).displayName || ''); if (a.didNotPlay || !(a.stats || []).length) continue; seen.add(n); ks.forEach((k, i) => { const v = parseFloat((a.stats || [])[i]); if (!isNaN(v)) (box[k] = box[k] || {})[n] = v; }); } }
+        for (const a of s.athletes || []) { const n = nm((a.athlete || {}).displayName || ''); if (a.didNotPlay || !(a.stats || []).length) continue; seen.add(n); ks.forEach((k, i) => { const v = parseFloat((a.stats || [])[i]); if (!isNaN(v)) { (box[k] = box[k] || {})[n] = v; if (s.name) (box[s.name + '.' + k] = box[s.name + '.' + k] || {})[n] = v; } }); } }
       if (!box.points && box.goals && box.assists) { box.points = {}; for (const n of new Set([...Object.keys(box.goals), ...Object.keys(box.assists)])) box.points[n] = (box.goals[n] || 0) + (box.assists[n] || 0); } // hockey box scores have no points column
       const pay = [], dnp = [];
+      const cs = ((((j.header || {}).competitions || [])[0] || {}).competitors || []), tot = cs.length === 2 && cs.every((x) => x.score !== undefined && x.score !== '') ? cs.reduce((a, x) => a + (Number(x.score) || 0), 0) : null;
       for (const p of ps) { const n = nm(p.subject);
+        if (p.stat === 'gameTotal') { if (tot === null) errors.push(gid + ': no final score found (left open)'); else pay.push({ id: p.id, actual: tot }); continue; }
         if (!box[p.stat]) { errors.push(gid + ': ESPN box score has no "' + p.stat + '" stat (left open)'); continue; } // never guess a 0
         const v = box[p.stat][n] !== undefined ? box[p.stat][n] : seen.has(n) ? 0 : null;
         if (v === null) dnp.push(p.id); else pay.push({ id: p.id, actual: v }); }
