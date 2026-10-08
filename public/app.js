@@ -23,7 +23,7 @@ const MMA=sp=>sp==='UFC';
 P.mlb='<circle cx="12" cy="12" r="9"/><path d="M6 5c3 3 3 11 0 14M18 5c-3 3-3 11 0 14"/>';
 P.nhl='<path d="M5 4l8 13h5"/><ellipse cx="17" cy="19" rx="3.5" ry="1.5"/>';
 P.soccer='<circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20 10l-4.5.5M17 19l-2.8-4.5M7 19l2.8-4.5M4 10l4.5.5"/>';
-const SPG=[['NFL','NFL',['NFL']],['NBA','NBA',['NBA']],['MLB','MLB',['MLB']],['NHL','NHL',['NHL']],['WNBA','WNBA',['WNBA']],['CFB','College FB',['CFB']],['CBB','College BB',['CBB']],['CBASE','College Baseball',['CBASE']],['CFL','CFL',['CFL']],['UFC','UFC',['UFC']]];
+const SPG=[['NFL','NFL',['NFL']],['NBA','NBA',['NBA']],['MLB','MLB',['MLB']],['NHL','NHL',['NHL']],['WNBA','WNBA',['WNBA']],['CFB','College FB',['CFB']],['UFC','UFC',['UFC']]];
 const SPN={CFB:'College Football',CBB:'College Basketball',CBASE:'College Baseball'};
 const spl=c=>SPN[c]||c;
 const ICA={wnba:'nba',cfb:'nfl',cbb:'nba',cbase:'mlb',cfl:'nfl'};
