@@ -16,7 +16,7 @@ const D={
 'Fighters in action':['Peleadores en acción','Combattants en action','Lutadores em ação','Kämpfer im Einsatz','Lottatori in azione'],
 'Live scores':['Marcadores en vivo','Scores en direct','Placares ao vivo','Live-Ergebnisse','Risultati live'],
 'Scores update automatically every 20 seconds.':['Los marcadores se actualizan cada 20 segundos.','Les scores se mettent à jour toutes les 20 secondes.','Os placares atualizam a cada 20 segundos.','Die Ergebnisse werden alle 20 Sekunden aktualisiert.','I risultati si aggiornano ogni 20 secondi.'],
-'Finished · last 36 hours':['Finalizados · últimas 36 horas','Terminés · dernières 36 heures','Encerrados · últimas 36 horas','Beendet · letzte 36 Stunden','Terminate · ultime 36 ore'],
+'Finished · today':['Finalizados · hoy','Terminés · aujourd’hui','Encerrados · hoje','Beendet · heute','Terminate · oggi'],
 'People':['Personas','Personnes','Pessoas','Personen','Persone'],
 'People to follow':['Personas para seguir','Personnes à suivre','Pessoas para seguir','Personen zum Folgen','Persone da seguire'],
 'Teams':['Equipos','Équipes','Equipes','Teams','Squadre'],
