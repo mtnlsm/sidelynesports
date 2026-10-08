@@ -2,7 +2,7 @@
 // Only shown for LIVE team games. Polls /game-detail every 15s while the game sheet is open.
 (function () {
   const E = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const isTeam = (g) => g && g.st === 'live' && g.sp !== 'UFC' && g.sp !== 'PFL';
+  const isTeam = (g) => g && g.st === 'live' && g.sp !== 'UFC';
   const C = {}; // game id -> { d, err, tab, tm, gi }
 
   // Diamond with base runners (filled = occupied).
