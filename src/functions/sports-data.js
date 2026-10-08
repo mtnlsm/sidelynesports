@@ -4,12 +4,8 @@ const { cached, TTL, db } = require('./_cache');
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/';
 const LEAGUES = { // code -> ESPN {sport}/{league}
   NFL: 'football/nfl', NBA: 'basketball/nba', MLB: 'baseball/mlb', NHL: 'hockey/nhl', WNBA: 'basketball/wnba', CFL: 'football/cfl',
-  CFB: 'football/college-football', CBB: 'basketball/mens-college-basketball', CBASE: 'baseball/college-baseball',
-  EPL: 'soccer/eng.1', LALIGA: 'soccer/esp.1', BUND: 'soccer/ger.1', SERIEA: 'soccer/ita.1', LIGUE1: 'soccer/fra.1', MLS: 'soccer/usa.1',
-  UCL: 'soccer/uefa.champions', UEL: 'soccer/uefa.europa', WC: 'soccer/fifa.world', LIGAMX: 'soccer/mex.1', ERED: 'soccer/ned.1', PORT: 'soccer/por.1' };
-// Leagues left out of the "ALL" refresh to stay under Cloudflare's free-plan request limit. They still work if asked for directly (so unpaid picks can settle).
-const OFF = new Set(['EPL', 'LALIGA', 'BUND', 'SERIEA', 'LIGUE1', 'MLS', 'UCL', 'UEL', 'WC', 'LIGAMX', 'ERED', 'PORT', 'PFL']);
-const PATHS = { UFC: 'mma/ufc/scoreboard', PFL: 'mma/pfl/scoreboard' }, TEAM_PATHS = {};
+  CFB: 'football/college-football', CBB: 'basketball/mens-college-basketball', CBASE: 'baseball/college-baseball' };
+const PATHS = { UFC: 'mma/ufc/scoreboard' }, TEAM_PATHS = {};
 for (const k of Object.keys(LEAGUES)) { PATHS[k] = LEAGUES[k] + '/scoreboard'; TEAM_PATHS[k] = LEAGUES[k] + '/teams'; }
 // Extra query params ESPN needs for the big college scoreboards/team lists (FBS / Division I only).
 const EXTRA = { CFB: 'groups=80&limit=300', CBB: 'groups=50&limit=400', CBASE: 'limit=300' };
@@ -25,7 +21,7 @@ const hs = (a, sp, cid) => {
   const h = a.headshot, u = typeof h === 'string' ? h : (h && h.href) || '';
   if (u) return u.replace(/^http:/, 'https:');
   const id = a.id || cid; if (!id) return '';
-  const seg = sp === 'UFC' || sp === 'PFL' ? 'mma' : LEAGUES[sp] ? LEAGUES[sp].split('/').pop() : '';
+  const seg = sp === 'UFC' ? 'mma' : LEAGUES[sp] ? LEAGUES[sp].split('/').pop() : '';
   return seg ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + id + '.png' : '';
 };
 const lgo = (t) => String((t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href))) || '').replace(/^http:/, 'https:');
@@ -39,7 +35,7 @@ function normOdds(c) {
   const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' };
   return out.a || out.b || out.d || out.ou ? out : undefined;
 }
-// UFC / PFL fight odds: ESPN lists a moneyline per fighter on upcoming bouts (awayAthleteOdds / homeAthleteOdds). We match each line to the right fighter
+// UFC fight odds: ESPN lists a moneyline per fighter on upcoming bouts (awayAthleteOdds / homeAthleteOdds). We match each line to the right fighter
 // by athlete id (or home/away) and never guess: if a line cannot be matched, no odds are shown and the bet pays the flat 2x like before.
 function normMmaOdds(c, f) {
   const o = c && c.odds && c.odds[0]; if (!o) return undefined;
@@ -140,14 +136,14 @@ async function load(sp) {
   // UFC: ranged request (works). NFL/NBA: try a ranged request, but fall back to ESPN's plain default scoreboard if it errors or comes back empty.
   const get = async (q) => { const r = await fetch(BASE + PATHS[sp] + q); if (!r.ok) throw new Error('espn ' + r.status); return (await r.json()).events || []; };
   let events = [];
-  if (sp === 'UFC' || sp === 'PFL') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
+  if (sp === 'UFC') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
     try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { events = await get(x ? '?' + x.slice(1) : ''); }
     if (!events.length && ['NFL', 'NBA', 'MLB', 'NHL'].includes(sp)) events = await get(x ? '?' + x.slice(1) : '');
   }
-  const out = events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
-  if (sp === 'UFC' || sp === 'PFL') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
+  const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
+  if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
   return out;
 }
 // ESPN gives team colors as 6-digit hex without '#'. Used by the SP Shop team themes.
@@ -167,7 +163,7 @@ exports.handler = async (event) => {
   const { sport = 'ALL', type = 'games' } = event.queryStringParameters || {};
   const S = sport.toUpperCase();
   if (type === 'teams') {
-    const tl = S === 'ALL' ? Object.keys(TEAM_PATHS).filter((k) => !OFF.has(k)) : [S];
+    const tl = S === 'ALL' ? Object.keys(TEAM_PATHS) : [S];
     if (tl.some((s) => !TEAM_PATHS[s])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport' }) };
     try {
       const data = await cached('teams4:' + S, TTL.standings, async () => {
@@ -180,7 +176,7 @@ exports.handler = async (event) => {
     } catch (e) { return { statusCode: 502, body: JSON.stringify({ error: 'upstream unavailable', detail: String(e.message || e) }) }; }
   }
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
-  const list = S === 'ALL' ? Object.keys(PATHS).filter((k) => !OFF.has(k)) : [S];
+  const list = S === 'ALL' ? Object.keys(PATHS) : [S];
   try {
     const data = await cached('games5:' + S, TTL.live, async () => {
       oddsBudget = S === 'ALL' ? 10 : 20;
