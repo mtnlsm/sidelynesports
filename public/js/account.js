@@ -71,24 +71,6 @@ window.acctOpen = async (kind, onDone) => {
     return;
   }
 
-  if (kind === 'email') {
-    box.innerHTML = `<p class="ac-p">Current email: <b>${esc(u.email || '')}</b></p>${field('ace', 'New email', '', 'type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com"')}${pwField('acp', 'Current password', 'current-password')}<p class="ac-err" role="alert"></p><button class="pri" id="acgo">Send confirmation</button>`;
-    const btn = box.querySelector('#acgo');
-    btn.onclick = async () => {
-      err('');
-      const ne = val('ace').trim();
-      if (!/^\S+@\S+\.\S+$/.test(ne)) return err('Enter a valid email.');
-      if (ne.toLowerCase() === String(u.email || '').toLowerCase()) return err('That is already your email.');
-      busy(btn, true);
-      const bad = await verify(val('acp'));
-      if (bad) { busy(btn, false, 'Send confirmation'); return err(bad); }
-      const r = await FX_DB.auth.updateUser({ email: ne }, { emailRedirectTo: location.origin });
-      if (r.error) { busy(btn, false, 'Send confirmation'); return err(/already|registered|exists/i.test(r.error.message) ? 'An account already uses that email.' : r.error.message); }
-      box.innerHTML = `<p class="ac-p"><b>Check your inbox.</b> We sent a confirmation link to ${esc(ne)}. Your email only changes after you open the link. Supabase usually also emails your <b>current</b> address, and you need to open <b>both</b> links before it switches.</p>`;
-    };
-    return;
-  }
-
   // password
   box.innerHTML = `${hasPw ? pwField('acp', 'Current password', 'current-password') : '<p class="ac-p">You signed in with a connected account. Set a password to also log in with your username.</p>'}${pwField('acn', 'New password', 'new-password')}<p class="ac-hint">At least 8 characters.</p>${pwField('acn2', 'Confirm new password', 'new-password')}<p class="ac-err" role="alert"></p><button class="pri" id="acgo">${hasPw ? 'Change password' : 'Set password'}</button>`;
   const btn = box.querySelector('#acgo'), lbl = hasPw ? 'Change password' : 'Set password';
@@ -106,16 +88,4 @@ window.acctOpen = async (kind, onDone) => {
     if (onDone) onDone();
   };
 };
-})();
-
-// Landing back from an email-change link: tell the person what happened and refresh the shown email.
-(() => {
-  const h = decodeURIComponent((location.hash || '').replace(/\+/g, ' '));
-  if (!/type=email_change|message=|error_description=/.test(h)) return;
-  const msg = (h.match(/message=([^&]+)/) || [])[1], er = (h.match(/error_description=([^&]+)/) || [])[1];
-  setTimeout(() => {
-    if (typeof toast === 'function') toast(er || msg || 'Email confirmed');
-    window.ACCT_EMAIL = '';
-    try { history.replaceState({}, '', location.pathname + location.search); } catch (e) {}
-  }, 1500);
 })();
