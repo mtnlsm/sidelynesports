@@ -11,7 +11,7 @@
 -- LINE PAYS: 3, 4 or 5 matching symbols left to right from reel 1 on an active line.
 --   Pays = multiplier x credits per line x denom x payback factor. Multipliers (3 / 4 / 5 of a kind):
 --     soccer 8/22/70  ufc 10/28/100  nhl 14/40/140  mlb 18/50/200  nba 22/70/300  nfl 34/110/500
--- THEMES: nfl, nba, nhl, mlb, ufc, soccer. The theme only changes the look (client) and the BONUS below. Pay table and odds are the same.
+-- THEMES: nfl, nba, nhl, mlb, ufc, cfb (college football). The theme only changes the look (client) and the BONUS below. Pay table and odds are the same.
 --   The symbol ids in the pay table (soccer..nfl) are just 6 TIERS, lowest to highest; the app draws each theme's own icons on them.
 -- BONUS: 3+ Sidelynes anywhere = FREE SPINS at your bet. Every theme has its own bonus (slots_bonus_mults below): a list of win multipliers,
 --   one per free spin. Every list adds up to 12 (same value as the old 6 spins x2) so the payback stays the same.
@@ -54,7 +54,7 @@ create or replace function slots_mult(p_sym text,p_n int) returns int language s
 --   nhl  Power Play      : 4 spins, every win x3
 --   mlb  Home Run Derby  : 12 swings, every win x1
 --   ufc  Fight Night     : 5 rounds, 1,2,2,3,4 (the last round is the KO)
---   soccer Penalty Shootout : 5 kicks, 1,1,2,3,5 (sudden death)
+--   cfb  Playoff Run     : 4 games, 1,2,3,6 (the National Championship is x6)
 create or replace function slots_bonus_mults(p_theme text) returns int[] language sql immutable as $$
   select case p_theme
     when 'og'     then array[2,2,2,2,2,2]
@@ -63,7 +63,7 @@ create or replace function slots_bonus_mults(p_theme text) returns int[] languag
     when 'nhl'    then array[3,3,3,3]
     when 'mlb'    then array[1,1,1,1,1,1,1,1,1,1,1,10]
     when 'ufc'    then array[1,2,2,3,4]
-    when 'soccer' then array[1,1,2,3,5]
+    when 'cfb'    then array[1,2,3,6]
     else null end $$;
 
 -- payback factor per denom (raw return ~0.745 x factor = target RTP)   <== TUNE
