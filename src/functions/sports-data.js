@@ -7,6 +7,8 @@ const LEAGUES = { // code -> ESPN {sport}/{league}
   CFB: 'football/college-football', CBB: 'basketball/mens-college-basketball', CBASE: 'baseball/college-baseball',
   EPL: 'soccer/eng.1', LALIGA: 'soccer/esp.1', BUND: 'soccer/ger.1', SERIEA: 'soccer/ita.1', LIGUE1: 'soccer/fra.1', MLS: 'soccer/usa.1',
   UCL: 'soccer/uefa.champions', UEL: 'soccer/uefa.europa', WC: 'soccer/fifa.world', LIGAMX: 'soccer/mex.1', ERED: 'soccer/ned.1', PORT: 'soccer/por.1' };
+// Leagues left out of the "ALL" refresh to stay under Cloudflare's free-plan request limit. They still work if asked for directly (so unpaid picks can settle).
+const OFF = new Set(['EPL', 'LALIGA', 'BUND', 'SERIEA', 'LIGUE1', 'MLS', 'UCL', 'UEL', 'WC', 'LIGAMX', 'ERED', 'PORT', 'PFL']);
 const PATHS = { UFC: 'mma/ufc/scoreboard', PFL: 'mma/pfl/scoreboard' }, TEAM_PATHS = {};
 for (const k of Object.keys(LEAGUES)) { PATHS[k] = LEAGUES[k] + '/scoreboard'; TEAM_PATHS[k] = LEAGUES[k] + '/teams'; }
 // Extra query params ESPN needs for the big college scoreboards/team lists (FBS / Division I only).
@@ -165,7 +167,7 @@ exports.handler = async (event) => {
   const { sport = 'ALL', type = 'games' } = event.queryStringParameters || {};
   const S = sport.toUpperCase();
   if (type === 'teams') {
-    const tl = S === 'ALL' ? Object.keys(TEAM_PATHS) : [S];
+    const tl = S === 'ALL' ? Object.keys(TEAM_PATHS).filter((k) => !OFF.has(k)) : [S];
     if (tl.some((s) => !TEAM_PATHS[s])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport' }) };
     try {
       const data = await cached('teams4:' + S, TTL.standings, async () => {
@@ -178,7 +180,7 @@ exports.handler = async (event) => {
     } catch (e) { return { statusCode: 502, body: JSON.stringify({ error: 'upstream unavailable', detail: String(e.message || e) }) }; }
   }
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
-  const list = S === 'ALL' ? Object.keys(PATHS) : [S];
+  const list = S === 'ALL' ? Object.keys(PATHS).filter((k) => !OFF.has(k)) : [S];
   try {
     const data = await cached('games5:' + S, TTL.live, async () => {
       oddsBudget = S === 'ALL' ? 10 : 20;
