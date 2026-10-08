@@ -30,7 +30,7 @@ const espn = async (url) => {
   let last;
   for (let i = 0; i < 2; i++) {
     try {
-      const r = await fetch(url, { cache: 'no-store', headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0 (compatible; SidelineSports/1.0)' }, cf: { cacheTtl: 0, cacheEverything: false } });
+      const r = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0 (compatible; SidelineSports/1.0)' }, cf: { cacheTtl: 0, cacheEverything: false } });
       if (r.ok) return r;
       last = new Error('espn ' + r.status);
     } catch (e) { last = e; }
@@ -199,7 +199,7 @@ exports.handler = async (event) => {
       oddsBudget = S === 'ALL' ? 6 : 20;
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
-      if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
+      if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed: ' + res.slice(0, 3).map((r, i) => list[i] + ' -> ' + String((r.reason && r.reason.message) || r.reason)).join(' | '));
       // Save the moneylines of upcoming games so the database (not the browser) decides what a winning bet pays. Needs supabase/odds.sql.
       try { const c = db(), ml = (v) => { const n = parseInt(v, 10); return n ? n : null; };
         const rows = items.filter((g) => g.st === 'up' && g.od && (g.od.a || g.od.b)).map((g) => ({ game_id: String(g.id), a: g.a, b: g.b, a_ml: ml(g.od.a), b_ml: ml(g.od.b), updated_at: new Date().toISOString() }));
