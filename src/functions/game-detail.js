@@ -16,12 +16,11 @@ const state = (s) => (s === 'in' ? 'live' : s === 'post' ? 'final' : 'up');
 // Column labels for the line score (innings / quarters / periods / halves).
 function labels(sp, n) {
   const l = LEAGUES[sp] || '';
-  const min = l.startsWith('baseball') ? 9 : l.startsWith('hockey') ? 3 : l.startsWith('soccer') ? 2 : l.includes('college') && l.startsWith('basketball') ? 2 : 4;
+  const min = l.startsWith('baseball') ? 9 : l.startsWith('hockey') ? 3 : l.includes('college') && l.startsWith('basketball') ? 2 : 4;
   const len = Math.max(n, min), out = [];
   for (let i = 0; i < len; i++) {
     if (l.startsWith('baseball')) out.push(String(i + 1));
     else if (l.startsWith('hockey')) out.push(i < 3 ? 'P' + (i + 1) : i === 3 ? 'OT' : 'SO');
-    else if (l.startsWith('soccer')) out.push(i === 0 ? '1H' : i === 1 ? '2H' : 'ET');
     else if (l.includes('college') && l.startsWith('basketball')) out.push(i < 2 ? 'H' + (i + 1) : i === 2 ? 'OT' : 'OT' + (i - 1));
     else out.push(i < 4 ? 'Q' + (i + 1) : i === 4 ? 'OT' : 'OT' + (i - 3));
   }
@@ -45,7 +44,7 @@ function normBox(sp, j) {
   return out;
 }
 
-// Lineups: soccer-style rosters if ESPN sends them, otherwise built from the box score (MLB batting order, NBA/NHL starters).
+// Lineups: rosters if ESPN sends them, otherwise built from the box score (MLB batting order, NBA/NHL starters).
 function normLineups(sp, j, box) {
   const out = {};
   if (Array.isArray(j.rosters) && j.rosters.length) {
