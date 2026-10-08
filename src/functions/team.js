@@ -69,7 +69,7 @@ const sortVal = (sp, m) => (SOCCER.has(sp) || sp === 'NHL' ? nv(m, 'points') : n
 function flattenGroups(node, out = [], path = '') {
   if (!node) return out;
   const name = node.name || node.abbreviation || '';
-  if (node.standings && Array.isArray(node.standings.entries) && node.standings.entries.length) out.push({ name: node.standings.name || name, entries: node.standings.entries, parent: path });
+  if (node.standings && Array.isArray(node.standings.entries) && node.standings.entries.length) out.push({ name: name || node.standings.name || '', entries: node.standings.entries, parent: path });
   (node.children || []).forEach((c) => flattenGroups(c, out, name));
   return out;
 }
