@@ -53,6 +53,41 @@ function normMmaOdds(c, f) {
   if (a && b && a === b && a !== '+100') return undefined; // same line twice = a bad match, do not show it
   return a || b ? { a, b, d: '', ou: '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' } : undefined;
 }
+// ESPN does NOT put fight odds on the scoreboard. They live on the core API, one request per fight:
+//   sports.core.api.espn.com/v2/sports/mma/leagues/{ufc|pfl}/events/{eventId}/competitions/{fightId}/odds
+// Results are remembered in memory for 15 minutes (also when a fight has no line yet) so we do not hit ESPN on every refresh.
+const CORE = 'https://sports.core.api.espn.com/v2/sports/mma/leagues/';
+const mmaOddsMem = new Map();
+const impl = (m) => { const n = parseInt(m, 10); return n ? (n < 0 ? -n / (-n + 100) : 100 / (n + 100)) : 0; };
+async function fetchMmaOdds(sp, evId, c, f) {
+  const key = sp + ':' + evId + ':' + c.id, hit = mmaOddsMem.get(key);
+  if (hit && hit.exp > Date.now()) return hit.v;
+  let v;
+  try {
+    const url = CORE + sp.toLowerCase() + '/events/' + evId + '/competitions/' + c.id + '/odds';
+    const r = await fetch(url); if (!r.ok) throw new Error('espn ' + r.status);
+    let items = (await r.json()).items || [];
+    // some responses only list links to each provider's line: open the first one
+    if (items.length && !items[0].awayAthleteOdds && !items[0].homeAthleteOdds && items[0].$ref) {
+      const r2 = await fetch(String(items[0].$ref).replace(/^http:/, 'https:')); if (r2.ok) items = [await r2.json()];
+    }
+    v = normMmaOdds({ odds: items }, f);
+    // sanity gate: two sides of one fight add up to a bit over 100% (the book's cut). Anything else is a mismatch, so show nothing.
+    if (v && v.a && v.b) { const t = impl(v.a) + impl(v.b); if (t < 0.95 || t > 1.35) v = undefined; }
+  } catch (e) { v = undefined; }
+  mmaOddsMem.set(key, { v, exp: Date.now() + 15 * 60 * 1000 });
+  return v;
+}
+async function addMmaOdds(sp, events, fights) {
+  const by = new Map();
+  events.forEach((ev) => (ev.competitions || []).forEach((c) => by.set(sp + ':' + c.id, { ev, c })));
+  await Promise.allSettled(fights.filter((g) => g.st === 'up' && !g.od).map(async (g) => {
+    const x = by.get(g.id); if (!x) return;
+    const f = (x.c.competitors || []).slice().sort((p, q) => (p.order || 0) - (q.order || 0));
+    const od = await fetchMmaOdds(sp, x.ev.id, x.c, f);
+    if (od) g.od = od;
+  }));
+}
 // Live situation (ESPN scoreboard/summary "situation"): baseball = count/outs/runners/batter/pitcher, football = down & distance/possession, others = last play.
 const pn = (o) => { if (!o) return ''; const a = o.athlete || o; return String(a.shortName || a.displayName || a.fullName || '').slice(0, 30); };
 function normSit(sp, s, ids) {
@@ -106,7 +141,9 @@ async function load(sp) {
     try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) {}
     if (!events.length) events = await get(x ? '?' + x.slice(1) : '');
   }
-  return events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
+  const out = events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
+  if (sp === 'UFC' || sp === 'PFL') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
+  return out;
 }
 // ESPN gives team colors as 6-digit hex without '#'. Used by the SP Shop team themes.
 const hexc = (x) => (/^[0-9a-f]{6}$/i.test(String(x || '')) ? String(x).toLowerCase() : '');
