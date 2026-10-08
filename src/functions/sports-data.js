@@ -7,6 +7,8 @@ const LEAGUES = { // code -> ESPN {sport}/{league}
   CFB: 'football/college-football', CBB: 'basketball/mens-college-basketball', CBASE: 'baseball/college-baseball' };
 const PATHS = { UFC: 'mma/ufc/scoreboard' }, TEAM_PATHS = {};
 for (const k of Object.keys(LEAGUES)) { PATHS[k] = LEAGUES[k] + '/scoreboard'; TEAM_PATHS[k] = LEAGUES[k] + '/teams'; }
+// Leagues switched off to stay inside Cloudflare's free-plan CPU / request limits. To bring one back, delete it from this list.
+const OFF = ['CFL', 'CBB', 'CBASE']; for (const k of OFF) { delete PATHS[k]; delete TEAM_PATHS[k]; }
 // Extra query params ESPN needs for the big college scoreboards/team lists (FBS / Division I only).
 const EXTRA = { CFB: 'groups=80&limit=300', CBB: 'groups=50&limit=400', CBASE: 'limit=300' };
 const TEAM_Q = { CFB: 'groups=80&limit=500', CBB: 'groups=50&limit=500', CBASE: 'limit=500' };
@@ -146,6 +148,7 @@ function normUfc(ev, sp = 'UFC') {
 const ymd = (o) => new Date(Date.now() + o * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
 const DBG = {};
 async function load(sp) {
+  if (!PATHS[sp]) return []; // switched off (see OFF above)
   // Ranged request first (yesterday .. +7 days, UFC +14). For team leagues we ALSO read ESPN's plain default scoreboard and merge the two, so a flaky range query can never leave the upcoming list empty or stuck.
   const get = async (q) => { const r = await espn(BASE + PATHS[sp] + q); return (await r.json()).events || []; };
   let events = [], rangeErr = '';
