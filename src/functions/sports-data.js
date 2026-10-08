@@ -57,10 +57,11 @@ function normTeam(sp, ev) {
   if (!fresh(st, ev.date)) return null;
   if (st === 'final' && ev.status.type.completed === false) return null; // postponed / canceled: never a result (it used to settle as a 0-0 draw)
   return { id: sp + ':' + ev.id, sp, a: tn(sp, away.team), b: tn(sp, home.team), la: lgo(away.team), lb: lgo(home.team),
+    ca: String(away.team.conferenceId || ''), cb: String(home.team.conferenceId || ''),
     sa: st === 'up' ? '' : sa, sb: st === 'up' ? '' : sb, st, date: ev.date,
     od: st === 'up' ? normOdds(c) : undefined,
     sit: st === 'live' ? normSit(sp, c.situation, { a: String(away.team.id), b: String(home.team.id) }) : undefined,
-    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, p: o.athlete.displayName, v: Number(o.value), i: hs(o.athlete, sp) } : null; }).filter(Boolean)) : undefined,
+    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: hs(o.athlete, sp) } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0 } : null))).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
 function normUfc(ev, sp = 'UFC') {
@@ -122,7 +123,7 @@ exports.handler = async (event) => {
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
   const list = S === 'ALL' ? Object.keys(PATHS) : [S];
   try {
-    const data = await cached('games3:' + S, TTL.live, async () => {
+    const data = await cached('games4:' + S, TTL.live, async () => {
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
       if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
