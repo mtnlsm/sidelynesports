@@ -58,10 +58,13 @@ function normMmaOdds(c, f) {
 // Results are remembered in memory for 15 minutes (also when a fight has no line yet) so we do not hit ESPN on every refresh.
 const CORE = 'https://sports.core.api.espn.com/v2/sports/mma/leagues/';
 const mmaOddsMem = new Map();
+let oddsBudget = 0; // Cloudflare free plan allows ~50 outgoing requests per run: cap how many fight-odds lookups one refresh may make
 const impl = (m) => { const n = parseInt(m, 10); return n ? (n < 0 ? -n / (-n + 100) : 100 / (n + 100)) : 0; };
 async function fetchMmaOdds(sp, evId, c, f) {
   const key = sp + ':' + evId + ':' + c.id, hit = mmaOddsMem.get(key);
   if (hit && hit.exp > Date.now()) return hit.v;
+  if (oddsBudget <= 0) return undefined; // out of budget: not cached, so it is retried on the next refresh
+  oddsBudget--;
   let v;
   try {
     const url = CORE + sp.toLowerCase() + '/events/' + evId + '/competitions/' + c.id + '/odds';
@@ -69,7 +72,7 @@ async function fetchMmaOdds(sp, evId, c, f) {
     let items = (await r.json()).items || [];
     // some responses only list links to each provider's line: open the first one
     if (items.length && !items[0].awayAthleteOdds && !items[0].homeAthleteOdds && items[0].$ref) {
-      const r2 = await fetch(String(items[0].$ref).replace(/^http:/, 'https:')); if (r2.ok) items = [await r2.json()];
+      oddsBudget--; const r2 = await fetch(String(items[0].$ref).replace(/^http:/, 'https:')); if (r2.ok) items = [await r2.json()];
     }
     v = normMmaOdds({ odds: items }, f);
     // sanity gate: two sides of one fight add up to a bit over 100% (the book's cut). Anything else is a mismatch, so show nothing.
@@ -138,8 +141,8 @@ async function load(sp) {
   if (sp === 'UFC' || sp === 'PFL') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
-    try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) {}
-    if (!events.length) events = await get(x ? '?' + x.slice(1) : '');
+    try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { events = await get(x ? '?' + x.slice(1) : ''); }
+    if (!events.length && ['NFL', 'NBA', 'MLB', 'NHL'].includes(sp)) events = await get(x ? '?' + x.slice(1) : '');
   }
   const out = events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   if (sp === 'UFC' || sp === 'PFL') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
@@ -178,6 +181,7 @@ exports.handler = async (event) => {
   const list = S === 'ALL' ? Object.keys(PATHS) : [S];
   try {
     const data = await cached('games5:' + S, TTL.live, async () => {
+      oddsBudget = S === 'ALL' ? 10 : 20;
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
       if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
