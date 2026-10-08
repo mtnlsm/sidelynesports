@@ -19,7 +19,7 @@ if (!globalThis.fetch.__counted) {
 }
 
 function winner(g) {
-  if (g.sp === 'UFC' || g.sp === 'PFL') return g.sa === 'W' ? g.a : g.sb === 'W' ? g.b : g.sa === 'D' && g.sb === 'D' ? 'Draw' : null; // no winner flag yet: leave pending
+  if (g.sp === 'UFC') return g.sa === 'W' ? g.a : g.sb === 'W' ? g.b : g.sa === 'D' && g.sb === 'D' ? 'Draw' : null; // no winner flag yet: leave pending
   const a = Number(g.sa), b = Number(g.sb);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return a > b ? g.a : b > a ? g.b : 'Draw'; // a tie pays everyone the +50
@@ -87,7 +87,7 @@ exports.run = async (opts = {}) => {
     const batch = cand.slice(k, k + n); k += n;
     await Promise.all(batch.map(async (id) => {
       const m = /^([A-Z0-9]+):(\d+)$/.exec(id), path = m && sports.LEAGUES && sports.LEAGUES[m[1]], teams = (mu.get(id) || '').split(' vs ');
-      if (!path || teams.length !== 2) return; // UFC/PFL cards can't be looked up this way
+      if (!path || teams.length !== 2) return; // UFC cards can't be looked up this way
       try {
         const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/' + path + '/summary?event=' + m[2]);
         if (!r.ok) return;
