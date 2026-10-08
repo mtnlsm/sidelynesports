@@ -148,12 +148,19 @@ const DBG = {};
 async function load(sp) {
   // Ranged request first (yesterday .. +7 days, UFC +14). For team leagues we ALSO read ESPN's plain default scoreboard and merge the two, so a flaky range query can never leave the upcoming list empty or stuck.
   const get = async (q) => { const r = await espn(BASE + PATHS[sp] + q); return (await r.json()).events || []; };
-  let events = [];
+  let events = [], rangeErr = '';
   if (sp === 'UFC') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
     let ranged = [], plain = [], err;
-    try { ranged = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { err = e; }
+    try { ranged = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { err = e; rangeErr = String((e && e.message) || e); }
+    // ESPN answers 400 to multi-day ranges for day-based leagues (NHL, NBA, MLB, WNBA...). When that happens, ask one day at a time
+    // (yesterday .. +2 days = 4 requests per league, which keeps ALL under the free plan's ~50 outgoing requests).
+    if (rangeErr) {
+      const days = await Promise.allSettled([-1, 0, 1, 2].map((o) => get(`?dates=${ymd(o)}${x}`)));
+      ranged = days.flatMap((d) => (d.status === 'fulfilled' ? d.value : []));
+      if (ranged.length) err = null;
+    }
     const hasUp = ranged.some((ev) => ev && ev.status && ev.status.type && ev.status.type.state === 'pre');
     if (!hasUp) { try { plain = await get(x ? '?' + x.slice(1) : ''); } catch (e) { err = err || e; } }
     if (!ranged.length && !plain.length && err) throw err;
@@ -161,7 +168,7 @@ async function load(sp) {
     events = ranged.concat(plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
   }
   const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
-  DBG[sp] = { espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
+  DBG[sp] = { range_error: rangeErr || undefined, espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
     kept: out.length, kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
     next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && sp !== 'UFC' && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
   if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
