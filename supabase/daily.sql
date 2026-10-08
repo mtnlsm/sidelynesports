@@ -5,31 +5,34 @@
 alter table profiles add column if not exists last_daily_at timestamptz;
 
 -- Claim once every 24 hours (counted from your last claim, not midnight). Returns new balance + status.
+-- Only stamps last_daily_at when the SP was really paid, so a failed credit can never lock you out.
 create or replace function claim_daily() returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
   c_amt constant int:=500;           -- <== TUNE: daily SP
-  l timestamptz; ok boolean; nv int; ref text:=to_char(clock_timestamp() at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.US');
+  l timestamptz; ok boolean; nv int; ref text:=gen_random_uuid()::text;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   select last_daily_at into l from profiles where id=uid for update;
+  if l is not null and l>now() then l:=now()-interval '24 hours'; end if;  -- heal a bad/future timestamp
   if l is not null and now()<l+interval '24 hours' then
     select novas into nv from profiles where id=uid;
-    return jsonb_build_object('claimed',false,'novas',nv,'amount',0,'next',l+interval '24 hours');
+    return jsonb_build_object('claimed',false,'novas',nv,'amount',0,'next',l+interval '24 hours','now',now());
   end if;
   ok:=sp_credit(uid,c_amt,0,'Daily SP',ref);
-  update profiles set last_daily_at=now() where id=uid;
+  if ok then update profiles set last_daily_at=now() where id=uid; end if;
   select novas into nv from profiles where id=uid;
-  return jsonb_build_object('claimed',ok,'novas',nv,'amount',case when ok then c_amt else 0 end,'next',now()+interval '24 hours');
+  return jsonb_build_object('claimed',ok,'novas',nv,'amount',case when ok then c_amt else 0 end,'next',case when ok then now()+interval '24 hours' else now() end,'now',now());
 end $$;
 
--- Is a claim available? (the app calls this to show the button)
+-- Is a claim available? (the app calls this to show the button). Also returns the server clock so the app can't drift.
 create or replace function daily_status() returns jsonb language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid(); l timestamptz;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   select last_daily_at into l from profiles where id=uid;
-  return jsonb_build_object('available',l is null or now()>=l+interval '24 hours','next',case when l is null then now() else l+interval '24 hours' end);
+  if l is not null and l>now() then l:=now()-interval '24 hours'; end if;
+  return jsonb_build_object('available',l is null or now()>=l+interval '24 hours','next',case when l is null then now() else l+interval '24 hours' end,'now',now());
 end $$;
 
 -- Clients may only call the functions; they can't write last_daily_at directly.
