@@ -13,5 +13,5 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/.netlify/functions/*", "/api/*"]
   },
-  "triggers": { "crons": ["*/5 * * * *", "*/15 * * * *", "*/20 * * * *", "*/10 * * * *"] }
+  "triggers": { "crons": ["*/5 * * * *", "*/15 * * * *", "*/10 * * * *"] }
 }
