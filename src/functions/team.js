@@ -1,4 +1,4 @@
-// Team profiles (record, standing, last 5 results, next game, division/conference table) for NFL, NBA, MLB, NHL, WNBA, soccer and more.
+// Team profiles (record, standing, last 5 results, next game, division/conference table) for NFL, NBA, MLB, NHL, WNBA and more.
 // Data comes from ESPN's public endpoints (no API key needed). Results are cached in Supabase (see _cache.js).
 // Use:  /.netlify/functions/team?sport=NFL&id=12        (ESPN team id, exact)
 //       /.netlify/functions/team?sport=NFL&name=Chiefs  (looks the team up by name)
@@ -57,14 +57,12 @@ const dv = (m, ...names) => { for (const n of names) { const s = m[n.toLowerCase
 const nv = (m, ...names) => { for (const n of names) { const s = m[n.toLowerCase()]; if (s && s.value != null && !isNaN(+s.value)) return +s.value; } return null; };
 
 // Columns for the standings table, by league family. Only columns ESPN actually sent are shown.
-const SOCCER = new Set(['EPL', 'LALIGA', 'BUND', 'SERIEA', 'LIGUE1', 'MLS', 'UCL', 'UEL', 'WC', 'LIGAMX', 'ERED', 'PORT']);
 function colsFor(sp) {
-  if (SOCCER.has(sp)) return [['GP', ['gamesplayed']], ['W', ['wins']], ['D', ['ties', 'draws']], ['L', ['losses']], ['GD', ['pointdifferential', 'differential']], ['PTS', ['points']]];
   if (sp === 'NHL') return [['GP', ['gamesplayed']], ['W', ['wins']], ['L', ['losses']], ['OTL', ['otlosses']], ['PTS', ['points']]];
   if (sp === 'NFL' || sp === 'CFL') return [['W', ['wins']], ['L', ['losses']], ['T', ['ties']], ['PCT', ['winpercent']]];
   return [['W', ['wins']], ['L', ['losses']], ['PCT', ['winpercent']], ['GB', ['gamesbehind']], ['STRK', ['streak']]];
 }
-const sortVal = (sp, m) => (SOCCER.has(sp) || sp === 'NHL' ? nv(m, 'points') : nv(m, 'winpercent'));
+const sortVal = (sp, m) => (sp === 'NHL' ? nv(m, 'points') : nv(m, 'winpercent'));
 
 function flattenGroups(node, out = [], path = '') {
   if (!node) return out;
@@ -86,7 +84,7 @@ function buildGroup(sp, j, id) {
     return { id: String(t.id), n: t.shortDisplayName || t.displayName || t.name || '', ab: t.abbreviation || '', logo: https((t.logos && t.logos[0] && t.logos[0].href) || t.logo || ''),
       sv: sortVal(sp, m), seed: nv(m, 'playoffseed', 'rank'), v: spec.map(([, keys]) => dv(m, ...keys)), you: String(t.id) === id, _m: m };
   });
-  rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed && !SOCCER.has(sp) ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
+  rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
   const keep = spec.map((c, i) => rows.some((r) => r.v[i] !== '')); // drop columns ESPN left empty
   const me = rows.find((r) => r.you);
   const extra = me ? me._m : {};
@@ -120,7 +118,7 @@ function buildSchedule(j, id) {
 }
 
 // ---- whole-league standings (the Teams tab): every division/conference as its own table ----
-const rowSort = (sp, rows) => rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed && !SOCCER.has(sp) ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
+const rowSort = (sp, rows) => rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
 function tableOf(sp, g) {
   const spec = colsFor(sp);
   const rows = rowSort(sp, g.entries.map((e) => {
