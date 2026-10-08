@@ -139,7 +139,8 @@ async function load(sp) {
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
     try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) {}
-    if (!events.length) events = await get(x ? '?' + x.slice(1) : '');
+    // Always also ask for ESPN's plain scoreboard (today's games) and merge, so a ranged call that skips/misses today's games can't hide them.
+    try { const t = await get(x ? '?' + x.slice(1) : ''); const seen = new Set(events.map((e) => e.id)); events = events.concat(t.filter((e) => !seen.has(e.id))); } catch (e) { if (!events.length) throw e; }
   }
   const out = events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   if (sp === 'UFC' || sp === 'PFL') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
