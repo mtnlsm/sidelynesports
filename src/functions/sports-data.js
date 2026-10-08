@@ -1,4 +1,4 @@
-// NFL + NBA + UFC live scores. Uses ESPN's public scoreboard JSON (no key needed), normalized to the Sidelyne Sports game shape:
+// US pro/college leagues + UFC live scores. Uses ESPN's public scoreboard JSON (no key needed), normalized to the Sidelyne Sports game shape:
 // { id, sp, a, b, sa, sb, st:'live'|'up'|'final', clk, date }
 const { cached, TTL, db } = require('./_cache');
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/';
@@ -25,6 +25,18 @@ const hs = (a, sp, cid) => {
   return seg ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + id + '.png' : '';
 };
 const lgo = (t) => String((t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href))) || '').replace(/^http:/, 'https:');
+// Every ESPN call goes through here: never served from an edge/browser cache (that is what froze the upcoming games), one retry on failure.
+const espn = async (url) => {
+  let last;
+  for (let i = 0; i < 2; i++) {
+    try {
+      const r = await fetch(url, { cache: 'no-store', headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0 (compatible; SidelineSports/1.0)' }, cf: { cacheTtl: 0, cacheEverything: false } });
+      if (r.ok) return r;
+      last = new Error('espn ' + r.status);
+    } catch (e) { last = e; }
+  }
+  throw last;
+};
 const state = (s) => (s === 'in' ? 'live' : s === 'post' ? 'final' : 'up');
 
 // Betting odds shown for information only (ESPN lists them on upcoming team games; not every game has them). a = away team, b = home team.
@@ -52,7 +64,7 @@ function normMmaOdds(c, f) {
   return a || b ? { a, b, d: '', ou: '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' } : undefined;
 }
 // ESPN does NOT put fight odds on the scoreboard. They live on the core API, one request per fight:
-//   sports.core.api.espn.com/v2/sports/mma/leagues/{ufc|pfl}/events/{eventId}/competitions/{fightId}/odds
+//   sports.core.api.espn.com/v2/sports/mma/leagues/ufc/events/{eventId}/competitions/{fightId}/odds
 // Results are remembered in memory for 15 minutes (also when a fight has no line yet) so we do not hit ESPN on every refresh.
 const CORE = 'https://sports.core.api.espn.com/v2/sports/mma/leagues/';
 const mmaOddsMem = new Map();
@@ -66,11 +78,11 @@ async function fetchMmaOdds(sp, evId, c, f) {
   let v;
   try {
     const url = CORE + sp.toLowerCase() + '/events/' + evId + '/competitions/' + c.id + '/odds';
-    const r = await fetch(url); if (!r.ok) throw new Error('espn ' + r.status);
+    const r = await espn(url);
     let items = (await r.json()).items || [];
     // some responses only list links to each provider's line: open the first one
     if (items.length && !items[0].awayAthleteOdds && !items[0].homeAthleteOdds && items[0].$ref) {
-      oddsBudget--; const r2 = await fetch(String(items[0].$ref).replace(/^http:/, 'https:')); if (r2.ok) items = [await r2.json()];
+      oddsBudget--; try { const r2 = await espn(String(items[0].$ref).replace(/^http:/, 'https:')); items = [await r2.json()]; } catch (e) {}
     }
     v = normMmaOdds({ odds: items }, f);
     // sanity gate: two sides of one fight add up to a bit over 100% (the book's cut). Anything else is a mismatch, so show nothing.
@@ -130,17 +142,22 @@ function normUfc(ev, sp = 'UFC') {
       clk: st === 'final' ? 'Final' : st === 'live' ? ((c.status && c.status.type && c.status.type.shortDetail) || 'Live') : '' };
   }).filter(Boolean).reverse().slice(0, 8);
 }
-// ESPN's default scoreboard only covers "today"/the current week, so ask for an explicit window (yesterday .. +7 days; UFC/PFL +14).
+// ESPN's default scoreboard only covers "today"/the current week, so ask for an explicit window (yesterday .. +7 days; UFC +14).
 const ymd = (o) => new Date(Date.now() + o * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
 async function load(sp) {
-  // UFC: ranged request (works). NFL/NBA: try a ranged request, but fall back to ESPN's plain default scoreboard if it errors or comes back empty.
-  const get = async (q) => { const r = await fetch(BASE + PATHS[sp] + q); if (!r.ok) throw new Error('espn ' + r.status); return (await r.json()).events || []; };
+  // Ranged request first (yesterday .. +7 days, UFC +14). For team leagues we ALSO read ESPN's plain default scoreboard and merge the two, so a flaky range query can never leave the upcoming list empty or stuck.
+  const get = async (q) => { const r = await espn(BASE + PATHS[sp] + q); return (await r.json()).events || []; };
   let events = [];
   if (sp === 'UFC') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
-    try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { events = await get(x ? '?' + x.slice(1) : ''); }
-    if (!events.length && ['NFL', 'NBA', 'MLB', 'NHL'].includes(sp)) events = await get(x ? '?' + x.slice(1) : '');
+    let ranged = [], plain = [], err;
+    try { ranged = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { err = e; }
+    const hasUp = ranged.some((ev) => ev && ev.status && ev.status.type && ev.status.type.state === 'pre');
+    if (!hasUp) { try { plain = await get(x ? '?' + x.slice(1) : ''); } catch (e) { err = err || e; } }
+    if (!ranged.length && !plain.length && err) throw err;
+    const seen = new Set();
+    events = ranged.concat(plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
   }
   const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
@@ -151,7 +168,7 @@ const hexc = (x) => (/^[0-9a-f]{6}$/i.test(String(x || '')) ? String(x).toLowerC
 // Current teams (live from ESPN, so relocations/expansions are picked up automatically). Names use the same short form as the scoreboard.
 async function loadTeams(sp) {
   const url = BASE + TEAM_PATHS[sp] + '?' + (TEAM_Q[sp] || 'limit=500');
-  const r = await fetch(url).then((x) => (x.ok ? x : fetch(url))); if (!r.ok) throw new Error('espn ' + r.status);
+  const r = await espn(url);
   const j = await r.json(); const lg = (((j.sports || [])[0] || {}).leagues || [])[0];
   return ((lg && lg.teams) || []).map((x) => x.team).filter((t) => t && t.isActive !== false)
     .map((t) => ({ id: String(t.id || ''), n: tn(sp, t), full: t.displayName, ab: t.abbreviation, sp, c: hexc(t.color), c2: hexc(t.alternateColor), lg: lgo(t) })).sort((a, b) => a.n.localeCompare(b.n));
@@ -166,7 +183,7 @@ exports.handler = async (event) => {
     const tl = S === 'ALL' ? Object.keys(TEAM_PATHS) : [S];
     if (tl.some((s) => !TEAM_PATHS[s])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport' }) };
     try {
-      const data = await cached('teams4:' + S, TTL.standings, async () => {
+      const data = await cached('teams5:' + S, TTL.standings, async () => {
         const res = await Promise.allSettled(tl.map(loadTeams));
         const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
         if (!items.length) throw new Error('team list unavailable');
@@ -178,8 +195,8 @@ exports.handler = async (event) => {
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
   const list = S === 'ALL' ? Object.keys(PATHS) : [S];
   try {
-    const data = await cached('games5:' + S, TTL.live, async () => {
-      oddsBudget = S === 'ALL' ? 10 : 20;
+    const data = await cached('games6:' + S, TTL.live, async () => {
+      oddsBudget = S === 'ALL' ? 6 : 20;
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
       if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
