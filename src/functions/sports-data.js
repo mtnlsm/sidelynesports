@@ -104,7 +104,7 @@ function normTeam(sp, ev) {
   const home = c.competitors.find((x) => x.homeAway === 'home'), away = c.competitors.find((x) => x.homeAway === 'away');
   if (!home || !away) return null;
   const st = state(ev.status.type.state), sa = Number(away.score || 0), sb = Number(home.score || 0);
-  if (st === 'up' && (c.timeValid === false || /TBD|TBA/i.test(ev.status.type.shortDetail || ''))) return null; // no confirmed start time
+  if (st === 'up' && (/TBD|TBA/i.test(ev.status.type.shortDetail || '') || (c.timeValid === false && Date.parse(ev.date) - Date.now() > 864e5))) return null; // placeholder time: only hidden when it is more than a day away, so today's games always show // no confirmed start time
   if (!fresh(st, ev.date)) return null;
   if (st === 'final' && ev.status.type.completed === false) return null; // postponed / canceled: never a result (it used to settle as a 0-0 draw)
   return { id: sp + ':' + ev.id, sp, a: tn(sp, away.team), b: tn(sp, home.team), la: lgo(away.team), lb: lgo(home.team),
@@ -139,8 +139,7 @@ async function load(sp) {
   else {
     const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
     try { events = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) {}
-    // Always also ask for ESPN's plain scoreboard (today's games) and merge, so a ranged call that skips/misses today's games can't hide them.
-    try { const t = await get(x ? '?' + x.slice(1) : ''); const seen = new Set(events.map((e) => e.id)); events = events.concat(t.filter((e) => !seen.has(e.id))); } catch (e) { if (!events.length) throw e; }
+    if (!events.length) events = await get(x ? '?' + x.slice(1) : '');
   }
   const out = events.flatMap((ev) => (sp === 'UFC' || sp === 'PFL' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   if (sp === 'UFC' || sp === 'PFL') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
@@ -178,7 +177,7 @@ exports.handler = async (event) => {
   if (type !== 'games' || (S !== 'ALL' && !PATHS[S])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport/type' }) };
   const list = S === 'ALL' ? Object.keys(PATHS) : [S];
   try {
-    const data = await cached('games4:' + S, TTL.live, async () => {
+    const data = await cached('games5:' + S, TTL.live, async () => {
       const res = await Promise.allSettled(list.map(load));
       const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
       if (!items.length && res.every((r) => r.status === 'rejected')) throw new Error('all providers failed');
