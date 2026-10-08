@@ -41,7 +41,8 @@ exports.run = async (opts = {}) => {
   checks.push({ ok: true, name: 'Picks table is ready for payouts (' + (data || []).length + ' unpaid picks waiting)' });
   const open = new Set((data || []).map((x) => x.game_id));
   const mu = new Map(); for (const x of data || []) if (x.matchup && !mu.has(x.game_id)) mu.set(x.game_id, x.matchup);
-  const need = [...new Set([...open].map((id) => (/^([A-Z0-9]+):/.exec(id) || [])[1]).filter(Boolean))];
+  const allNeed = [...new Set([...open].map((id) => (/^([A-Z0-9]+):/.exec(id) || [])[1]).filter(Boolean))];
+  const need = shuffle(allNeed).slice(0, 6); // free plan: at most 6 leagues per run (each costs 1-2+ requests); the rest rotate in on the next run
 
   // 2) live feed, only for leagues with unpaid picks (1 request per league, 2 if ESPN's ranged call comes back empty)
   const games = new Map(); // game_id -> { w, date, row? }
