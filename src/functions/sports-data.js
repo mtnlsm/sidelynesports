@@ -98,7 +98,7 @@ async function loadTeams(sp) {
   const r = await fetch(url).then((x) => (x.ok ? x : fetch(url))); if (!r.ok) throw new Error('espn ' + r.status);
   const j = await r.json(); const lg = (((j.sports || [])[0] || {}).leagues || [])[0];
   return ((lg && lg.teams) || []).map((x) => x.team).filter((t) => t && t.isActive !== false)
-    .map((t) => ({ n: tn(sp, t), full: t.displayName, ab: t.abbreviation, sp, c: hexc(t.color), c2: hexc(t.alternateColor), lg: lgo(t) })).sort((a, b) => a.n.localeCompare(b.n));
+    .map((t) => ({ id: String(t.id || ''), n: tn(sp, t), full: t.displayName, ab: t.abbreviation, sp, c: hexc(t.color), c2: hexc(t.alternateColor), lg: lgo(t) })).sort((a, b) => a.n.localeCompare(b.n));
 }
 exports.LEAGUES = LEAGUES;
 exports.normSit = normSit; // used by game-detail.js
@@ -110,7 +110,7 @@ exports.handler = async (event) => {
     const tl = S === 'ALL' ? Object.keys(TEAM_PATHS) : [S];
     if (tl.some((s) => !TEAM_PATHS[s])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport' }) };
     try {
-      const data = await cached('teams3:' + S, TTL.standings, async () => {
+      const data = await cached('teams4:' + S, TTL.standings, async () => {
         const res = await Promise.allSettled(tl.map(loadTeams));
         const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
         if (!items.length) throw new Error('team list unavailable');
