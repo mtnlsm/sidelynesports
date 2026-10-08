@@ -154,7 +154,7 @@ async function load(sp) {
   let events = [], rangeErr = '';
   if (sp === 'UFC') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
-    const x = EXTRA[sp] ? '&' + EXTRA[sp] : '';
+    const x = '&' + (EXTRA[sp] || 'limit=300'); // always ask for plenty of games: ESPN can cut a long list short otherwise
     let ranged = [], plain = [], err;
     try { ranged = await get(`?dates=${ymd(-1)}-${ymd(7)}${x}`); } catch (e) { err = e; rangeErr = String((e && e.message) || e); }
     // ESPN answers 400 to multi-day ranges for day-based leagues (NHL, NBA, MLB, WNBA...). When that happens, ask one day at a time
@@ -167,8 +167,9 @@ async function load(sp) {
     const hasUp = ranged.some((ev) => ev && ev.status && ev.status.type && ev.status.type.state === 'pre');
     if (!hasUp || sp === 'NFL') { try { plain = await get(x ? '?' + x.slice(1) : ''); } catch (e) { err = err || e; } }
     if (!ranged.length && !plain.length && err) throw err;
+    let today = []; try { today = await get(`?dates=${ymd(0)}${x}`); } catch (e) {} // today's slate always asked for on its own, so a cut-off range can never hide today's games
     const seen = new Set();
-    events = ranged.concat(plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
+    events = ranged.concat(today, plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
   }
   const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   DBG[sp] = { range_error: rangeErr || undefined, espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
