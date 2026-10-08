@@ -70,7 +70,7 @@ function flattenGroups(node, out = [], path = '') {
   if (!node) return out;
   const name = node.name || node.abbreviation || '';
   if (node.standings && Array.isArray(node.standings.entries) && node.standings.entries.length) out.push({ name: name || node.standings.name || '', entries: node.standings.entries, parent: path });
-  (node.children || []).forEach((c) => flattenGroups(c, out, name));
+  (node.children || []).forEach((c) => flattenGroups(c, out, node.abbreviation || name));
   return out;
 }
 
@@ -119,6 +119,27 @@ function buildSchedule(j, id) {
   return { last: done.slice(0, 5), next: up[0] || null };
 }
 
+// ---- whole-league standings (the Teams tab): every division/conference as its own table ----
+const rowSort = (sp, rows) => rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed && !SOCCER.has(sp) ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
+function tableOf(sp, g) {
+  const spec = colsFor(sp);
+  const rows = rowSort(sp, g.entries.map((e) => {
+    const m = statMap(e.stats), t = e.team || {};
+    return { id: String(t.id), n: t.shortDisplayName || t.displayName || t.name || '', ab: t.abbreviation || '', logo: https((t.logos && t.logos[0] && t.logos[0].href) || t.logo || ''),
+      sv: sortVal(sp, m), seed: nv(m, 'playoffseed', 'rank'), v: spec.map(([, keys]) => dv(m, ...keys)) };
+  }));
+  const keep = spec.map((c, i) => rows.some((r) => r.v[i] !== ''));
+  return { name: g.name || '', parent: g.parent || '', labels: spec.map((c) => c[0]).filter((_, i) => keep[i]),
+    rows: rows.map((r, i) => ({ rank: i + 1, id: r.id, n: r.n, ab: r.ab, logo: r.logo, v: r.v.filter((_, k) => keep[k]) })) };
+}
+async function buildStandings(sp, ctx) {
+  const path = LEAGUES[sp];
+  const j = await get(STAND + path + '/standings?level=3', ctx).catch(() => get(STAND + path + '/standings', ctx));
+  const groups = flattenGroups(j).map((g) => tableOf(sp, g)).filter((g) => g.rows.length);
+  if (!groups.length) throw new Error('standings unavailable'); // do not cache an empty table
+  return { sport: sp, groups, updated: new Date().toISOString() };
+}
+
 async function buildProfile(sp, id, ctx) {
   const path = LEAGUES[sp];
   const [td, sc, st] = await Promise.all([
@@ -154,6 +175,13 @@ exports.handler = async (event) => {
   let id = String(q.id || '').trim();
   const debug = q.debug === '1';
   if (!LEAGUES[sp]) return json(400, { error: 'bad sport' });
+  if (q.type === 'standings') {
+    const c2 = { debug, trace: debug ? [] : null, warn: [], raw: {} };
+    try {
+      const data = debug ? await buildStandings(sp, c2) : await cached('STANDINGS:' + sp, 600, () => buildStandings(sp, c2), { provider: 'espn' });
+      return json(200, debug ? { ...data, _trace: c2.trace } : data);
+    } catch (e) { return json(502, { error: 'upstream unavailable', detail: String(e.message || e) }); }
+  }
   if (id && !/^\d{1,12}$/.test(id)) return json(400, { error: 'bad id' });
   if (!id && !name) return json(400, { error: 'name or id required' });
   const ctx = { debug, trace: debug ? [] : null, warn: [], raw: {} };
@@ -167,3 +195,5 @@ exports.handler = async (event) => {
     return json(s === 404 ? 404 : s === 429 ? 429 : 502, { error: s === 404 ? 'team not found' : s === 429 ? 'ESPN rate limit reached' : 'upstream unavailable', detail: String(e.message || e) });
   }
 };
+
+exports._test = { buildStandings, tableOf };
