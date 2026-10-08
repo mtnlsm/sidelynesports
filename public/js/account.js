@@ -84,7 +84,7 @@ window.acctOpen = async (kind, onDone) => {
       if (bad) { busy(btn, false, 'Send confirmation'); return err(bad); }
       const r = await FX_DB.auth.updateUser({ email: ne }, { emailRedirectTo: location.origin });
       if (r.error) { busy(btn, false, 'Send confirmation'); return err(/already|registered|exists/i.test(r.error.message) ? 'An account already uses that email.' : r.error.message); }
-      box.innerHTML = `<p class="ac-p"><b>Check your inbox.</b> We sent a confirmation link to ${esc(ne)}. Your email changes once you open it. If your project also confirms the old address, open that link too.</p>`;
+      box.innerHTML = `<p class="ac-p"><b>Check your inbox.</b> We sent a confirmation link to ${esc(ne)}. Your email only changes after you open the link. Supabase usually also emails your <b>current</b> address, and you need to open <b>both</b> links before it switches.</p>`;
     };
     return;
   }
@@ -106,4 +106,16 @@ window.acctOpen = async (kind, onDone) => {
     if (onDone) onDone();
   };
 };
+})();
+
+// Landing back from an email-change link: tell the person what happened and refresh the shown email.
+(() => {
+  const h = decodeURIComponent((location.hash || '').replace(/\+/g, ' '));
+  if (!/type=email_change|message=|error_description=/.test(h)) return;
+  const msg = (h.match(/message=([^&]+)/) || [])[1], er = (h.match(/error_description=([^&]+)/) || [])[1];
+  setTimeout(() => {
+    if (typeof toast === 'function') toast(er || msg || 'Email confirmed');
+    window.ACCT_EMAIL = '';
+    try { history.replaceState({}, '', location.pathname + location.search); } catch (e) {}
+  }, 1500);
 })();
