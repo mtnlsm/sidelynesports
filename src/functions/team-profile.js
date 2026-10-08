@@ -164,6 +164,20 @@
     });
     // 2) Team game pop-ups (NFL, NBA, MLB, NHL, soccer...)
     if (typeof G === 'undefined' || typeof MMA !== 'function') return;
+    // 2a) Tap a team's logo on any game card or game pop-up to open its profile
+    document.querySelectorAll('.score:not([data-tl])').forEach(function (sc) {
+      sc.dataset.tl = '1';
+      var host = sc.closest('[data-g]') || sc.parentNode, names = modalNames(host);
+      if (!names) return;
+      var g = G.find(function (x) { return !MMA(x.sp) && x.a === names[0] && x.b === names[1]; });
+      if (!g) return;
+      var divs = sc.querySelectorAll(':scope > div');
+      [g.a, g.b].forEach(function (n, i) {
+        var cr = divs[i] && divs[i].querySelector('.cr, svg'); if (!cr) return;
+        var t = cr.closest('.cr') || cr;
+        t.dataset.tprof = n; t.dataset.tsp = g.sp; t.title = n + ' record & standings';
+      });
+    });
     document.querySelectorAll('.modal').forEach(function (m) {
       if (m.querySelector('.tp-links') || m.querySelector('.fp-links')) return;
       var names = modalNames(m); if (!names) return;
