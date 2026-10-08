@@ -104,7 +104,7 @@ const joined=ME.created_at?new Date(ME.created_at).toLocaleDateString([],{month:
 const A=S.ach||new Set(),BD=[[A.has('first_pick')||np>=1,'First Pick','medal'],[A.has('picks_5')||np>=5,'5 Picks','medal'],[A.has('picks_25')||np>=25,'25 Picks','medal'],[A.has('level_2')||l>=2,'Level 2','nova'],[A.has('level_5')||l>=5,'Level 5','flame'],[A.has('fan_club')||S.favT.length+S.favF.length>=3,'Fan Club','star']];
 let body='';
 if(tab==='stats')body=`<div id="stbox">${statsBox(ME.id)}</div>`;
-else if(tab==='picks'){const E=Object.entries(S.preds).reverse(),W=E.filter(([k])=>S.res[k]&&S.res[k].r==='win').length,Lo=E.filter(([k])=>S.res[k]&&S.res[k].r==='loss').length;const rows=E.slice(0,12).map(([k,v])=>{const g=G.find(x=>x.id===k),m=S.pm[k]||{},r=S.res[k],t=g?g.a+' vs '+g.b:(m.m||'Game '+k),sp=g?g.sp:(m.sp||'');let st='<span class="rp-s">Pending</span>';if(r){const net=r.s>0?(r.r==='win'?r.a-r.s:-r.s):r.a;st=r.r==='win'?'<span class="rp-s w">Won '+r.a.toLocaleString()+' SP</span>':r.r==='loss'?(r.s>0?'<span class="rp-s l">Lost \u2212'+r.s+' SP</span>':'<span class="rp-s">Played +'+r.a+' SP</span>'):'<span class="rp-s">Refunded</span>'}else if(g&&g.st==='final')st='<span class="rp-s">Scoring\u2026</span>';return`<div class="rp"><div class="rp-top"><span class="rp-sp">${esc(sp)}</span>${st}</div><div class="rp-m">${esc(t)}</div><div class="rp-p">Picked <b>${esc(v)}</b></div></div>`}).join('');body=`<div class="glass card"><div class="rp-h"><b>Recent predictions</b>${W+Lo?`<span class="mu">${W}W \u00b7 ${Lo}L</span>`:''}</div><div style="margin-top:4px">${rows||'<p class="mu">No picks yet \u2014 try the Picks tab.</p>'}</div></div>`}
+else if(tab==='picks')body=picksTab();
 else if(tab==='favs')body=favCard();
 else body=`<div class="glass card"><b>Badges</b><div class="bgs" style="margin-top:10px">${BD.map(b=>`<div class="bdg ${b[0]?'':'off'}">${ic(b[2],26)}${b[1]}</div>`).join('')}</div></div>`;
 return`<div class="pp glass"><div class="pp-cover" style="${coverCss(ME)}"><button class="pp-cam" data-ep aria-label="Edit banner">${ic('camera',16)}</button></div><div class="pp-head"><div class="pp-av">${avHtml(ME,96)}<button class="pp-avcam" id="cam" aria-label="Change profile photo">${ic('camera',13)}</button></div><div class="pp-act"><button class="pp-btn fill" id="ep">Edit profile</button><button class="pp-btn" data-shop>${ic('nova',13,1)} Shop</button><button class="pp-ic" data-settings aria-label="Settings">${ic('gear',18)}</button></div></div><div class="pp-body"><div class="pp-name">${esc(name)}${flr(ME)}${isAdmin()?`<span class="badge-ad">${ic('shield',12)} Admin</span>`:''}</div><div class="pp-handle">@${esc(ME.username)}${joined?' · Joined '+joined:''}</div><p class="pp-bio${ME.bio?'':' mu'}">${ME.bio?esc(ME.bio):'No bio yet.'}</p><button class="pp-link" data-copy="${esc(ME.username)}"><span>${esc(location.host)}/@${esc(ME.username)}</span><b>Copy link</b></button></div><div class="pp-stats"><span data-fl="r:${esc(ME.id)}"><b id="pfr">${fc.r??'–'}</b><small>Followers</small></span><span data-fl="g:${esc(ME.id)}"><b id="pfg">${fc.g??'–'}</b><small>Following</small></span><span><b>${np}</b><small>Picks</small></span></div><div class="pp-lv"><div class="row sp"><b>Level ${l}</b><span class="mu">${S.novas.toLocaleString()} ${ic('nova',12,1)}</span></div><div class="bar"><div style="width:${p}%"></div></div><span class="mu">${(hi-S.life).toLocaleString()} SP to Level ${l+1}</span></div><div class="pp-tabs">${[['stats','Stats'],['picks','Picks'],['favs','Favorites'],['ach','Badges']].map(t=>`<button data-pt="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></div>${body}<div class="pp-out"><button id="lo">Log out</button></div>`}};
@@ -223,6 +223,9 @@ m.querySelector('#sd').onclick=async()=>{const dn=m.querySelector('#dn').value.t
 document.addEventListener('click',async e=>{const t=e.target,q=s=>t.closest(s);let c;
 if(q('#cam')||q('#ep')||q('[data-ep]'))return editProfile();
 if(c=q('[data-pt]')){S.pt=c.dataset.pt;return go('profile')}
+if(c=q('[data-pkst]')){S.pkst=c.dataset.pkst;S.pkn=15;return go('profile')}
+if(c=q('[data-pksp]')){S.pksp=c.dataset.pksp;S.pkn=15;return go('profile')}
+if(q('[data-pkmore]')){S.pkn=(S.pkn||15)+15;return go('profile')}
 if(c=q('[data-ut]')){if(S.up){S.up.ut=c.dataset.ut;$('#m').innerHTML='<div class="page">'+userHtml()+'</div>'}return}
 });
 /* ===== COMMUNITY (shared feed via Supabase) ===== */
@@ -566,3 +569,24 @@ fetch('/.netlify/functions/fighter?lite=1&name='+encodeURIComponent(n)).then(r=>
 function scan(){document.querySelectorAll('svg[data-fn]').forEach(el=>{const n=el.dataset.fn,k=nm(n);if(FH[k]||bad.has(k)||busy.has(k))return;busy.add(k);queue.push(n)});swap();pump()}
 new MutationObserver(()=>{clearTimeout(tm);tm=setTimeout(scan,120)}).observe(document.body,{childList:true,subtree:true});
 setTimeout(scan,500)})();
+
+/* ===== PROFILE > PICKS: every pick, filter by payout status and by sport type ===== */
+const pkGroup=sp=>sp==='UFC'||sp==='PFL'?'fight':sp==='NHL'?'hockey':'ball';
+const PKG={ball:'Ball sports',hockey:'Hockey',fight:'Fights'};
+function picksTab(){
+const st=S.pkst||'all',sf=S.pksp||'all',n=S.pkn||15;
+const all=Object.entries(S.preds).reverse().map(([k,v])=>{const g=G.find(x=>String(x.id)===String(k)),m=S.pm[k]||{},r=S.res[k],sp=g?g.sp:(m.sp||'');
+let state='open';if(r)state=r.r==='win'?'paid':r.r==='loss'&&r.s>0?'lost':'other';
+return{k,v,g,m,r,sp,state,grp:pkGroup(sp),t:g?g.a+' vs '+g.b:(m.m||'Game '+k)}});
+const cnt=f=>all.filter(f).length;
+const stOpts=[['all','All',all.length],['open','Pending',cnt(x=>x.state==='open')],['paid','Paid out',cnt(x=>x.state==='paid')],['lost','Lost',cnt(x=>x.state==='lost')]];
+const spOpts=[['all','All sports',all.length],...Object.keys(PKG).map(k=>[k,PKG[k],cnt(x=>x.grp===k)]).filter(o=>o[2]>0)];
+let L=all.filter(x=>(st==='all'||x.state===st)&&(sf==='all'||x.grp===sf));
+const W=L.filter(x=>x.state==='paid').length,Lo=L.filter(x=>x.state==='lost').length,paidSP=L.filter(x=>x.state==='paid').reduce((a,x)=>a+x.r.a,0);
+const row=x=>{const{g,r,v}=x;let s='<span class="rp-s">Pending</span>';
+if(r){s=r.r==='win'?'<span class="rp-s w">Paid out '+r.a.toLocaleString()+' SP</span>':r.r==='loss'?(r.s>0?'<span class="rp-s l">Lost −'+r.s.toLocaleString()+' SP</span>':'<span class="rp-s">Played +'+r.a+' SP</span>'):'<span class="rp-s">Refunded</span>'}
+else if(g&&g.st==='final')s='<span class="rp-s">Scoring…</span>';
+return`<div class="rp"><div class="rp-top"><span class="rp-sp">${esc(x.sp)}</span>${s}</div><div class="rp-m">${esc(x.t)}</div><div class="rp-p">Picked <b>${esc(v)}</b></div></div>`};
+const chips=(opts,cur,attr)=>`<div class="row hs">${opts.map(o=>`<button class="chip ${cur===o[0]?'on':''}" ${attr}="${o[0]}">${o[1]} <span class="pf-n">${o[2]}</span></button>`).join('')}</div>`;
+const shown=L.slice(0,n);
+return`<div class="glass card"><div class="rp-h"><b>My picks</b>${W+Lo?`<span class="mu">${W}W · ${Lo}L${paidSP?' · '+paidSP.toLocaleString()+' SP paid':''}</span>`:''}</div>${chips(stOpts,st,'data-pkst')}${spOpts.length>2?chips(spOpts,sf,'data-pksp'):''}<div style="margin-top:6px">${shown.map(row).join('')||'<p class="mu">'+(all.length?'No picks match this filter.':'No picks yet — try the Picks tab.')+'</p>'}</div>${L.length>n?`<button class="chip" data-pkmore style="display:block;margin:10px auto 0">Show more (${L.length-n} left)</button>`:''}</div>`}
