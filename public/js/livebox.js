@@ -47,6 +47,7 @@
 
   // Player photo (crisp ESPN size when possible, blank circle if there is none or it fails to load).
   function ph(u) {
+    return '';  // player photos removed (only fighter photos are kept, in the UFC views)
     if (!u || !/^https:\/\//.test(u)) return '<i class="lv-ph"></i>';
     let src = u;
     try { if (typeof imgUrl === 'function') src = imgUrl(u, 40, true); } catch (e) {}
