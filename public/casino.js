@@ -12,12 +12,64 @@ const SUIT={S:'\u2660',H:'\u2665',D:'\u2666',C:'\u2663'},RES={win:'Win',blackjac
 let bet=10;try{const b=parseInt(localStorage.getItem('fx-bjbet'),10);if(b>=1)bet=Math.min(b,MAXBET)}catch(e){}
 let lastT='classic';try{const t=localStorage.getItem('fx-bjt');if(TABLES.some(x=>x[0]===t))lastT=t}catch(e){}
 
+/* per-table look: gradient, a pair of showcase cards, and short rule tags */
+const TLOOK={
+ classic:{g:['#1f7a4a','#0b3d25'],c:['A\u2660','K\u2665'],t:['6 decks','Pays 3:2','Stand on 17']},
+ original:{g:['#7c3aed','#2e1065'],c:['5\u2663','5\u2666'],t:['Pays 7:5','5-card Charlie','Surrender']},
+ exposed:{g:['#0ea5e9','#0c3a63'],c:['K\u2666','A\u2665'],t:['Dealer face up','Pays 1:1','Dealer wins ties']},
+ strip:{g:['#e11d48','#4c0519'],c:['A\u2663','J\u2660'],t:['4 decks','Split to 4','Surrender']},
+ single:{g:['#f59e0b','#78350f'],c:['A\u2665','9\u2660'],t:['1 deck','Pays 7:5','Double 9-11']}};
+function hcss(){if(document.getElementById('czcss'))return;const s=document.createElement('style');s.id='czcss';s.textContent=`
+.cz-hero{position:relative;overflow:hidden;border-radius:20px;padding:22px 20px;margin-bottom:14px;color:#fff;background:radial-gradient(120% 140% at 0 0,#7c3aed 0,#3b1a8f 45%,#150a35 100%);box-shadow:0 10px 30px rgba(60,20,140,.35)}
+.cz-hero:after{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 100% 0,rgba(255,216,107,.28),transparent 60%);pointer-events:none}
+.cz-hero h2{margin:0;font-size:26px;letter-spacing:.02em}.cz-hero p{margin:4px 0 14px;opacity:.85;max-width:420px}
+.cz-bal{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(255,216,107,.5);font-weight:800}
+.cz-bal b{color:#ffd86b;font-size:17px}
+.cz-fl{position:absolute;right:14px;top:8px;font-size:54px;line-height:1;display:flex;gap:6px;opacity:.9;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+.cz-fl span{display:block;animation:czf 4s ease-in-out infinite}.cz-fl span:nth-child(2){animation-delay:-1s}.cz-fl span:nth-child(3){animation-delay:-2s}.cz-fl span:nth-child(4){animation-delay:-3s}
+@keyframes czf{50%{transform:translateY(-8px) rotate(6deg)}}
+.rm .cz-fl span,.rm .cz-m,.rm .cz-t{animation:none!important;transition:none!important}
+.cz-sh{display:flex;align-items:center;justify-content:space-between;margin:18px 2px 10px}
+.cz-sh h3{margin:0;font-size:17px;display:flex;align-items:center;gap:8px}.cz-sh .mu{font-size:12px}
+.cz-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.cz-m{position:relative;overflow:hidden;border:0;border-radius:18px;padding:14px 12px 12px;min-height:150px;color:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:0 6px 16px rgba(0,0,0,.28);transition:transform .18s,box-shadow .18s}
+.cz-m:hover,.cz-m:focus-visible{transform:translateY(-4px) scale(1.02);box-shadow:0 12px 26px rgba(0,0,0,.4)}
+.cz-m:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 45%);pointer-events:none}
+.cz-m:after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);pointer-events:none}
+.cz-ic{position:absolute;top:10px;left:12px;right:12px;display:flex;align-items:flex-start;justify-content:space-between}
+.cz-big{font-size:46px;line-height:1;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}.cz-sm{font-size:22px;opacity:.9;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.cz-m b{font-size:15px;position:relative;text-shadow:0 1px 3px rgba(0,0,0,.45)}.cz-m small{position:relative;opacity:.85;font-size:11px;margin-top:2px}
+.cz-pl{position:relative;margin-top:8px;align-self:flex-start;padding:4px 12px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.35);font:800 11px system-ui;letter-spacing:.06em;text-transform:uppercase}
+.cz-quick{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(255,216,107,.18),rgba(255,216,107,.04));border:1px solid rgba(255,216,107,.4)}
+.cz-quick b{display:block}.cz-quick .mu{font-size:12px}
+.cz-tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.cz-t{position:relative;overflow:hidden;border:0;border-radius:18px;padding:14px;min-height:150px;color:#fff;text-align:left;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.28);transition:transform .18s,box-shadow .18s}
+.cz-t:hover,.cz-t:focus-visible{transform:translateY(-4px);box-shadow:0 12px 26px rgba(0,0,0,.4)}
+.cz-t:before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 85% 10%,rgba(255,255,255,.22),transparent 60%);pointer-events:none}
+.cz-t:after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);pointer-events:none}
+.cz-t b{display:block;font-size:17px;position:relative;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.cz-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 10px;max-width:62%}
+.cz-tags span{font:700 10.5px system-ui;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.22)}
+.cz-cd{position:absolute;right:14px;top:16px;width:92px;height:96px}
+.cz-k{position:absolute;width:56px;height:78px;border-radius:9px;background:#fff;color:#111;font:800 19px/1 system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 6px 14px rgba(0,0,0,.45)}
+.cz-k.r{color:#d11}.cz-k:nth-child(1){left:0;top:10px;transform:rotate(-10deg)}.cz-k:nth-child(2){right:0;top:0;transform:rotate(9deg)}
+.cz-k i{font-style:normal;font-size:22px}
+.cz-note{margin:14px 2px 4px}`;document.head.append(s)}
+
 window.casinoHub=function(){
  if(!age18())return `<div class="glass card rw"><div class="rw-h">SP Casino</div><p class="mu" style="margin:6px 0 12px">The casino is for adults only. Confirm you are 18 or older to play. SP has no cash value.</p><button class="pri" data-age18 style="padding:8px 18px;min-height:40px">I am 18 or older</button></div>`;
- const th=window.SL_THEMES||{},ord=window.SL_ORDER||[];
- return `<div class="glass card rw"><div class="rw-h">Slots</div><div class="rw-row row sp"><div><b>Sidelyne Slots</b><div class="mu">${ord.length||13} machines, 9 paylines. 3 bonus symbols = free spins.</div></div><button class="pri" data-slots style="padding:8px 18px;min-height:40px">Play</button></div>${ord.length?`<div class="row hs" style="margin-top:6px">${ord.map(k=>`<button class="chip" data-slotsth="${k}">${th[k].name}</button>`).join('')}</div>`:''}</div>
- <div class="glass card rw"><div class="rw-h">Blackjack</div>${TABLES.map(t=>`<div class="rw-row row sp"><div><b>${t[1]}</b><div class="mu">${t[2]}</div></div><button class="pri" data-bj="${t[0]}" style="padding:8px 18px;min-height:40px">Play</button></div>`).join('')}</div>
- <p class="mu" style="margin:10px 2px">Free play only. SP has no cash value. A fresh shoe is shuffled for every hand.</p>`};
+ hcss();
+ const th=window.SL_THEMES||{},ord=window.SL_ORDER||Object.keys(th);
+ const hero=`<div class="cz-hero"><div class="cz-fl" aria-hidden="true"><span>\u2660\ufe0f</span><span>\u2665\ufe0f</span><span>\ud83c\udfb2</span><span>\ud83c\udfb0</span></div><h2>SP Casino</h2><p>13 slot machines and 5 blackjack tables. Free play, every card and spin decided on the server.</p><div class="cz-bal"><span>\ud83e\ude99</span><span>Balance</span><b>${fmt(S.novas||0)}</b><span>SP</span></div></div>`;
+ const slots=ord.filter(k=>th[k]).map(k=>{const t=th[k];return `<button class="cz-m" data-slotsth="${k}" style="background:linear-gradient(150deg,${t.a},${t.b})" aria-label="Play ${t.name}"><span class="cz-ic"><span class="cz-big">${t.s[5][0]}</span><span class="cz-sm">${t.sc.e}</span></span><b>${t.name}</b><small>Bonus: ${t.bonus.name}</small><span class="cz-pl">Play</span></button>`}).join('');
+ const tabs=TABLES.map(t=>{const L=TLOOK[t[0]];return `<button class="cz-t" data-bj="${t[0]}" style="background:linear-gradient(150deg,${L.g[0]},${L.g[1]})" aria-label="Play ${t[1]}"><span class="cz-cd" aria-hidden="true">${L.c.map(c=>`<span class="cz-k ${/[\u2665\u2666]/.test(c)?'r':''}"><span>${c.slice(0,-1)}</span><i>${c.slice(-1)}</i></span>`).join('')}</span><b>${t[1]}</b><span class="cz-tags">${L.t.map(x=>`<span>${x}</span>`).join('')}</span><span class="cz-pl" style="display:inline-block">Deal me in</span></button>`}).join('');
+ return `${hero}
+ <div class="cz-sh"><h3>\ud83c\udfb0 Slots</h3><span class="mu">${ord.length} machines \u00b7 9 paylines \u00b7 3 bonus symbols = free spins</span></div>
+ <div class="cz-quick"><div><b>Sidelyne Slots</b><span class="mu">Jump back into your last machine.</span></div><button class="pri" data-slots style="padding:8px 20px;min-height:42px">Quick play</button></div>
+ <div class="cz-g">${slots}</div>
+ <div class="cz-sh"><h3>\u2660\ufe0f Blackjack</h3><span class="mu">5 tables \u00b7 fresh shoe every hand</span></div>
+ <div class="cz-tg">${tabs}</div>
+ <p class="mu cz-note">Free play only. SP has no cash value.</p>`};
 
 function css(){if(document.getElementById('bjcss'))return;const s=document.createElement('style');s.id='bjcss';s.textContent=`
 .bj{text-align:center}.bj h3{margin:0 0 4px}.bj-bal{margin-bottom:8px}
