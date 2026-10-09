@@ -1,4 +1,4 @@
-/* SP Casino: the hub page (Slots + Blackjack) and the Blackjack table. Every card is dealt by the server (supabase/blackjack.sql); this file only draws what comes back. */
+/* Sidelyne Casino: the hub page (Slots + Blackjack) and the Blackjack table. Every card is dealt by the server (supabase/blackjack.sql); this file only draws what comes back. */
 (()=>{
 const TABLES=[
  ['classic','Classic 21','6 decks · dealer stands on 17 · blackjack pays 3:2'],
@@ -63,10 +63,10 @@ function hcss(){if(document.getElementById('czcss'))return;const s=document.crea
 .cz-note{margin:14px 2px 4px}`;document.head.append(s)}
 
 window.casinoHub=function(){
- if(!age18())return `<div class="glass card rw"><div class="rw-h">SP Casino</div><p class="mu" style="margin:6px 0 12px">The casino is for adults only. Confirm you are 18 or older to play. SP has no cash value.</p><button class="pri" data-age18 style="padding:8px 18px;min-height:40px">I am 18 or older</button></div>`;
+ if(!age18())return `<div class="glass card rw"><div class="rw-h">Sidelyne Casino</div><p class="mu" style="margin:6px 0 12px">The casino is for adults only. Confirm you are 18 or older to play. Chips and SP have no cash value.</p><button class="pri" data-age18 style="padding:8px 18px;min-height:40px">I am 18 or older</button></div>`;
  hcss();
  const th=window.SL_THEMES||{},ord=window.SL_ORDER||Object.keys(th);
- const hero=`<div class="cz-hero"><div class="cz-fl" aria-hidden="true"><span>\u2660\ufe0f</span><span>\u2665\ufe0f</span><span>\ud83c\udfb2</span><span>\ud83c\udfb0</span></div><h2>SP Casino</h2><p>Slots, blackjack, poker and coin flip. Free play, every card and spin decided on the server.</p><div class="cz-bal"><span>\ud83e\ude99</span><span>Balance</span><b>${fmt(S.novas||0)}</b><span>SP</span></div></div>`;
+ const hero=`<div class="cz-hero"><div class="cz-fl" aria-hidden="true"><span>\u2660\ufe0f</span><span>\u2665\ufe0f</span><span>\ud83c\udfb2</span><span>\ud83c\udfb0</span></div><h2>Sidelyne Casino</h2><p>Slots, blackjack, poker and coin flip. Free play, every card and spin decided on the server.</p><div class="cz-bal"><span>\ud83e\ude99</span><span>Chips</span><b data-chipbal>${fmt(S.chips||0)}</b></div><button class="cz-ex" data-cx>Exchange</button><div class="cz-sp"><b data-spbal>${fmt(S.novas||0)}</b> SP in your main balance \u00b7 1 SP = 1 chip</div></div>`;
  const slots=ord.filter(k=>th[k]).map(k=>{const t=th[k];return `<button class="cz-m" data-slotsth="${k}" style="background:linear-gradient(150deg,${t.a},${t.b})" aria-label="Play ${t.name}"><span class="cz-ic"><span class="cz-big">${t.s[5][0]}</span><span class="cz-sm">${t.sc.e}</span></span><b>${t.name}</b><small>Bonus: ${t.bonus.name}</small><span class="cz-pl">Play</span></button>`}).join('');
  const tabs=TABLES.map(t=>{const L=TLOOK[t[0]];return `<button class="cz-t" data-bj="${t[0]}" style="background:linear-gradient(150deg,${L.g[0]},${L.g[1]})" aria-label="Play ${t[1]}"><span class="cz-cd" aria-hidden="true">${L.c.map(c=>`<span class="cz-k ${/[\u2665\u2666]/.test(c)?'r':''}"><span>${c.slice(0,-1)}</span><i>${c.slice(-1)}</i></span>`).join('')}</span><b>${t[1]}</b><span class="cz-tags">${L.t.map(x=>`<span>${x}</span>`).join('')}</span><span class="cz-pl" style="display:inline-block">Deal me in</span></button>`}).join('');
  const gt=k=>{const L=GLOOK[k];return `<button class="cz-t" data-cg="${k}" style="background:linear-gradient(150deg,${L.g[0]},${L.g[1]})" aria-label="Play ${L.n}">${L.c?`<span class="cz-cd" aria-hidden="true">${L.c.map(c=>`<span class="cz-k ${/[\u2665\u2666]/.test(c)?'r':''}"><span>${c.slice(0,-1)}</span><i>${c.slice(-1)}</i></span>`).join('')}</span>`:'<span class="cz-coin" aria-hidden="true">\ud83d\udc51</span>'}<b>${L.n}</b><span class="cz-tags">${L.t.map(x=>`<span>${x}</span>`).join('')}</span><span class="cz-pl" style="display:inline-block">${L.b}</span></button>`};
@@ -80,7 +80,7 @@ window.casinoHub=function(){
  <div class="cz-tg">${['vp','tc','hc'].map(k=>gt(k)).join('')}</div>
  <div class="cz-sh"><h3>\ud83e\ude99 Coin Flip</h3><span class="mu">Heads or tails, double or nothing (almost)</span></div>
  <div class="cz-tg">${gt('cf')}</div>
- <p class="mu cz-note">Free play only. SP has no cash value.</p>`};
+ <p class="mu cz-note">Free play only. Chips and SP have no cash value.</p>`};
 
 function css(){if(document.getElementById('bjcss'))return;const s=document.createElement('style');s.id='bjcss';s.textContent=`
 .bj{text-align:center}.bj h3{margin:0 0 4px}.bj-bal{margin-bottom:8px}
@@ -98,37 +98,37 @@ function css(){if(document.getElementById('bjcss'))return;const s=document.creat
 const card=(c,hide)=>{if(hide)return '<div class="bj-c back">?</div>';const r=c[0]==='T'?'10':c[0],s=c[1];return `<div class="bj-c ${s==='H'||s==='D'?'r':''}"><span>${r}</span><small>${SUIT[s]}</small></div>`};
 
 function openBlackjack(variant){
- if(!ME)return;if(!age18()){toast('Confirm you are 18+ in the SP Casino tab first');return}
+ if(!ME)return;if(!age18()){toast('Confirm you are 18+ in the Sidelyne Casino tab first');return}
  css();if(!TABLES.some(t=>t[0]===variant))variant=lastT;lastT=variant;try{localStorage.setItem('fx-bjt',variant)}catch(e){}
  const tname=()=>TABLES.find(t=>t[0]===lastT)[1];
  const m=modal('<div class="bj" id="bjw"></div>');let g=null,busy=false,msg='';
  const w=m.querySelector('#bjw');
  const err=e=>{const t=String(e&&e.message||e||'');return /function|schema|does not exist/i.test(t)?'Blackjack is not set up yet (run supabase/blackjack.sql)':t};
- const setNovas=n=>{if(typeof n==='number')applyNovas(n,null)};
- async function call(fn,args){if(busy)return;busy=true;draw();try{const q=await FX_DB.rpc(fn,args);if(q.error)throw q.error;g=q.data;if(g)setNovas(g.novas);msg=''}catch(e){msg=err(e);toast(msg)}busy=false;if(m.isConnected)draw()}
- function hand(h,i,live){const cur=live&&g.cur===i&&!h.done;return `<div class="bj-hd ${cur?'cur':''}"><div class="bj-h" style="min-height:0">${h.cards.map(c=>card(c)).join('')}</div><div class="bj-r">${h.total}${h.soft&&!h.done?' (soft)':''} · ${fmt(h.bet)} SP${h.result?' · '+(RES[h.result]||h.result)+(h.pay>0?' +'+fmt(h.pay):''):''}</div></div>`}
+ const setChips=n=>{if(typeof n==='number')applyChips(n,null)};
+ async function call(fn,args){if(busy)return;busy=true;draw();try{const q=await FX_DB.rpc(fn,args);if(q.error)throw q.error;g=q.data;if(g)setChips(g.chips);msg=''}catch(e){msg=err(e);toast(msg)}busy=false;if(m.isConnected)draw()}
+ function hand(h,i,live){const cur=live&&g.cur===i&&!h.done;return `<div class="bj-hd ${cur?'cur':''}"><div class="bj-h" style="min-height:0">${h.cards.map(c=>card(c)).join('')}</div><div class="bj-r">${h.total}${h.soft&&!h.done?' (soft)':''} · ${fmt(h.bet)} chips${h.result?' · '+(RES[h.result]||h.result)+(h.pay>0?' +'+fmt(h.pay):''):''}</div></div>`}
  function draw(){
-  const bal=fmt(S.novas);let h=`<h3>${tname()}</h3><div class="bj-bal"><span class="mu">Balance</span> <b>${bal}</b> SP</div>`;
+  const bal=fmt(S.chips);let h=`<h3>${tname()}</h3><div class="bj-bal"><span class="mu">Balance</span> <b data-chipbal>${bal}</b> chips <button class="chip cz-cx" data-cx>Exchange</button></div>`;
   if(g){
    const live=!g.done;
    h+=`<div class="bj-t"><div class="bj-l">Dealer${g.dealer_total!=null?' · '+g.dealer_total:''}</div><div class="bj-h">${g.dealer.map(c=>card(c)).join('')}${g.hidden?card('',true):''}</div><div class="bj-l">You</div><div class="bj-h">${g.hands.map((x,i)=>hand(x,i,live)).join('')}</div></div>`;
    if(live)h+=`<div class="bj-a">${g.actions.map(a=>`<button class="${a==='hit'||a==='stand'?'pri':'chip'}" data-bja="${a}" ${busy?'disabled':''}>${a[0].toUpperCase()+a.slice(1)}</button>`).join('')}</div>`;
-   else{const p=g.payout||0,w=g.wagered||0,net=p-w;h+=`<div class="bj-m">${net>0?'You won +'+fmt(net)+' SP':net===0?'Push. Bet returned.':'You lost '+fmt(-net)+' SP'}</div>`}
+   else{const p=g.payout||0,w=g.wagered||0,net=p-w;h+=`<div class="bj-m">${net>0?'You won +'+fmt(net)+' chips':net===0?'Push. Bet returned.':'You lost '+fmt(-net)+' chips'}</div>`}
   }else h+=`<div class="bj-t"><div class="bj-m">${msg?msg:'Set your bet and deal.'}</div></div>`;
   if(!g||g.done){
-   h+=`<div class="bj-bi"><button class="chip" data-bjb="half">\u00bd</button><input id="bjbet" inputmode="numeric" value="${bet}" aria-label="Bet amount"><button class="chip" data-bjb="dbl">2\u00d7</button><button class="chip" data-bjb="max">Max</button></div><div class="bj-a"><button class="pri" data-bjdeal ${busy||bet<MINBET||bet>S.novas?'disabled':''}>${g?'Deal again':'Deal'}</button></div><div class="row hs" style="justify-content:center">${TABLES.map(t=>`<button class="chip ${t[0]===lastT?'on':''}" data-bjt="${t[0]}">${t[1]}</button>`).join('')}</div>`}
+   h+=`<div class="bj-bi"><button class="chip" data-bjb="half">\u00bd</button><input id="bjbet" inputmode="numeric" value="${bet}" aria-label="Bet amount"><button class="chip" data-bjb="dbl">2\u00d7</button><button class="chip" data-bjb="max">Max</button></div><div class="bj-a"><button class="pri" data-bjdeal ${busy||bet<MINBET||bet>S.chips?'disabled':''}>${g?'Deal again':'Deal'}</button></div><div class="row hs" style="justify-content:center">${TABLES.map(t=>`<button class="chip ${t[0]===lastT?'on':''}" data-bjt="${t[0]}">${t[1]}</button>`).join('')}</div>`}
   w.innerHTML=h}
  const clamp=()=>{bet=Math.max(MINBET,Math.min(MAXBET,Math.floor(bet)||MINBET));try{localStorage.setItem('fx-bjbet',bet)}catch(e){}};
- m.addEventListener('input',e=>{if(e.target.id!=='bjbet')return;const v=parseInt(e.target.value.replace(/\D/g,''),10);bet=Number.isFinite(v)?Math.min(v,MAXBET):0;const b=w.querySelector('[data-bjdeal]');if(b)b.disabled=busy||bet<MINBET||bet>S.novas});
+ m.addEventListener('input',e=>{if(e.target.id!=='bjbet')return;const v=parseInt(e.target.value.replace(/\D/g,''),10);bet=Number.isFinite(v)?Math.min(v,MAXBET):0;const b=w.querySelector('[data-bjdeal]');if(b)b.disabled=busy||bet<MINBET||bet>S.chips});
  m.addEventListener('change',e=>{if(e.target.id==='bjbet'){clamp();draw()}});
  m.addEventListener('click',e=>{
   const a=e.target.closest('[data-bja]');if(a){call('bj_act',{p_action:a.dataset.bja});return}
-  if(e.target.closest('[data-bjdeal]')){clamp();if(bet>S.novas){toast('Not enough SP');return}g=null;call('bj_start',{p_variant:lastT,p_bet:bet});return}
+  if(e.target.closest('[data-bjdeal]')){clamp();if(bet>S.chips){toast('Not enough chips');return}g=null;call('bj_start',{p_variant:lastT,p_bet:bet});return}
   const t=e.target.closest('[data-bjt]');if(t&&!busy){lastT=t.dataset.bjt;try{localStorage.setItem('fx-bjt',lastT)}catch(x){}g=null;draw();return}
-  const b=e.target.closest('[data-bjb]');if(b){bet=b.dataset.bjb==='half'?Math.floor(bet/2):b.dataset.bjb==='dbl'?bet*2:Math.min(MAXBET,S.novas);clamp();draw()}});
+  const b=e.target.closest('[data-bjb]');if(b){bet=b.dataset.bjb==='half'?Math.floor(bet/2):b.dataset.bjb==='dbl'?bet*2:Math.min(MAXBET,S.chips);clamp();draw()}});
  draw();
  /* resume a hand that was still in progress (refresh or closed window never loses a hand) */
- FX_DB.rpc('bj_state').then(q=>{if(q.error||!q.data||!m.isConnected)return;g=q.data;lastT=g.variant||lastT;setNovas(g.novas);draw()}).catch(()=>{});
+ FX_DB.rpc('bj_state').then(q=>{if(q.error||!q.data||!m.isConnected)return;g=q.data;lastT=g.variant||lastT;setChips(g.chips);draw()}).catch(()=>{});
 }
 /* ---- Coin Flip, Video Poker, Three Card Poker, Texas Hold'em (server: supabase/casino_games.sql) ---- */
 const MINB={cf:10,vp:1,tc:1,tcpp:0,hc:1},DIV={tc:2,hc:3};
@@ -140,7 +140,7 @@ function bindBets(m,redraw){
  m.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.bi;if(!k)return;const v=parseInt(e.target.value.replace(/\D/g,''),10);bets[k]=Number.isFinite(v)?Math.min(v,MAXBET):0});
  m.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.bi;if(!k)return;SB(k,bets[k]);e.target.value=B(k)});
  m.addEventListener('click',e=>{const b=e.target.closest('[data-cgb]');if(!b)return;const[k,op]=b.dataset.cgb.split(':'),v=B(k);
-  SB(k,op==='h'?Math.floor(v/2):op==='d'?v*2:k==='tcpp'?Math.max(0,S.novas-2*B('tc')):Math.floor(S.novas/(DIV[k]||1)));redraw()})}
+  SB(k,op==='h'?Math.floor(v/2):op==='d'?v*2:k==='tcpp'?Math.max(0,S.chips-2*B('tc')):Math.floor(S.chips/(DIV[k]||1)));redraw()})}
 const gcss=()=>{if(document.getElementById('cgcss'))return;const s=document.createElement('style');s.id='cgcss';s.textContent=`
 .cg-coinw{perspective:600px;height:136px;display:grid;place-items:center;margin:8px 0}
 .cg-coin{width:112px;height:112px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#f5c542 45%,#b8860b);border:4px solid #8a6508;box-shadow:0 8px 20px rgba(0,0,0,.4),inset 0 0 0 4px rgba(255,255,255,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a3d00;font-weight:900}
@@ -166,11 +166,11 @@ const gcss=()=>{if(document.getElementById('cgcss'))return;const s=document.crea
 .cg-pt .hit{background:rgba(255,216,107,.25);font-weight:800}
 .cg-ex{font-size:12px;opacity:.85;margin-top:2px}`;document.head.append(s)};
 function shell(){css();gcss();const m=modal('<div class="bj cg" id="cgw"></div>');return{m,w:m.querySelector('#cgw')}}
-const need18=()=>{if(!ME)return true;if(!age18()){toast('Confirm you are 18+ in the SP Casino tab first');return true}return false};
+const need18=()=>{if(!ME)return true;if(!age18()){toast('Confirm you are 18+ in the Sidelyne Casino tab first');return true}return false};
 const cap=s=>s[0].toUpperCase()+s.slice(1),sleep=ms=>new Promise(r=>setTimeout(r,ms)),calm=()=>document.documentElement.classList.contains('rm');
 async function rpc(fn,args){const q=await FX_DB.rpc(fn,args);if(q.error)throw q.error;return q.data}
 const errM=e=>{const t=String(e&&e.message||e||'');return /function|schema|does not exist|relation/i.test(t)?'This game is not set up yet (run supabase/casino_games.sql)':t};
-const balRow=()=>`<div class="bj-bal"><span class="mu">Balance</span> <b>${fmt(S.novas)}</b> SP</div>`;
+const balRow=()=>`<div class="bj-bal"><span class="mu">Balance</span> <b data-chipbal>${fmt(S.chips)}</b> chips <button class="chip cz-cx" data-cx>Exchange</button></div>`;
 const backs=n=>Array.from({length:n},()=>card('',true)).join('');
 
 /* COIN FLIP */
@@ -178,15 +178,15 @@ function openCoin(){
  if(need18())return;const{m,w}=shell();let side='heads',busy=false,face='heads',msg='',hist=[];
  const F={heads:'\ud83d\udc51',tails:'\ud83e\udd85'};
  const draw=()=>{w.innerHTML=`<h3>Heads or Tails</h3>${balRow()}<div class="cg-coinw"><div class="cg-coin" id="cgcoin"><span>${F[face]}</span><small>${face.toUpperCase()}</small></div></div><div class="bj-m">${msg||'Pick a side and flip. Wins pay 1.95\u00d7.'}</div><div class="cg-sides">${['heads','tails'].map(s=>`<button class="cg-side ${side===s?'on':''}" data-cfs="${s}" ${busy?'disabled':''}>${F[s]} ${cap(s)}</button>`).join('')}</div>${betBox('cf','Bet (min 10)')}<div class="bj-a"><button class="pri" data-cfgo ${busy?'disabled':''}>Flip coin</button></div><div class="cg-hist">${hist.map(h=>`<i class="${h.w?'w':'l'}">${h.r==='heads'?'H':'T'}</i>`).join('')}</div>`};
- async function go(){const bet=B('cf');if(busy)return;if(bet<10){toast('Minimum bet is 10 SP');return}if(bet>S.novas){toast('Not enough SP');return}
+ async function go(){const bet=B('cf');if(busy)return;if(bet<10){toast('Minimum bet is 10 chips');return}if(bet>S.chips){toast('Not enough chips');return}
   busy=true;msg='Flipping\u2026';draw();let r;
   try{r=await rpc('coin_flip',{p_bet:bet,p_side:side})}catch(e){busy=false;msg=errM(e);if(m.isConnected)draw();toast(msg);return}
   const c=m.querySelector('#cgcoin');
   if(c&&!calm()){c.classList.add('spin');await sleep(620);if(m.isConnected)c.innerHTML=`<span>${F[r.result]}</span><small>${r.result.toUpperCase()}</small>`;await sleep(600)}
-  if(!m.isConnected){applyNovas(r.novas,null);return}
+  if(!m.isConnected){applyChips(r.chips,null);return}
   face=r.result;hist.unshift({r:r.result,w:r.win});hist=hist.slice(0,12);
-  msg=r.win?`${cap(r.result)}! You won +${fmt(r.payout-bet)} SP`:`${cap(r.result)}. You lost ${fmt(bet)} SP`;
-  busy=false;applyNovas(r.novas,r.payout>bet?'Casino win':null);draw()}
+  msg=r.win?`${cap(r.result)}! You won +${fmt(r.payout-bet)} chips`:`${cap(r.result)}. You lost ${fmt(bet)} chips`;
+  busy=false;applyChips(r.chips,r.payout>bet?'Casino win':null);draw()}
  bindBets(m,draw);
  m.addEventListener('click',e=>{const s=e.target.closest('[data-cfs]');if(s&&!busy){side=s.dataset.cfs;draw();return}if(e.target.closest('[data-cfgo]'))go()});
  draw()}
@@ -196,14 +196,14 @@ const VPT=[['Royal flush',800],['Straight flush',50],['Four of a kind',25],['Ful
 function openVP(){
  if(need18())return;const{m,w}=shell();let g=null,res=null,holds=[0,0,0,0,0],busy=false,msg='';
  function draw(){const cur=res||g;
-  const top=res?(res.payout>0?`${res.name}! +${fmt(res.payout-res.bet)} SP`:'No win. Better luck next hand.'):g?'Tap cards to HOLD, then draw.':(msg||'Set your bet and deal.');
+  const top=res?(res.payout>0?`${res.name}! +${fmt(res.payout-res.bet)} chips`:'No win. Better luck next hand.'):g?'Tap cards to HOLD, then draw.':(msg||'Set your bet and deal.');
   let h=`<h3>Video Poker \u00b7 Jacks or Better</h3>${balRow()}<div class="bj-t"><div class="bj-m">${top}</div><div class="bj-h">${cur?cur.hand.map((c,i)=>`<button class="cg-hold ${(res?res.holds[i]:holds[i])?'held':''}" data-vph="${i}" ${g&&!busy?'':'disabled'}>${card(c)}<span class="cg-ht">${(res?res.holds[i]:holds[i])?'HELD':''}</span></button>`).join(''):backs(5)}</div></div>`;
   h+=g?`<div class="bj-a"><button class="pri" data-vpdraw ${busy?'disabled':''}>Draw</button></div>`:betBox('vp','Bet')+`<div class="bj-a"><button class="pri" data-vpdeal ${busy?'disabled':''}>${res?'Deal again':'Deal'}</button></div>`;
   h+=`<div class="cg-pt">${VPT.map(r=>`<div class="${res&&res.mult===r[1]?'hit':''}"><span>${r[0]}</span><b>${fmt(r[1])}\u00d7</b></div>`).join('')}</div>`;w.innerHTML=h}
- async function deal(){if(busy)return;const bet=B('vp');if(bet>S.novas){toast('Not enough SP');return}busy=true;msg='';draw();
-  try{const r=await rpc('vp_deal',{p_bet:bet});g={hand:r.hand,bet:r.bet};res=null;holds=[0,0,0,0,0];applyNovas(r.novas,null)}catch(e){msg=errM(e);toast(msg)}busy=false;if(m.isConnected)draw()}
+ async function deal(){if(busy)return;const bet=B('vp');if(bet>S.chips){toast('Not enough chips');return}busy=true;msg='';draw();
+  try{const r=await rpc('vp_deal',{p_bet:bet});g={hand:r.hand,bet:r.bet};res=null;holds=[0,0,0,0,0];applyChips(r.chips,null)}catch(e){msg=errM(e);toast(msg)}busy=false;if(m.isConnected)draw()}
  async function drawCards(){if(busy)return;busy=true;draw();
-  try{const r=await rpc('vp_draw',{p_holds:holds.map(x=>!!x)});res=r;g=null;applyNovas(r.novas,r.payout>r.bet?'Casino win':null)}catch(e){toast(errM(e))}busy=false;if(m.isConnected)draw()}
+  try{const r=await rpc('vp_draw',{p_holds:holds.map(x=>!!x)});res=r;g=null;applyChips(r.chips,r.payout>r.bet?'Casino win':null)}catch(e){toast(errM(e))}busy=false;if(m.isConnected)draw()}
  bindBets(m,draw);
  m.addEventListener('click',e=>{const c=e.target.closest('[data-vph]');if(c&&g&&!busy){const i=+c.dataset.vph;holds[i]=holds[i]?0:1;draw();return}
   if(e.target.closest('[data-vpdeal]'))deal();else if(e.target.closest('[data-vpdraw]'))drawCards()});
@@ -220,28 +220,67 @@ function openVs(kind){
  const board=r=>{const b=r.board||[];return `<div class="bj-l">Board</div><div class="bj-h" style="min-height:0">${[0,1,2,3,4].map(i=>b[i]?card(b[i]):'<div class="bj-c back" style="opacity:.25"></div>').join('')}</div>`};
  function draw(){const done=g&&g.done;
   let h=`<h3>${C.title}</h3>${balRow()}<div class="bj-t"><div class="bj-l">Dealer${done?' \u00b7 '+g.d_name:''}</div><div class="bj-h" style="min-height:0">${done?g.d.map(c=>card(c)).join(''):backs(C.n)}</div>${kind==='hc'?board(g||{}):''}<div class="bj-l">You${done?' \u00b7 '+g.p_name:''}</div><div class="bj-h" style="min-height:0">${g?g.p.map(c=>card(c)).join(''):backs(C.n)}</div></div>`;
-  if(g&&!done){h+=`<div class="bj-m">Your move: ${C.label.toLowerCase()} for ${fmt(C.cost(g))} SP, or fold.</div><div class="bj-a"><button class="pri" data-vsa="${C.go}" ${busy?'disabled':''}>${C.label} \u00b7 ${fmt(C.cost(g))} SP</button><button class="chip" data-vsa="fold" ${busy?'disabled':''}>Fold</button></div>`}
+  if(g&&!done){h+=`<div class="bj-m">Your move: ${C.label.toLowerCase()} for ${fmt(C.cost(g))} chips, or fold.</div><div class="bj-a"><button class="pri" data-vsa="${C.go}" ${busy?'disabled':''}>${C.label} \u00b7 ${fmt(C.cost(g))} chips</button><button class="chip" data-vsa="fold" ${busy?'disabled':''}>Fold</button></div>`}
   else{
    if(done){const net=g.payout-g.wagered,ex=[];
-    if(kind==='tc'){if(g.bonus>0)ex.push('Ante bonus +'+fmt(g.bonus)+' SP');if(g.pp_pay>0)ex.push('Pair Plus paid '+fmt(g.pp_pay)+' SP')}
+    if(kind==='tc'){if(g.bonus>0)ex.push('Ante bonus +'+fmt(g.bonus)+' chips');if(g.pp_pay>0)ex.push('Pair Plus paid '+fmt(g.pp_pay)+' chips')}
     if(kind==='hc'&&g.result==='win'&&g.call_mult>1)ex.push('Call bet paid '+g.call_mult+':1');
-    h+=`<div class="bj-m">${LAB[g.result]||''}. ${net>0?'+'+fmt(net)+' SP':net===0?'Bet returned':'-'+fmt(-net)+' SP'}${ex.length?`<div class="cg-ex">${ex.join(' \u00b7 ')}</div>`:''}</div>`}
+    h+=`<div class="bj-m">${LAB[g.result]||''}. ${net>0?'+'+fmt(net)+' chips':net===0?'Bet returned':'-'+fmt(-net)+' chips'}${ex.length?`<div class="cg-ex">${ex.join(' \u00b7 ')}</div>`:''}</div>`}
    else h+=`<div class="bj-m" style="font-weight:600;font-size:13px">${msg||C.info}</div>`;
    h+=betBox(kind,'Ante')+(kind==='tc'?betBox('tcpp','Pair Plus (optional)'):'')+`<div class="bj-a"><button class="pri" data-vsdeal ${busy?'disabled':''}>${done?'Deal again':'Deal'}</button></div>`}
   w.innerHTML=h}
  async function deal(){if(busy)return;const a=B(kind),pp=kind==='tc'?B('tcpp'):0,need=a*C.mult+pp;
-  if(need>S.novas){toast(`You need ${fmt(need)} SP (${kind==='tc'?'ante + play bet + Pair Plus':'ante + the 2\u00d7 call bet'})`);return}
+  if(need>S.chips){toast(`You need ${fmt(need)} chips (${kind==='tc'?'ante + play bet + Pair Plus':'ante + the 2\u00d7 call bet'})`);return}
   busy=true;msg='';draw();
-  try{const r=await rpc(C.deal,kind==='tc'?{p_ante:a,p_pp:pp}:{p_ante:a});g=r;applyNovas(r.novas,null)}catch(e){msg=errM(e);toast(msg)}busy=false;if(m.isConnected)draw()}
+  try{const r=await rpc(C.deal,kind==='tc'?{p_ante:a,p_pp:pp}:{p_ante:a});g=r;applyChips(r.chips,null)}catch(e){msg=errM(e);toast(msg)}busy=false;if(m.isConnected)draw()}
  async function act(a){if(busy)return;busy=true;draw();
-  try{const r=await rpc(C.act,{p_action:a});g=r;applyNovas(r.novas,r.payout>r.wagered?'Casino win':null)}catch(e){toast(errM(e))}busy=false;if(m.isConnected)draw()}
+  try{const r=await rpc(C.act,{p_action:a});g=r;applyChips(r.chips,r.payout>r.wagered?'Casino win':null)}catch(e){toast(errM(e))}busy=false;if(m.isConnected)draw()}
  bindBets(m,draw);
  m.addEventListener('click',e=>{if(e.target.closest('[data-vsdeal]')){deal();return}const a=e.target.closest('[data-vsa]');if(a)act(a.dataset.vsa)});
  draw();
  FX_DB.rpc(C.state).then(q=>{if(q.error||!q.data||!m.isConnected)return;g=q.data;draw()}).catch(()=>{})}
 const OPEN={cf:openCoin,vp:openVP,tc:()=>openVs('tc'),hc:()=>openVs('hc')};
 
+/* ---- Exchange: Sidelyne Points (SP, main currency) <-> Sidelyne Chips (casino currency), 1 SP = 1 chip (server: supabase/chips.sql) ---- */
+function exCss(){if(document.getElementById('excss'))return;const s=document.createElement('style');s.id='excss';s.textContent=`
+.ex{text-align:center}.ex h3{margin:0 0 6px}
+.ex-bals{display:flex;gap:8px;margin:8px 0}.ex-bals>div{flex:1;background:var(--sf2);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ex-bals span{font-size:11px;font-weight:600}.ex-bals b{font-size:15px;overflow-wrap:anywhere}
+.ex-seg{display:flex;gap:6px;margin:10px 0}.ex-seg button{flex:1;min-height:42px;border-radius:12px;border:2px solid var(--bd);background:transparent;color:inherit;font-weight:800;cursor:pointer}
+.ex-seg button.on{border-color:var(--ab);background:color-mix(in srgb,var(--ab) 14%,transparent)}
+.ex-n{font-size:12px;margin:4px 0 10px}.ex-r{min-height:22px;margin:8px 0;font-weight:800}
+.ex-in{width:130px;font-size:16px;text-align:center}`;document.head.append(s)}
+function openExchange(){
+ if(!ME)return;css();exCss();
+ let dir='to_chips',amt='',busy=false,msg='';
+ const m=modal('<div class="ex" id="exw"></div>'),w=m.querySelector('#exw');
+ const have=()=>dir==='to_chips'?S.novas:S.chips,val=()=>{const v=parseInt(String(amt).replace(/\D/g,''),10);return Number.isFinite(v)?v:0};
+ const unit=()=>dir==='to_chips'?'chips':'SP',from=()=>dir==='to_chips'?'SP':'chips';
+ const line=()=>{const v=val();return v<1?(msg||'Enter an amount.'):v>have()?`You only have ${fmt(have())} ${from()}`:`You get ${fmt(v)} ${unit()}`};
+ const upd=()=>{const r=w.querySelector('.ex-r'),g=w.querySelector('[data-exgo]'),v=val();if(r)r.textContent=line();if(g)g.disabled=busy||v<1||v>have()};
+ const draw=()=>{w.innerHTML=`<h3>Exchange</h3><div class="ex-bals"><div><span class="mu">Sidelyne Points</span><b>${fmt(S.novas)} SP</b></div><div><span class="mu">Sidelyne Chips</span><b>${fmt(S.chips)} chips</b></div></div>
+<div class="ex-seg"><button data-exd="to_chips" class="${dir==='to_chips'?'on':''}">SP \u2192 Chips</button><button data-exd="to_sp" class="${dir==='to_sp'?'on':''}">Chips \u2192 SP</button></div>
+<p class="mu ex-n">1 SP = 1 chip. Chips are only used in the casino. Cash chips back out to SP any time.</p>
+<div class="bj-bi"><input class="ex-in" id="examt" inputmode="numeric" value="${amt}" placeholder="Amount" aria-label="Amount to exchange"><button class="chip" data-exq="q">\u00bc</button><button class="chip" data-exq="h">\u00bd</button><button class="chip" data-exq="m">Max</button></div>
+<div class="ex-r" role="status">${line()}</div><button class="pri" data-exgo>${busy?'Exchanging\u2026':dir==='to_chips'?'Get chips':'Cash out to SP'}</button>`;upd()};
+ m.addEventListener('input',e=>{if(e.target.id!=='examt')return;const d=e.target.value.replace(/\D/g,'');amt=d;if(d!==e.target.value)e.target.value=d;msg='';upd()});
+ m.addEventListener('keydown',e=>{if(e.target.id==='examt'&&e.key==='Enter'){e.preventDefault();const g=w.querySelector('[data-exgo]');if(g&&!g.disabled)g.click()}});
+ m.addEventListener('click',async e=>{
+  const d=e.target.closest('[data-exd]');if(d&&!busy){dir=d.dataset.exd;amt='';msg='';draw();return}
+  const q=e.target.closest('[data-exq]');if(q&&!busy){const h=have();amt=String(q.dataset.exq==='m'?h:Math.floor(h/(q.dataset.exq==='h'?2:4)));draw();return}
+  if(!e.target.closest('[data-exgo]')||busy)return;const v=val();if(v<1||v>have())return;
+  busy=true;draw();
+  try{const q2=await FX_DB.rpc('chips_exchange',{p_dir:dir,p_amount:v});if(q2.error)throw q2.error;const r=q2.data;
+   applyNovas(r.novas,null);applyChips(r.chips,null);if(typeof r.lifetime==='number'){S.life=r.lifetime;sv()}hdr();
+   msg=dir==='to_chips'?`Done: ${fmt(v)} SP became ${fmt(r.got)} chips.`:`Done: ${fmt(v)} chips became ${fmt(r.got)} SP.`;toast(msg);amt='';
+   document.dispatchEvent(new Event('fx-chips'))}
+  catch(err){const t=String(err&&err.message||err||'');msg=/function|schema|does not exist/i.test(t)?'Exchange is not set up yet (run supabase/chips.sql)':t;toast(msg)}
+  busy=false;if(m.isConnected)draw()});
+ draw()}
+window.openExchange=openExchange;
+
 document.addEventListener('click',e=>{
+ if(e.target.closest('[data-cx]')){openExchange();return}
  const b=e.target.closest('[data-bj]');if(b){openBlackjack(b.dataset.bj);return}
  const cg=e.target.closest('[data-cg]');if(cg&&OPEN[cg.dataset.cg]){OPEN[cg.dataset.cg]();return}
  const t=e.target.closest('[data-slotsth]');if(t&&window.openSlots)window.openSlots(t.dataset.slotsth)});
