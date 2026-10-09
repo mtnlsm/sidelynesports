@@ -20,7 +20,7 @@
     '.tt-tb .n{text-align:left;white-space:nowrap}',
     '.tt-tb .r{color:var(--mu);width:22px;text-align:left}',
     '.tt-tb .n span{display:inline-flex;align-items:center;gap:8px;font-weight:700}',
-    '.tt-tb .n img{width:24px;height:24px;object-fit:contain}',
+    '.tt-tb .n img,.tt-tb .n svg{width:24px;height:24px;object-fit:contain;flex:none}',
     '.tt-tb tr[data-ttm]{cursor:pointer}',
     '.tt-tb tr[data-ttm]:active td{background:var(--sf2)}',
     '.tt-note{color:var(--mu);font-size:12px;margin-top:14px}',
@@ -37,7 +37,7 @@
     '.tt-gm{flex:1;min-width:0}.tt-gm b{display:block;overflow-wrap:anywhere}',
     '.tt-gd{text-align:right;font-size:13px;color:var(--mu);flex:none}',
     '.tt-hd{display:flex;gap:12px;align-items:center}',
-    '.tt-lg{width:60px;height:60px;flex:none}.tt-lg img{width:100%;height:100%;object-fit:contain;display:block}',
+    '.tt-lg{width:60px;height:60px;flex:none}.tt-lg img,.tt-lg svg{width:100%;height:100%;object-fit:contain;display:block}',
     '.tt-nm{font-family:var(--fd);font-size:26px;font-weight:800;text-transform:uppercase;line-height:1.05;margin:0;overflow-wrap:anywhere}'
   ].join('');
   document.head.appendChild(css);
@@ -46,6 +46,7 @@
     return fetch(API + '?' + qs).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'error'); return j; }); });
   }
 
+  function jr(n, z, ab) { try { return jerseySvg(n, z, st.sp, ab); } catch (e) { return ''; } }
   function load(sp) {
     var c = ST[sp];
     if ((c && Date.now() - c.at < 300000) || busy[sp]) return;
@@ -73,7 +74,7 @@
         g.labels.map(function (l) { return '<th>' + E(l) + '</th>'; }).join('') + '</tr></thead><tbody>';
       g.rows.forEach(function (r) {
         h += '<tr data-ttm="' + E(r.id) + '" data-ttn="' + E(r.n) + '"><td class="r">' + r.rank + '</td><td class="n"><span>' +
-          (r.logo ? '<img src="' + E(r.logo) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + E(r.n) + '</span></td>' +
+          jr(r.n, 24, r.ab) + E(r.n) + '</span></td>' +
           r.v.map(function (v) { return '<td>' + E(v) + '</td>'; }).join('') + '</tr>';
       });
       h += '</tbody></table></div></div>';
@@ -99,7 +100,7 @@
 
   function sheet(d, name) {
     var r = d.record || {}, f = d.last || [];
-    var h = '<div class="tt-hd"><div class="tt-lg">' + (d.logo ? '<img src="' + E(d.logo) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</div><div style="min-width:0"><h3 class="tt-nm">' + E(d.name || name) + '</h3>' +
+    var h = '<div class="tt-hd"><div class="tt-lg">' + jr(d.name || name, 60, d.ab) + '</div><div style="min-width:0"><h3 class="tt-nm">' + E(d.name || name) + '</h3>' +
       (d.tags && d.tags.length ? '<div class="mu" style="margin-top:4px">' + E(d.tags.join(' \u00b7 ')) + '</div>' : '') + '</div></div>';
     if (r.summary) h += '<div class="tt-rec"><b>' + E(r.summary) + '</b><span>Record</span></div>';
     if (d.stats && d.stats.length) h += '<div class="tt-bio">' + d.stats.map(function (x) { return '<div><small>' + E(x[0]) + '</small><span>' + E(x[1]) + '</span></div>'; }).join('') + '</div>';
