@@ -289,14 +289,14 @@ function openSlots(startTheme){
  const saveBet=()=>{try{localStorage.setItem('fx-slbet',String(bet))}catch(e){}};
  const lk=()=>busy||autoOn;
  const defMsg=()=>'<span>'+TH().name+' · 3 '+SCP()+' = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
- const goBtn=()=>{const g=$m('#slgo');if(autoOn){g.disabled=false;g.textContent='Stop auto · '+autoLeft+' left'}else if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{const ok=bet>=MINBET&&bet<=S.novas;g.disabled=busy||!ok;g.textContent=busy?'Spinning…':bet<MINBET?'Enter a bet':S.novas<bet?'Not enough SP':'Spin · '+fmt(bet)+' SP'}
+ const goBtn=()=>{const g=$m('#slgo');if(autoOn){g.disabled=false;g.textContent='Stop auto · '+(autoLeft===Infinity?'∞':autoLeft+' left')}else if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{const ok=bet>=MINBET&&bet<=S.novas;g.disabled=busy||!ok;g.textContent=busy?'Spinning…':bet<MINBET?'Enter a bet':S.novas<bet?'Not enough SP':'Spin · '+fmt(bet)+' SP'}
   $m('#sltot').textContent='Min '+fmt(MINBET)+' · Max '+fmt(Math.min(MAXBET,Math.max(S.novas,MINBET)))};
  const uiExtra=()=>{$m('#slname').textContent=TH().name;
   $m('#slth').innerHTML=TORDER.map(k=>`<button class="chip ${k===theme?'on':''}" data-slth="${k}" aria-label="${THEMES[k].name}" ${lk()?'disabled':''}>${THEMES[k].s[5][0]}${k===theme?' '+THEMES[k].name:''}</button>`).join('');
   $m('#slmu').textContent=muted?'🔇 Sound off':'🔊 Sound on';
   $m('#slq').innerHTML=QUICK.map(v=>`<button class="chip ${v===bet?'on':''}" data-slq="${v}" ${lk()||v>S.novas?'disabled':''}>${shortN(v)}</button>`).join('');
   const bi=$m('#slbet');bi.disabled=lk();m.querySelectorAll('[data-slhalf],[data-sldbl],[data-slmax]').forEach(b=>b.disabled=lk());
-  $m('#slau').innerHTML=(autoOn?'':`<div class="sl-ar"><span class="mu">Auto spin</span>`+[10,25,50,100].map(n=>`<button class="chip" data-slau="${n}" ${busy||(S.novas<bet&&!(wsv>0))?'disabled':''}>${n}</button>`).join('')+`</div>`)+`<div class="sl-ar"><button class="chip ${turbo?'on':''}" data-sltg="turbo" aria-pressed="${turbo}">${turbo?'✓ ':''}Turbo</button><button class="chip ${stopBonus?'on':''}" data-sltg="bonus" aria-pressed="${stopBonus}">${stopBonus?'✓ ':''}Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" aria-pressed="${stopBig}" title="Any win of ${BIGX}× your total bet or more">${stopBig?'✓ ':''}Stop on big win</button></div>`};
+  $m('#slau').innerHTML=(autoOn?'':`<div class="sl-ar"><span class="mu">Auto spin</span>`+[5,10,25,'inf'].map(n=>`<button class="chip" data-slau="${n}" ${n==='inf'?'title="Spin until you run out of SP or stop" aria-label="Infinite auto spin"':''} ${busy||(S.novas<bet&&!(wsv>0))?'disabled':''}>${n==='inf'?'∞':n}</button>`).join('')+`</div>`)+`<div class="sl-ar"><button class="chip ${turbo?'on':''}" data-sltg="turbo" aria-pressed="${turbo}">${turbo?'✓ ':''}Turbo</button><button class="chip ${stopBonus?'on':''}" data-sltg="bonus" aria-pressed="${stopBonus}">${stopBonus?'✓ ':''}Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" aria-pressed="${stopBig}" title="Any win of ${BIGX}× your total bet or more">${stopBig?'✓ ':''}Stop on big win</button></div>`};
  const draw=()=>{clampBet();const bi=$m('#slbet');if(document.activeElement!==bi)bi.value=String(bet);goBtn();bal(S.novas);saverUI();uiExtra()};
  /* wager saver: out of SP (1 to 24) = stake your last SP for a chance at 1 free spin. The server decides (supabase/wager_saver.sql) */
  function saverUI(){const p=$m('#slsv'),n=S.novas,low=n>=1&&n<MINBET&&!busy&&wsv===0;$m('#slsvre').hidden=!(low&&declined);
@@ -317,7 +317,7 @@ function openSlots(startTheme){
   if(e.target.closest('[data-slmute]')){muted=!muted;try{localStorage.setItem('fx-slm',muted?'1':'0')}catch(x){}if(!muted)sfx.click();draw();return}
   const tg=e.target.closest('[data-sltg]');if(tg){const w=tg.dataset.sltg;if(w==='bonus')stopBonus=!stopBonus;else if(w==='big')stopBig=!stopBig;else{turbo=!turbo;try{localStorage.setItem('fx-slturbo',turbo?'1':'0')}catch(x){}}draw();return}
   const th=e.target.closest('[data-slth]');if(th&&!busy&&!autoOn){switchTheme(th.dataset.slth);return}
-  const au=e.target.closest('[data-slau]');if(au&&!busy&&!autoOn){autoLeft=+au.dataset.slau;autoOn=true;ac();draw();autoLoop();return}
+  const au=e.target.closest('[data-slau]');if(au&&!busy&&!autoOn){autoLeft=au.dataset.slau==='inf'?Infinity:+au.dataset.slau;autoOn=true;ac();draw();autoLoop();return}
   if(e.target.closest('#slgo')&&autoOn){autoOn=false;autoLeft=0;draw();return}
   if(!busy&&!autoOn){
    if(e.target.closest('[data-slhalf]'))return setBet(Math.max(MINBET,Math.floor(bet/2)));
