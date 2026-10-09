@@ -5,7 +5,8 @@ const BASE = 'https://site.api.espn.com/apis/site/v2/sports/';
 const LEAGUES = { // code -> ESPN {sport}/{league}
   NFL: 'football/nfl', NBA: 'basketball/nba', MLB: 'baseball/mlb', NHL: 'hockey/nhl', WNBA: 'basketball/wnba', CFL: 'football/cfl',
   CFB: 'football/college-football', CBB: 'basketball/mens-college-basketball', CBASE: 'baseball/college-baseball' };
-const PATHS = { UFC: 'mma/ufc/scoreboard' }, TEAM_PATHS = {};
+const PATHS = { UFC: 'mma/ufc/scoreboard', PFL: 'mma/pfl/scoreboard' }, TEAM_PATHS = {};
+const MMA_SP = new Set(['UFC', 'PFL']); // fight leagues (ESPN mma/*), handled with the fighter-card code
 for (const k of Object.keys(LEAGUES)) { PATHS[k] = LEAGUES[k] + '/scoreboard'; TEAM_PATHS[k] = LEAGUES[k] + '/teams'; }
 // Leagues switched off to stay inside Cloudflare's free-plan CPU / request limits. To bring one back, delete it from this list.
 const OFF = ['CFL', 'CBB', 'CBASE']; for (const k of OFF) { delete PATHS[k]; delete TEAM_PATHS[k]; }
@@ -23,7 +24,7 @@ const hs = (a, sp, cid) => {
   const h = a.headshot, u = typeof h === 'string' ? h : (h && h.href) || '';
   if (u) return u.replace(/^http:/, 'https:');
   const id = a.id || cid; if (!id) return '';
-  const seg = sp === 'UFC' ? 'mma' : LEAGUES[sp] ? LEAGUES[sp].split('/').pop() : '';
+  const seg = MMA_SP.has(sp) ? 'mma' : LEAGUES[sp] ? LEAGUES[sp].split('/').pop() : '';
   return seg ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + id + '.png' : '';
 };
 const lgo = (t) => String((t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href))) || '').replace(/^http:/, 'https:');
@@ -127,7 +128,7 @@ function normTeam(sp, ev) {
     sa: st === 'up' ? '' : sa, sb: st === 'up' ? '' : sb, st, date: ev.date,
     od: st === 'up' ? normOdds(c) : undefined,
     sit: st === 'live' ? normSit(sp, c.situation, { a: String(away.team.id), b: String(home.team.id) }) : undefined,
-    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: sp === 'UFC' ? hs(o.athlete, sp) : '' } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0 } : null))).filter(Boolean)) : undefined,
+    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: MMA_SP.has(sp) ? hs(o.athlete, sp) : '' } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0 } : null))).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
 function normUfc(ev, sp = 'UFC') {
@@ -164,7 +165,7 @@ async function load(sp) {
   // Ranged request first (yesterday .. +7 days, UFC +14). For team leagues we ALSO read ESPN's plain default scoreboard and merge the two, so a flaky range query can never leave the upcoming list empty or stuck.
   const get = async (q) => { const r = await espn(BASE + PATHS[sp] + q); return (await r.json()).events || []; };
   let events = [], rangeErr = '';
-  if (sp === 'UFC') events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
+  if (MMA_SP.has(sp)) events = await get(`?dates=${ymd(-1)}-${ymd(14)}&limit=100`);
   else {
     const x = '&' + (EXTRA[sp] || 'limit=300'); // always ask for plenty of games: ESPN can cut a long list short otherwise
     let ranged = [], plain = [], err;
@@ -183,11 +184,11 @@ async function load(sp) {
     const seen = new Set();
     events = ranged.concat(today, plain).filter((ev) => ev && ev.id != null && !seen.has(ev.id) && seen.add(ev.id));
   }
-  const out = events.flatMap((ev) => (sp === 'UFC' ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
+  const out = events.flatMap((ev) => (MMA_SP.has(sp) ? normUfc(ev, sp) : [normTeam(sp, ev)])).filter(Boolean);
   DBG[sp] = { range_error: rangeErr || undefined, espn_events: events.length, espn_pre: events.filter((e) => e && e.status && e.status.type && e.status.type.state === 'pre').length,
-    kept: out.length, games: events.filter((e) => e && sp !== 'UFC').map((e) => (e.shortName || e.name) + ' | ' + (e.status && e.status.type && e.status.type.state) + ' | ' + e.date), kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
-    next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && sp !== 'UFC' && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
-  if (sp === 'UFC') { try { await addMmaOdds(sp, events, out); } catch (e) {} }
+    kept: out.length, games: events.filter((e) => e && !MMA_SP.has(sp)).map((e) => (e.shortName || e.name) + ' | ' + (e.status && e.status.type && e.status.type.state) + ' | ' + e.date), kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
+    next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && !MMA_SP.has(sp) && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
+  if (MMA_SP.has(sp)) { try { await addMmaOdds(sp, events, out); } catch (e) {} }
   return out;
 }
 // ESPN gives team colors as 6-digit hex without '#'. Used by the SP Shop team themes.
