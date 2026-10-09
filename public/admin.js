@@ -76,12 +76,12 @@ async function adComments(pid){
 
 /* ---- Users ---- */
 async function adUsers(){
-  let q=FX_DB.from('profiles').select('id,username,display_name,avatar_url,banner_url,bio,role,novas,created_at').order('created_at',{ascending:false}).limit(40);
+  let q=FX_DB.from('profiles').select('id,username,display_name,avatar_url,banner_url,bio,role,novas,created_at,flair').order('created_at',{ascending:false}).limit(40);
   const s=adClean(AD.q.users);if(s)q=q.or(`username.ilike.%${s}%,display_name.ilike.%${s}%`);
   const r=await q;if(r.error)throw r.error;
   r.data.forEach(u=>AD.users[u.id]=u);
   if(!r.data.length)return'<div class="glass card"><p class="mu">No users found.</p></div>';
-  return`<div class="glass card">${r.data.map(u=>`<div class="pk"><div style="min-width:0">${adWho(u)}<div class="mu" style="margin-top:2px">${(u.novas||0).toLocaleString()} SP · joined ${ago(u.created_at)}${u.role==='admin'?' · <span class="badge-ad">Admin</span>':''}</div></div>${adBtn('user',u.id,'Manage')}</div>`).join('')}</div>`;
+  return`<div class="glass card">${r.data.map(u=>`<div class="pk"><div style="min-width:0">${adWho(u)}<div class="mu" style="margin-top:2px">${(u.novas||0).toLocaleString()} SP · joined ${ago(u.created_at)}${u.role==='admin'?' · <span class="badge-ad">Admin</span>':''}${u.flair==='og'?' · '+flr(u):''}</div></div>${adBtn('user',u.id,'Manage')}</div>`).join('')}</div>`;
 }
 function adUserModal(id){
   const u=AD.users[id];if(!u)return;
@@ -92,10 +92,13 @@ function adUserModal(id){
 <div class="row" style="margin:10px 0;flex-wrap:wrap"><label class="row" style="gap:6px;text-transform:none"><input type="checkbox" id="au-ca" style="width:auto"> Remove avatar</label><label class="row" style="gap:6px;text-transform:none"><input type="checkbox" id="au-cb" style="width:auto"> Remove banner</label></div>
 <button class="pri" id="au-save">Save profile</button>
 <div style="border-top:1px solid var(--bd);margin:14px 0 10px;padding-top:12px"><b>Adjust SP</b><div class="row" style="margin-top:8px;gap:8px"><input id="au-sp" type="number" inputmode="numeric" placeholder="+100 or -50" style="flex:1;min-width:0;font-size:16px"><button class="chip" id="au-go">Apply</button></div><input id="au-why" maxlength="60" placeholder="Reason (optional)" style="margin-top:8px;font-size:16px"></div>
+<div style="border-top:1px solid var(--bd);margin:14px 0 10px;padding-top:12px"><b>OG badge</b><div class="mu" style="margin:4px 0 8px">A gold crown badge next to their name. They can equip or remove it in the SP Shop.</div><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${flr({flair:'og'})}<button class="chip" id="au-og">Give OG</button><button class="chip" id="au-ogx">Remove OG</button></div></div>
 <div class="ad-act" style="border-top:1px solid var(--bd);padding-top:12px">${u.id===ME.id?'':`<button class="chip" id="au-role">${u.role==='admin'?'Remove admin':'Make admin'}</button><button class="chip danger" id="au-del">Delete account</button>`}</div>`);
   const done=msg=>{m.remove();toast(msg);if(S.tab==='admin')loadAdmin()};
   m.querySelector('#au-save').onclick=async()=>{const r=await FX_DB.rpc('admin_update_profile',{p_user:id,p_username:m.querySelector('#au-un').value,p_display:m.querySelector('#au-dn').value,p_bio:m.querySelector('#au-bio').value,p_clear_avatar:m.querySelector('#au-ca').checked,p_clear_banner:m.querySelector('#au-cb').checked});if(r.error)return adFail(r.error);done('Profile saved')};
   m.querySelector('#au-go').onclick=async()=>{const d=parseInt(m.querySelector('#au-sp').value,10);if(!d)return toast('Enter an amount like 100 or -50');const r=await FX_DB.rpc('admin_adjust_sp',{p_user:id,p_delta:d,p_reason:m.querySelector('#au-why').value});if(r.error)return adFail(r.error);done('SP updated. They now have '+Number(r.data).toLocaleString())};
+  m.querySelector('#au-og').onclick=async()=>{const r=await FX_DB.rpc('admin_set_og',{p_user:id,p_on:true});if(r.error)return adFail(r.error);done('OG badge given to @'+u.username)};
+  m.querySelector('#au-ogx').onclick=async()=>{const r=await FX_DB.rpc('admin_set_og',{p_user:id,p_on:false});if(r.error)return adFail(r.error);done('OG badge removed from @'+u.username)};
   const ro=m.querySelector('#au-role');if(ro)ro.onclick=async()=>{const r=await FX_DB.rpc('admin_set_role',{p_user:id,p_role:u.role==='admin'?'user':'admin'});if(r.error)return adFail(r.error);done(u.role==='admin'?'Admin removed':'Admin added')};
   const de=m.querySelector('#au-del');if(de)de.onclick=async()=>{if(!confirm('Delete @'+u.username+' and everything they posted? This cannot be undone.'))return;const r=await FX_DB.rpc('admin_delete_user',{p_user:id});if(r.error)return adFail(r.error);done('Account deleted')};
 }
