@@ -86,34 +86,34 @@ const SFX={
   click(){nz(0,.02,'bandpass',2400,0,4,.06,.001);tone(500,0,.03,'square',.02)},
   coin(){clink(0,.035)},
   expand(){nz(0,.8,'bandpass',200,2200,1.2,.1,.15);boom(.55,.12)}},
- /* GOLD RUSH: pickaxe tinks on rock, heavy coin pours, anvil rings, dynamite */
+ /* GOLD RUSH: prospector banjo, anvil dings, brass and coin pours */
  gold:{
-  spinOn(){ticker(n=>{if(n%2===0){nz(0,.03,'bandpass',2600,0,5,.2,.001);tone(2100+Math.random()*500,0,.06,'sine',.07,1700)}else{nz(0,.05,'lowpass',500,200,1,.28,.001);tone(130,0,.07,'sine',.14,80)}},85,18)},
-  stop(i){nz(0,.07,'lowpass',700,150,1,.4,.001);tone(110,0,.12,'sine',.22,60);tone(2300,.02,.1,'sine',.07,1900)},
-  win(l){if(l<=0){shower(4,.3,.05);return}
-   if(l===1){shower(10,.7,.055);glass(1100,0,.6,.045);return}
-   if(l===2){shower(22,1.4,.06);glass(1100,0,.8,.06);glass(1100,.25,.8,.06);boom(0,.05);return}
-   shower(40,2.4,.065);[0,.22,.44,.66].forEach(t=>glass(1100,t,1,.07));boom(0,.09);[0,2,5].forEach(s=>brass(note(s),.1,.8,.045))},
-  bonus(){nz(0,.95,'highpass',2000,9000,.8,.08,.3);for(let k=0;k<14;k++)tone(2600+Math.random()*900,k*.06,.03,'square',.015);boom(.95,.16);for(let k=0;k<10;k++)clink(1.2+k*.07,.05);[0,2,5].forEach(s=>brass(note(s),1.5,.8,.05))},
-  bonusWin(){shower(46,2.6,.06);[1,1.25,1.5,2].forEach((m,i)=>glass(1100*m,i*.3,1.1,.07));boom(0,.1);[0,2,5].forEach(s=>brass(note(s),0,1.3,.05))},
-  lose(){nz(0,.12,'lowpass',500,120,1,.25,.001);tone(98,0,.2,'sine',.14,60)},
-  click(){nz(0,.025,'bandpass',2400,0,5,.12,.001)},
+  spinOn(){ticker(n=>{const a=n%4===0;nz(0,.024,'bandpass',a?900:1300+Math.random()*200,0,3,a?.28:.2,.001);tone(a?240:330,0,.035,'sine',a?.09:.05,a?170:240);if(n%8===5)bell(1180,0,.25,.025)},64,12)},
+  stop(i){nz(0,.055,'bandpass',750,320,1.3,.36,.001);tone(190,0,.1,'sine',.2,90);clink(.03,.05)},
+  win(l){if(l<=0){shower(4,.3,.05);bell(note(5)*2,.05,.6,.06);return}
+   if(l===1){shower(10,.7,.055);[5,7,9].forEach((s,i)=>pluck(note(s),i*.09,.5,.07));bell(880,.3,.7,.05);return}
+   if(l===2){shower(22,1.4,.06);arp([2,4,7,9,12],0,.08,(f,t)=>pluck(f,t,.6,.07));[0,.3,.6].forEach(t=>bell(880,t,.8,.06));brass(note(2),.1,.6,.045);brass(note(5),.1,.6,.04);return}
+   shower(40,2.4,.065);arp([0,2,4,7,9,12,14],0,.07,(f,t)=>pluck(f,t,.6,.07));[0,.25,.5,.75].forEach(t=>bell(880,t,1,.07));[0,2,5].forEach(s=>brass(note(s),.1,1,.055));brass(note(7),.6,.9,.05)},
+  bonus(){for(let k=0;k<8;k++){bell(880,k*.17,.7,.07);bell(1320,k*.17+.04,.5,.035)}shower(18,1.4,.05);[0,2,5].forEach(s=>brass(note(s),1.1,.7,.05));[0,3,7].forEach(s=>brass(note(s+2),1.65,.9,.05))},
+  bonusWin(){[[0,2,5],[2,4,7],[0,5,9]].forEach((ch,k)=>ch.forEach(s=>brass(note(s),k*.34,k===2?1.4:.36,.05)));shower(46,2.6,.06);[0,.25,.5,.75,1].forEach(t=>bell(880,1+t,1.1,.07))},
+  lose(){tone(330,0,.16,'sine',.06);tone(262,.16,.22,'sine',.05)},
+  click(){nz(0,.02,'bandpass',2000,0,4,.07,.001);tone(440,0,.03,'sine',.03)},
   coin(){clink(0,.04)},
-  expand(){nz(0,1,'lowpass',300,80,.8,.22,.1);boom(.35,.2);for(let k=0;k<8;k++)clink(.6+k*.06,.04)}},
- /* OCEAN TREASURE: bubbles, harp, sonar, waves and whale song */
+  expand(){nz(0,.8,'bandpass',200,2000,1.2,.1,.2);for(let k=0;k<6;k++)bell(880,.4+k*.1,.6,.06);boom(.7,.1);shower(14,1,.05)}},
+ /* OCEAN TREASURE: soft harp, glass drops, ship's bell, rolling swells */
  ocean:{
-  spinOn(){ticker(n=>{bubble(0,.07+Math.random()*.03);if(n%3===0)nz(0,.18,'bandpass',500+Math.random()*300,0,.8,.05,.05)},95,40)},
-  stop(i){tone(520+i*70,0,.1,'sine',.17,1300+i*100);nz(0,.05,'bandpass',900,0,2,.08,.002)},
-  win(l){if(l<=0){[5,7].forEach((s,i)=>pluck(note(s),i*.08,.35,.06));bubble(.1,.06);return}
-   const run=l===1?[5,7,9]:l===2?[2,4,7,9,12]:[0,2,4,7,9,12,14,16];
-   arp(run,0,.08,(f,t)=>pluck(f,t,.7,.07));for(let k=0;k<(l===1?4:l===2?9:16);k++)bubble(.1+Math.random()*(.6+l*.4),.05);
-   if(l>=2)nz(0,1,'bandpass',300,1800,.9,.07,.3);if(l>=3)tone(190,.3,1.6,'sine',.08,120)},
-  bonus(){tone(1100,0,1.6,'sine',.09);tone(1100,.7,1.6,'sine',.06);nz(0,1.8,'bandpass',200,1600,1,.1,.7);tone(170,.5,2,'sine',.1,110);tone(176,.5,2,'sine',.05,116);for(let k=0;k<18;k++)bubble(.3+Math.random()*1.5,.05);arp([0,4,7,9,12],1.3,.12,(f,t)=>pluck(f,t,.8,.06))},
-  bonusWin(){arp([0,2,4,7,9,12,14,16,19],0,.09,(f,t)=>pluck(f,t,.9,.07));nz(0,1.8,'bandpass',300,1400,1,.08,.5);for(let k=0;k<24;k++)bubble(Math.random()*2,.045);tone(190,.6,1.8,'sine',.08,120)},
-  lose(){tone(420,0,.18,'sine',.07,230);bubble(.2,.04)},
-  click(){bubble(0,.05)},
-  coin(){bubble(0,.04)},
-  expand(){nz(0,.9,'bandpass',200,1800,1,.12,.2);boom(.6,.08)}},
+  spinOn(){ticker(n=>{nz(0,.02,'bandpass',n%3===0?950:1250,0,3,.16,.001);tone(n%3===0?280:350,0,.03,'sine',.06,220);if(n%7===4)glass(note([5,7,9,10][n%4])*2,0,.35,.018)},72,14)},
+  stop(i){nz(0,.05,'bandpass',800,350,1.2,.26,.001);tone(200,0,.09,'sine',.16,100);pluck(note(5+i),.02,.4,.05)},
+  win(l){if(l<=0){[5,7].forEach((s,i)=>pluck(note(s),i*.09,.45,.07));glass(note(9)*2,.15,.5,.03);return}
+   const run=l===1?[5,7,9,10]:l===2?[2,4,7,9,12,14]:[0,2,4,7,9,12,14,16,19];
+   arp(run,0,.085,(f,t)=>{pluck(f,t,.8,.075);tone(f*2,t,.4,'sine',.02)});
+   nz(0,1+l*.4,'bandpass',250,900,.8,.045,.4);if(l>=2){glass(note(12)*2,.5,1,.04);glass(note(16)*2,.7,1,.035)}if(l>=3)[0,2,5].forEach(s=>tone(note(s),.2,1.8,'sine',.04))},
+  bonus(){bell(330,0,2,.09);bell(330,.9,2,.07);nz(0,2,'bandpass',200,1400,.9,.09,.8);[0,2,5].forEach(s=>tone(note(s),.2,2.2,'sine',.045));arp([0,4,7,9,12,16],1.2,.11,(f,t)=>pluck(f,t,.9,.07))},
+  bonusWin(){arp([0,2,4,7,9,12,14,16,19,21],0,.09,(f,t)=>pluck(f,t,1,.075));nz(0,2,'bandpass',250,1200,.9,.06,.6);[0,2,5].forEach(s=>tone(note(s),.5,2,'sine',.045));bell(330,1.2,1.8,.07)},
+  lose(){pluck(note(5),0,.3,.05);pluck(note(2),.14,.4,.045)},
+  click(){glass(note(9)*2,0,.2,.025)},
+  coin(){glass(note(10)*2,0,.15,.02)},
+  expand(){nz(0,1,'bandpass',200,1400,.9,.11,.4);bell(330,.3,1.6,.08);boom(.7,.07)}},
  /* FROZEN FORTUNE: ice crackle, glass chimes, sleigh bells, aurora shimmer */
  frozen:{
   spinOn(){ticker(n=>{nz(0,.02,'highpass',5000,0,1,.12,.001);tone(2600+Math.random()*900,0,.05,'sine',.05,2200);if(n%4===0)nz(0,.06,'bandpass',3200,0,3,.08,.001)},62,12)},
@@ -153,19 +153,19 @@ const SFX={
   click(){nz(0,.03,'bandpass',900,0,6,.12,.001)},
   coin(){pluck(note(10),0,.2,.04)},
   expand(){gong(note(0),0,2,.1);boom(.1,.12)}},
- /* COSMIC VOYAGE: laser zaps, synth arps, warp whooshes, sparkle */
+ /* COSMIC VOYAGE: soft synth pads, glass pings and sparkle arps, smooth warp swells */
  cosmic:{
-  spinOn(){ticker(n=>{const s=[0,2,4,7,9,12,9,7][n%8];tone(note(s)*2,0,.05,'square',.04);if(n%8===0)tone(note(0)/2,0,.1,'sine',.08)},58,6)},
-  stop(i){zap(1200,240,0,.1,.07,'sawtooth');tone(note(0)/2,0,.12,'sine',.18,60);nz(0,.02,'bandpass',3000,0,3,.1,.001)},
-  win(l){if(l<=0){zap(500,1500,0,.18,.05,'square');sparkle(4,.3,.04);return}
-   const run=l===1?[0,4,7,12]:l===2?[0,2,4,7,9,12,16]:[0,2,4,7,9,12,14,16,19,21,24];
-   arp(run,0,.06,(f,t)=>{tone(f*2,t,.18,'square',.04);tone(f*4,t,.1,'sine',.025)});sparkle(l*6,.5+l*.6,.04);if(l>=3)zap(100,1600,.4,1.2,.05,'sawtooth')},
-  bonus(){nz(0,1.5,'bandpass',100,6000,1.3,.14,.4);zap(60,1200,0,1.4,.06,'sawtooth');arp([0,4,7,12,16,19,24],1.3,.07,(f,t)=>tone(f*2,t,.25,'square',.05));sparkle(16,1.6,.05)},
-  bonusWin(){arp([0,4,7,12,7,12,16,19,24],0,.08,(f,t)=>{tone(f*2,t,.3,'square',.045);tone(f,t,.4,'sine',.05)});zap(80,2000,.2,1.6,.05,'sawtooth');sparkle(34,2.4,.045)},
-  lose(){zap(420,90,0,.4,.05,'sawtooth')},
-  click(){tone(1200,0,.03,'square',.025)},
-  coin(){tone(2600+Math.random()*800,0,.05,'sine',.04)},
-  expand(){nz(0,1.1,'bandpass',100,5000,1.2,.14,.3);zap(60,900,0,1,.06,'sawtooth')}}};
+  spinOn(){ticker(n=>{const sc=[0,2,4,7,9,12,9,7][n%8];tone(note(sc)*2,0,.07,'triangle',.035);if(n%8===0)tone(note(0),0,.12,'sine',.07)},105,8)},
+  stop(i){tone(note(0),0,.14,'sine',.2,note(0)*.6);glass(note(5+i)*2,.02,.45,.035);nz(0,.03,'bandpass',1500,0,2,.08,.001)},
+  win(l){if(l<=0){glass(note(7)*2,0,.6,.05);glass(note(9)*2,.1,.6,.04);return}
+   const run=l===1?[0,4,7,12]:l===2?[0,2,4,7,9,12,16]:[0,2,4,7,9,12,14,16,19,21];
+   arp(run,0,.07,(f,t)=>{tone(f*2,t,.28,'triangle',.05);glass(f*4,t+.01,.4,.022)});sparkle(l*5,.5+l*.5,.035);if(l>=2)[0,4,7].forEach(s=>tone(note(s),.2,1.4,'sine',.04))},
+  bonus(){nz(0,1.6,'bandpass',150,4200,1,.1,.5);[0,4,7,12].forEach((s,i)=>tone(note(s),.1+i*.12,2,'sine',.05));arp([0,4,7,12,16,19,24],1.1,.09,(f,t)=>{tone(f*2,t,.4,'triangle',.05);glass(f*4,t,.5,.025)});sparkle(14,1.8,.04)},
+  bonusWin(){arp([0,4,7,12,7,12,16,19,24],0,.09,(f,t)=>{tone(f*2,t,.4,'triangle',.05);tone(f,t,.5,'sine',.04)});[0,4,7].forEach(s=>tone(note(s),.4,2.2,'sine',.045));nz(0,1.8,'bandpass',200,3500,1,.07,.5);sparkle(28,2.4,.04)},
+  lose(){tone(note(4),0,.35,'sine',.06,note(0));glass(note(0)*2,.1,.4,.025)},
+  click(){tone(note(9)*2,0,.06,'sine',.03)},
+  coin(){glass(note(10)*2,0,.12,.02)},
+  expand(){nz(0,1.2,'bandpass',150,4000,1,.1,.3);[0,4,7].forEach(s=>tone(note(s),0,1.2,'sine',.05));sparkle(8,.8,.035)}}};
 const cur=()=>SFX[theme]||SFX.classic;
 const sfx={spinOn:()=>cur().spinOn(),spinOff(){clearTimeout(tickT);tickT=null;mot=null},stop:i=>cur().stop(i),win:l=>cur().win(l),bonus:()=>cur().bonus(),coin:()=>cur().coin(),bonusWin:()=>cur().bonusWin(),lose:()=>cur().lose(),click:()=>cur().click(),expand:()=>cur().expand()};
 
