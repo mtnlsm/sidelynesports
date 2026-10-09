@@ -1,5 +1,5 @@
--- Sidelyne Sports: SP CASINO extra games: COIN FLIP + 3 POKER GAMES. Free play only, SP has no cash value.
--- Run in Supabase SQL Editor AFTER stake.sql (it uses sp_credit from there). Safe to re-run.
+-- Sidelyne Sports: CASINO extra games: COIN FLIP + 3 POKER GAMES. Free play only, chips have no cash value.
+-- These games bet and pay in Sidelyne CHIPS (not SP). Run chips.sql first, then this file. Safe to re-run.
 -- Every card and every flip is decided on the server. The deck and the dealer's hidden cards never reach the browser
 -- until the hand is over, so nobody can peek or tamper with the odds. The app only draws what the server sends back.
 --
@@ -104,21 +104,20 @@ create or replace function cz_name(p_score bigint,p_three boolean) returns text 
 create or replace function cz_take(p_uid uuid,p_amt int,p_reason text) returns void language plpgsql security definer set search_path=public as $$
 declare bal int;
 begin
-  select novas into bal from profiles where id=p_uid for update;   -- lock the balance so two taps can never overspend
+  select chips into bal from profiles where id=p_uid for update;   -- lock the balance so two taps can never overspend
   if bal is null then raise exception 'Profile not found'; end if;
-  if bal<p_amt then raise exception 'Not enough SP: you have %, you need %',bal,p_amt; end if;
-  update profiles set novas=novas-p_amt where id=p_uid;
-  insert into nova_transactions(user_id,amount,reason,ref) values(p_uid,-p_amt,p_reason,gen_random_uuid()::text);
+  if bal<p_amt then raise exception 'Not enough chips: you have %, you need %',bal,p_amt; end if;
+  update profiles set chips=chips-p_amt where id=p_uid;
 end $$;
 
 create or replace function cz_pay(p_uid uuid,p_pay bigint,p_wagered int,p_reason text) returns void language plpgsql security definer set search_path=public as $$
 declare pay int:=least(p_pay,1000000000)::int;
 begin
-  if pay>0 then perform sp_credit(p_uid,pay,least(p_wagered,pay),p_reason,gen_random_uuid()::text); end if;
+  if pay>0 then perform chip_credit(p_uid,pay); end if;
 end $$;
 
 create or replace function cz_nv(p_uid uuid) returns int language sql stable security definer set search_path=public as $$
-  select novas from profiles where id=p_uid $$;
+  select chips from profiles where id=p_uid $$;
 
 -- ============ COIN FLIP ============
 create or replace function coin_flip(p_bet int,p_side text) returns jsonb language plpgsql security definer set search_path=public as $$
@@ -131,7 +130,7 @@ declare
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   if p_side is null or p_side not in ('heads','tails') then raise exception 'Pick heads or tails'; end if;
-  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % SP',c_min,c_max; end if;
+  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
   if exists(select 1 from casino_rounds where user_id=uid and game='coin' and created_at>now()-interval '1 second') then raise exception 'Slow down'; end if;
   perform cz_take(uid,p_bet,'Coin flip bet');
   res:=case when random()<0.5 then 'heads' else 'tails' end;
@@ -140,7 +139,7 @@ begin
     perform cz_pay(uid,pay,p_bet,'Coin flip win');
   end if;
   insert into casino_rounds(user_id,game,wagered,payout) values(uid,'coin',p_bet,pay);
-  return jsonb_build_object('result',res,'win',pay>0,'payout',pay,'novas',cz_nv(uid));
+  return jsonb_build_object('result',res,'win',pay>0,'payout',pay,'chips',cz_nv(uid));
 end $$;
 
 -- ============ VIDEO POKER (Jacks or Better) ============
@@ -148,12 +147,12 @@ create or replace function vp_deal(p_bet int) returns jsonb language plpgsql sec
 declare uid uuid:=auth.uid(); c_min constant int:=1; c_max constant int:=100000; dk text[];
 begin
   if uid is null then raise exception 'Not signed in'; end if;
-  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % SP',c_min,c_max; end if;
+  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
   if exists(select 1 from vp_active where user_id=uid) then raise exception 'Finish your current hand first'; end if;
   perform cz_take(uid,p_bet,'Video poker bet');
   dk:=cz_deck();
   insert into vp_active(user_id,bet,deck,hand) values(uid,p_bet,dk,dk[1:5]);
-  return jsonb_build_object('hand',to_jsonb(dk[1:5]),'bet',p_bet,'novas',cz_nv(uid));
+  return jsonb_build_object('hand',to_jsonb(dk[1:5]),'bet',p_bet,'chips',cz_nv(uid));
 end $$;
 
 create or replace function vp_draw(p_holds boolean[]) returns jsonb language plpgsql security definer set search_path=public as $$
@@ -178,7 +177,7 @@ begin
   insert into casino_rounds(user_id,game,wagered,payout) values(uid,'vpoker',g.bet,least(pay,1000000000)::int);
   delete from vp_active where user_id=uid;
   return jsonb_build_object('hand',to_jsonb(hd),'holds',to_jsonb(p_holds),'name',cz_name(s,false),'mult',mult,
-    'bet',g.bet,'payout',least(pay,1000000000)::int,'novas',cz_nv(uid));
+    'bet',g.bet,'payout',least(pay,1000000000)::int,'chips',cz_nv(uid));
 end $$;
 
 create or replace function vp_state() returns jsonb language plpgsql security definer set search_path=public as $$
@@ -187,7 +186,7 @@ begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into g from vp_active where user_id=uid;
   if not found then return null; end if;
-  return jsonb_build_object('hand',to_jsonb(g.hand),'bet',g.bet,'novas',cz_nv(uid));
+  return jsonb_build_object('hand',to_jsonb(g.hand),'bet',g.bet,'chips',cz_nv(uid));
 end $$;
 
 -- ============ THREE CARD POKER ============
@@ -196,16 +195,16 @@ declare uid uuid:=auth.uid(); c_min constant int:=1; c_max constant int:=100000;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   p_pp:=coalesce(p_pp,0);
-  if p_ante is null or p_ante<c_min or p_ante>c_max then raise exception 'Ante must be between % and % SP',c_min,c_max; end if;
-  if p_pp<0 or p_pp>c_max then raise exception 'Pair Plus must be between 0 and % SP',c_max; end if;
+  if p_ante is null or p_ante<c_min or p_ante>c_max then raise exception 'Ante must be between % and % chips',c_min,c_max; end if;
+  if p_pp<0 or p_pp>c_max then raise exception 'Pair Plus must be between 0 and % chips',c_max; end if;
   if exists(select 1 from tc_active where user_id=uid) then raise exception 'Finish your current hand first'; end if;
-  select novas into bal from profiles where id=uid for update;
+  select chips into bal from profiles where id=uid for update;
   if bal is null then raise exception 'Profile not found'; end if;
-  if bal<p_ante*2+p_pp then raise exception 'Not enough SP: you need % (ante + play bet + Pair Plus), you have %',p_ante*2+p_pp,bal; end if;
+  if bal<p_ante*2+p_pp then raise exception 'Not enough chips: you need % (ante + play bet + Pair Plus), you have %',p_ante*2+p_pp,bal; end if;
   perform cz_take(uid,p_ante+p_pp,'Three card poker bet');
   dk:=cz_deck();
   insert into tc_active(user_id,ante,pp,p,d) values(uid,p_ante,p_pp,dk[1:3],dk[4:6]);
-  return jsonb_build_object('p',to_jsonb(dk[1:3]),'ante',p_ante,'pp',p_pp,'novas',cz_nv(uid));
+  return jsonb_build_object('p',to_jsonb(dk[1:3]),'ante',p_ante,'pp',p_pp,'chips',cz_nv(uid));
 end $$;
 
 create or replace function tc_act(p_action text) returns jsonb language plpgsql security definer set search_path=public as $$
@@ -239,7 +238,7 @@ begin
   delete from tc_active where user_id=uid;
   return jsonb_build_object('done',true,'p',to_jsonb(g.p),'d',to_jsonb(g.d),'result',res,
     'p_name',cz_name(sp,true),'d_name',cz_name(sd,true),'qualified',case when p_action='fold' then null else qual end,
-    'bonus',bonus,'pp_pay',ppay,'payout',least(pay,1000000000)::int,'wagered',wag,'novas',cz_nv(uid));
+    'bonus',bonus,'pp_pay',ppay,'payout',least(pay,1000000000)::int,'wagered',wag,'chips',cz_nv(uid));
 end $$;
 
 create or replace function tc_state() returns jsonb language plpgsql security definer set search_path=public as $$
@@ -248,7 +247,7 @@ begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into g from tc_active where user_id=uid;
   if not found then return null; end if;
-  return jsonb_build_object('p',to_jsonb(g.p),'ante',g.ante,'pp',g.pp,'novas',cz_nv(uid));
+  return jsonb_build_object('p',to_jsonb(g.p),'ante',g.ante,'pp',g.pp,'chips',cz_nv(uid));
 end $$;
 
 -- ============ TEXAS HOLD'EM (vs the dealer) ============
@@ -256,15 +255,15 @@ create or replace function hc_deal(p_ante int) returns jsonb language plpgsql se
 declare uid uuid:=auth.uid(); c_min constant int:=1; c_max constant int:=100000; bal int; dk text[];
 begin
   if uid is null then raise exception 'Not signed in'; end if;
-  if p_ante is null or p_ante<c_min or p_ante>c_max then raise exception 'Ante must be between % and % SP',c_min,c_max; end if;
+  if p_ante is null or p_ante<c_min or p_ante>c_max then raise exception 'Ante must be between % and % chips',c_min,c_max; end if;
   if exists(select 1 from hc_active where user_id=uid) then raise exception 'Finish your current hand first'; end if;
-  select novas into bal from profiles where id=uid for update;
+  select chips into bal from profiles where id=uid for update;
   if bal is null then raise exception 'Profile not found'; end if;
-  if bal<p_ante*3 then raise exception 'Not enough SP: you need % (ante + the 2x call bet), you have %',p_ante*3,bal; end if;
+  if bal<p_ante*3 then raise exception 'Not enough chips: you need % (ante + the 2x call bet), you have %',p_ante*3,bal; end if;
   perform cz_take(uid,p_ante,'Hold em ante');
   dk:=cz_deck();
   insert into hc_active(user_id,ante,p,d,b) values(uid,p_ante,dk[1:2],dk[3:4],dk[5:9]);
-  return jsonb_build_object('p',to_jsonb(dk[1:2]),'board',to_jsonb(dk[5:7]),'ante',p_ante,'novas',cz_nv(uid));
+  return jsonb_build_object('p',to_jsonb(dk[1:2]),'board',to_jsonb(dk[5:7]),'ante',p_ante,'chips',cz_nv(uid));
 end $$;
 
 create or replace function hc_act(p_action text) returns jsonb language plpgsql security definer set search_path=public as $$
@@ -292,7 +291,7 @@ begin
   delete from hc_active where user_id=uid;
   return jsonb_build_object('done',true,'p',to_jsonb(g.p),'d',to_jsonb(g.d),'board',to_jsonb(g.b),'result',res,
     'p_name',cz_name(sp,false),'d_name',cz_name(sd,false),'qualified',case when p_action='fold' then null else qual end,
-    'call_mult',cm,'payout',least(pay,1000000000)::int,'wagered',wag,'novas',cz_nv(uid));
+    'call_mult',cm,'payout',least(pay,1000000000)::int,'wagered',wag,'chips',cz_nv(uid));
 end $$;
 
 create or replace function hc_state() returns jsonb language plpgsql security definer set search_path=public as $$
@@ -301,7 +300,7 @@ begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into g from hc_active where user_id=uid;
   if not found then return null; end if;
-  return jsonb_build_object('p',to_jsonb(g.p),'board',to_jsonb(g.b[1:3]),'ante',g.ante,'novas',cz_nv(uid));
+  return jsonb_build_object('p',to_jsonb(g.p),'board',to_jsonb(g.b[1:3]),'ante',g.ante,'chips',cz_nv(uid));
 end $$;
 
 -- ============ permissions ============
