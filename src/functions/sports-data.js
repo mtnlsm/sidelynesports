@@ -133,7 +133,10 @@ function normTeam(sp, ev) {
 }
 function normUfc(ev, sp = 'UFC') {
   const comps = (ev.competitions || []).slice().reverse(); // ESPN lists the opener first: reverse so index 0 = main event, 1 = co-main
-  const segOf = (c, i) => { const t = String((c.cardSegment && (c.cardSegment.description || c.cardSegment.name)) || '').toLowerCase(); return /prelim/.test(t) ? 'pre' : /main/.test(t) ? 'main' : i < 5 ? 'main' : 'pre'; };
+  // PFL (and some other promotions) send no cardSegment: the later start time is the main card, earlier fights are the prelims.
+  const stamps = comps.map((c) => Date.parse(c.date || ev.date)).filter(Boolean), lastT = Math.max(...stamps), firstT = Math.min(...stamps);
+  const segOf = (c, i) => { const t = String((c.cardSegment && (c.cardSegment.description || c.cardSegment.name)) || '').toLowerCase(); if (/prelim/.test(t)) return 'pre'; if (/main/.test(t)) return 'main';
+    if (stamps.length && lastT !== firstT) return Date.parse(c.date || ev.date) >= lastT ? 'main' : 'pre'; return i < 5 ? 'main' : 'pre'; };
   const venue = (ev.venues && ev.venues[0]) || (ev.competitions && ev.competitions[0] && ev.competitions[0].venue) || {};
   const ad = venue.address || {};
   const vn = [venue.fullName, [ad.city, ad.state || ad.country].filter(Boolean).join(', ')].filter(Boolean).join(' \u00b7 ').slice(0, 90);
