@@ -1,5 +1,5 @@
--- Sidelyne Sports: SP CASINO BLACKJACK (5 table styles). Free play only, SP has no cash value.
--- Run in Supabase SQL Editor AFTER stake.sql (it uses sp_credit from there). Safe to re-run.
+-- Sidelyne Sports: CASINO BLACKJACK (5 table styles). Free play only, chips have no cash value.
+-- Bets and payouts are in Sidelyne CHIPS (not SP). Run chips.sql first, then this file. Safe to re-run.
 -- Every card is dealt on the server. The shoe and the dealer's face-down card never reach the browser until the hand is over,
 -- so nobody can peek or tamper with the odds. The app only draws what the server sends back.
 --
@@ -107,7 +107,7 @@ begin
   dl:=case when show then to_jsonb(g.dealer) else jsonb_build_array(g.dealer[1]) end;
   if not p_done then
     hnd:=g.hands->g.cur; cards:=bj_cards(hnd); t:=bj_total(cards);
-    select novas into bal from profiles where id=g.user_id;
+    select chips into bal from profiles where id=g.user_id;
     acts:=jsonb_build_array('hit','stand');
     if array_length(cards,1)=2 then
       if ((hnd->>'sp')::boolean=false or (rl->>'das')::boolean)
@@ -176,12 +176,12 @@ begin
   end loop;
 
   update bj_active set dealer=dl,hands=hs,pos=g.pos where user_id=uid returning * into g;
-  if tot_pay>0 then perform sp_credit(uid,least(tot_pay,1000000000)::int,least(tot_bet,tot_pay)::int,'Blackjack win',gen_random_uuid()::text); end if;
+  if tot_pay>0 then perform chip_credit(uid,least(tot_pay,1000000000)); end if;
   insert into bj_rounds(user_id,variant,wagered,payout,hands) values(uid,g.variant,tot_bet::int,least(tot_pay,1000000000)::int,n);
-  select novas into nv from profiles where id=uid;
+  select chips into nv from profiles where id=uid;
   hnd:=bj_render(g,true);
   delete from bj_active where user_id=uid;
-  return hnd||jsonb_build_object('novas',nv,'payout',tot_pay,'wagered',tot_bet);
+  return hnd||jsonb_build_object('chips',nv,'payout',tot_pay,'wagered',tot_bet);
 end $$;
 
 -- ============ deal ============
@@ -194,16 +194,15 @@ declare
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   if rl is null then raise exception 'Unknown table, reload the page'; end if;
-  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % SP',c_min,c_max; end if;
-  select novas into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
+  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
+  select chips into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
   if bal is null then raise exception 'Profile not found'; end if;
-  if bal<p_bet then raise exception 'Not enough SP: you have %, you need %',bal,p_bet; end if;
+  if bal<p_bet then raise exception 'Not enough chips: you have %, you need %',bal,p_bet; end if;
   if exists(select 1 from bj_active where user_id=uid) then raise exception 'Finish your current hand first'; end if;
 
   sh:=bj_shoe((rl->>'decks')::int);
   hnd:=jsonb_build_object('c',jsonb_build_array(sh[1],sh[3]),'b',p_bet,'d',false,'x',false,'sp',false,'sr',false,'r',null,'p',0);
-  update profiles set novas=novas-p_bet where id=uid;
-  insert into nova_transactions(user_id,amount,reason,ref) values(uid,-p_bet,'Blackjack bet',gen_random_uuid()::text);
+  update profiles set chips=chips-p_bet where id=uid;
   insert into bj_active(user_id,variant,shoe,pos,dealer,hands,cur)
     values(uid,p_variant,sh,4,array[sh[2],sh[4]],jsonb_build_array(hnd),0) returning * into g;
 
@@ -211,8 +210,8 @@ begin
   if bj_total(array[sh[1],sh[3]])=21 or (bj_val(sh[2])>=10 and bj_total(array[sh[2],sh[4]])=21) then
     return bj_settle(uid);
   end if;
-  select novas into nv from profiles where id=uid;
-  return bj_render(g,false)||jsonb_build_object('novas',nv);
+  select chips into nv from profiles where id=uid;
+  return bj_render(g,false)||jsonb_build_object('chips',nv);
 end $$;
 
 -- ============ player decisions ============
@@ -242,10 +241,9 @@ begin
     if array_length(cards,1)<>2 then raise exception 'You can only double on your first two cards'; end if;
     if (hnd->>'sp')::boolean and not (rl->>'das')::boolean then raise exception 'No doubling after a split at this table'; end if;
     if (rl->>'d911')::boolean and t not between 9 and 11 then raise exception 'This table only lets you double on 9, 10 or 11'; end if;
-    select novas into bal from profiles where id=uid for update;
-    if bal<b then raise exception 'Not enough SP to double'; end if;
-    update profiles set novas=novas-b where id=uid;
-    insert into nova_transactions(user_id,amount,reason,ref) values(uid,-b,'Blackjack bet',gen_random_uuid()::text);
+    select chips into bal from profiles where id=uid for update;
+    if bal<b then raise exception 'Not enough chips to double'; end if;
+    update profiles set chips=chips-b where id=uid;
     g.pos:=g.pos+1; cards:=cards||g.shoe[g.pos];
     hnd:=jsonb_set(jsonb_set(jsonb_set(hnd,'{c}',to_jsonb(cards)),'{b}',to_jsonb(b*2)),'{x}','true'::jsonb);
     hnd:=jsonb_set(hnd,'{d}','true'::jsonb);
@@ -254,10 +252,9 @@ begin
   elsif p_action='split' then
     if array_length(cards,1)<>2 or bj_val(cards[1])<>bj_val(cards[2]) then raise exception 'You can only split a pair'; end if;
     if n>=(rl->>'hands')::int then raise exception 'You cannot split again at this table'; end if;
-    select novas into bal from profiles where id=uid for update;
-    if bal<b then raise exception 'Not enough SP to split'; end if;
-    update profiles set novas=novas-b where id=uid;
-    insert into nova_transactions(user_id,amount,reason,ref) values(uid,-b,'Blackjack bet',gen_random_uuid()::text);
+    select chips into bal from profiles where id=uid for update;
+    if bal<b then raise exception 'Not enough chips to split'; end if;
+    update profiles set chips=chips-b where id=uid;
     c2:=array[cards[2],g.shoe[g.pos+2]]; cards:=array[cards[1],g.shoe[g.pos+1]]; g.pos:=g.pos+2;
     hnd:=jsonb_build_object('c',to_jsonb(cards),'b',b,'d',false,'x',false,'sp',true,'sr',false,'r',null,'p',0);
     h2:=jsonb_build_object('c',to_jsonb(c2),'b',b,'d',false,'x',false,'sp',true,'sr',false,'r',null,'p',0);
@@ -284,8 +281,8 @@ begin
   end loop;
   update bj_active set hands=hs,pos=g.pos,cur=greatest(nxt,0) where user_id=uid returning * into g;
   if nxt<0 then return bj_settle(uid); end if;
-  select novas into nv from profiles where id=uid;
-  return bj_render(g,false)||jsonb_build_object('novas',nv);
+  select chips into nv from profiles where id=uid;
+  return bj_render(g,false)||jsonb_build_object('chips',nv);
 end $$;
 
 -- ============ resume a hand in progress ============
@@ -295,8 +292,8 @@ begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into g from bj_active where user_id=uid;
   if not found then return null; end if;
-  select novas into nv from profiles where id=uid;
-  return bj_render(g,false)||jsonb_build_object('novas',nv);
+  select chips into nv from profiles where id=uid;
+  return bj_render(g,false)||jsonb_build_object('chips',nv);
 end $$;
 
 revoke all on function bj_rules(text) from public,anon;
