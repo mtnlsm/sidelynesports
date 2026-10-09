@@ -1,9 +1,9 @@
--- Sidelyne Sports: SP CASINO SLOTS (5 reels x 3 rows, 9 paylines) with a single BET AMOUNT, like an online casino. Free play only, SP has no cash value.
--- Run in Supabase SQL Editor AFTER stake.sql (it uses sp_credit from there). Safe to re-run.
+-- Sidelyne Sports: CASINO SLOTS (5 reels x 3 rows, 9 paylines) with a single BET AMOUNT, like an online casino. Free play only, chips have no cash value.
+-- Slots bet and pay in Sidelyne CHIPS (not SP). Run chips.sql first, then this file. Safe to re-run.
 -- Every spin is decided here on the server (the app only plays the animation), so the odds can't be tampered with.
 --
 -- WHAT CHANGED IN THIS VERSION
---   * Betting is now ONE number: slots_spin(p_bet, p_theme). Type any bet from 1 to 100,000 SP (or use 1/2, 2x, Max in the app).
+--   * Betting is now ONE number: slots_spin(p_bet, p_theme). Type any bet from 1 to 100,000 chips (or use 1/2, 2x, Max in the app).
 --     All 9 paylines are always active. Each line stakes bet/9, so total bet = the number you typed.
 --   * 6 new machines: candy, viking, egypt, jungle, neon, spooky (13 in total).
 --   * The old slots_spin(denom, lines, cpl, theme) is dropped. slots_play(...) is kept as a thin wrapper so wager_saver.sql keeps working.
@@ -17,7 +17,7 @@
 --   A 6 row spin plays the 9 paylines on the top 3 rows AND again on the bottom 3 rows, so it is worth exactly 2x a 3 row spin.
 --   Every bonus is balanced so that sum(multiplier x rows/3) = 12, which keeps the payback the same on every machine.
 --   3 more scatters during the bonus = another round of the same spins (max 4 rounds).
--- PAYBACK BY BET SIZE: about 88% on tiny bets up to about 96% from 9,000 SP and up (see slots_adj_bet).
+-- PAYBACK BY BET SIZE: about 88% on tiny bets up to about 96% from 9,000 chips and up (see slots_adj_bet).
 --   (measured by simulation: raw return is ~74.5% at factor 1.0.)
 
 create table if not exists slot_spins(
@@ -110,7 +110,7 @@ create or replace function slots_bonus_rows(p_theme text) returns int[] language
     when 'spooky'  then array[3,3,3,3,3,3,3,3,3,3]
     else null end $$;
 
--- payback factor by BET SIZE: about 88% RTP on a 1 SP bet, rising smoothly to about 96% at 9,000 SP and above   <== TUNE
+-- payback factor by BET SIZE: about 88% RTP on a 1 chip bet, rising smoothly to about 96% at 9,000 chips and above   <== TUNE
 create or replace function slots_adj_bet(p_bet int) returns numeric language sql immutable as $$
   select 1.181+0.108*least(1.0,ln(greatest(p_bet,1)::numeric)/ln(9000::numeric)) $$;
 
@@ -178,16 +178,16 @@ declare
   fs_total int:=0; n int:=0; ret boolean; spins jsonb:='[]'::jsonb; flat text:=''; c int; nv int; fr jsonb; free jsonb:=null;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
-  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % SP',c_min,c_max; end if;
+  if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
   mults:=slots_bonus_mults(p_theme); rws:=slots_bonus_rows(p_theme);
   if mults is null or rws is null then raise exception 'Unknown machine, reload the page'; end if;
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
   c_bonus_p:=c_bonus_p*12.0/(select sum(tm*tr/3.0) from unnest(mults,rws) as t(tm,tr));
   total:=p_bet; unit:=p_bet/9.0; adj:=slots_adj_bet(p_bet);
 
-  select novas into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
+  select chips into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
   if bal is null then raise exception 'Profile not found'; end if;
-  if bal<total then raise exception 'Not enough SP: you have %, you need %',bal,total; end if;
+  if bal<total then raise exception 'Not enough chips: you have %, you need %',bal,total; end if;
   select max(created_at) into last from slot_spins where user_id=uid;
   if last is not null and last>now()-interval '1 second' then raise exception 'Slow down'; end if;
 
@@ -216,15 +216,14 @@ begin
   elsif pay>0 then kind:='lines'; else kind:='lose'; end if;
   pay:=least(pay,1000000000);
 
-  update profiles set novas=novas-total where id=uid;
-  insert into nova_transactions(user_id,amount,reason,ref) values(uid,-total,'Slots spin',gen_random_uuid()::text);
-  if pay>0 then perform sp_credit(uid,pay::int,least(total,pay::int),'Slots win',gen_random_uuid()::text); end if;
+  update profiles set chips=chips-total where id=uid;
+  if pay>0 then perform chip_credit(uid,pay); end if;
 
   fr:=b->'reels';
   for c in 0..4 loop flat:=flat||case when c>0 then '|' else '' end||(fr->c->>0)||','||(fr->c->>1)||','||(fr->c->>2); end loop;
   insert into slot_spins(user_id,bet,reels,kind,payout,denom,lines,cpl,theme) values(uid,total,flat,kind,pay::int,null,9,null,p_theme);
-  select novas into nv from profiles where id=uid;
-  return jsonb_build_object('reels',b->'reels','kind',kind,'bet',total,'lines',9,'theme',p_theme,'payout',pay,'line_pay',lpay,'wins',b->'wins','scatters',(b->>'scatters')::int,'free',free,'novas',nv);
+  select chips into nv from profiles where id=uid;
+  return jsonb_build_object('reels',b->'reels','kind',kind,'bet',total,'lines',9,'theme',p_theme,'payout',pay,'line_pay',lpay,'wins',b->'wins','scatters',(b->>'scatters')::int,'free',free,'chips',nv);
 end $$;
 
 drop function if exists slots_spin(int,int,int,text);   -- old denom x lines x credits version
