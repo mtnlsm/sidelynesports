@@ -1,5 +1,8 @@
--- Sidelyne Sports: PROFILE STATS (game picks, stat picks, slots, community, overall). Safe to re-run.
--- Run in Supabase SQL Editor AFTER stake.sql and slots.sql (needs user_picks, prop_picks, props, slot_spins, post_likes, follows).
+-- Sidelyne Sports: PROFILE STATS (game picks, stat picks, FULL CASINO, community, overall). Safe to re-run.
+-- Run in Supabase SQL Editor AFTER chips.sql, stake.sql, slots.sql, blackjack.sql and casino-games.sql
+-- (needs user_picks, prop_picks, props, slot_spins, bj_rounds, casino_rounds, post_likes, follows and profiles.chips / hide_stats).
+-- Casino stats cover every game: slots, blackjack (all tables), coin flip, video poker, three card poker, hold'em. Amounts are in chips.
+-- If the player turned on "Hide my stats" in Settings, everyone except the player gets {hidden:true} and nothing else.
 -- One call returns every stat for a profile. It is read-only and security definer so that OTHER people's profiles can show stats
 -- even though user_picks / prop_picks / slot_spins are private tables. It only returns totals (no pick-by-pick data, no balances beyond the profile's public SP).
 
@@ -15,12 +18,16 @@ declare
   pr profiles; rk int; players int;
   picks jsonb; picks_sport jsonb; picks_top jsonb; picks_best jsonb;
   props jsonb; props_sport jsonb; props_top jsonb;
-  slots jsonb; slots_theme jsonb; slots_fav jsonb;
+  slots jsonb; slots_theme jsonb; slots_fav jsonb; casino jsonb; casino_games jsonb;
   soc jsonb; form jsonb;
 begin
   if p_user is null then return null; end if;
   select * into pr from profiles where id=p_user and onboarded;
   if not found then return null; end if;
+  -- hidden stats: only the owner can see them
+  if pr.hide_stats and auth.uid() is distinct from p_user then
+    return jsonb_build_object('hidden',true,'level',pr.level);
+  end if;
 
   select count(*)+1 into rk from profiles where onboarded and lifetime_novas>pr.lifetime_novas;
   select count(*) into players from profiles where onboarded;
@@ -107,6 +114,32 @@ begin
     'big_theme',(select upper(theme) from slot_spins where user_id=p_user and payout>0 order by payout desc limit 1)
   ) into slots_fav;
 
+  -- ===== casino (all games together, then per game) =====
+  with r as (
+    select bet::bigint wag,payout::bigint pay,created_at at from slot_spins where user_id=p_user
+    union all select wagered::bigint,payout::bigint,created_at from bj_rounds where user_id=p_user
+    union all select wagered::bigint,payout::bigint,created_at from casino_rounds where user_id=p_user)
+  select jsonb_build_object(
+    'rounds',count(*),
+    'wagered',coalesce(sum(wag),0),
+    'won',coalesce(sum(pay),0),
+    'net',coalesce(sum(pay-wag),0),
+    'wins',count(*) filter(where pay>wag),
+    'biggest_win',coalesce(max(pay-wag),0),
+    'biggest_payout',coalesce(max(pay),0),
+    'biggest_bet',coalesce(max(wag),0),
+    'day_net',coalesce(sum(pay-wag) filter(where at>now()-interval '24 hours'),0),
+    'week',count(*) filter(where at>now()-interval '7 days')
+  ) into casino from r;
+
+  select coalesce(jsonb_agg(jsonb_build_object('game',g,'n',n,'wins',w,'wagered',wg,'won',pw,'net',pw-wg,'best',best) order by n desc),'[]'::jsonb) into casino_games
+  from (
+    with r as (
+      select 'slots'::text g,bet::bigint wag,payout::bigint pay from slot_spins where user_id=p_user
+      union all select 'blackjack',wagered::bigint,payout::bigint from bj_rounds where user_id=p_user
+      union all select game,wagered::bigint,payout::bigint from casino_rounds where user_id=p_user)
+    select g,count(*) n,count(*) filter(where pay>wag) w,sum(wag) wg,sum(pay) pw,max(pay-wag) best from r group by g) q;
+
   -- ===== community =====
   select jsonb_build_object(
     'followers',(select count(*) from follows where followee=p_user),
@@ -131,6 +164,7 @@ begin
     'picks',picks,'picks_sport',picks_sport,'picks_top',picks_top,'picks_best',picks_best,
     'props',props,'props_sport',props_sport,'props_top',props_top,
     'slots',slots,'slots_theme',slots_theme,'slots_fav',slots_fav,
+    'chips',pr.chips,'casino',casino,'casino_games',casino_games,'hide_stats',pr.hide_stats,
     'social',soc,'form',form);
 end $$;
 
