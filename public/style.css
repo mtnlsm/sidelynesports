@@ -635,3 +635,6 @@ html.nopop .pop{display:none}
 .ps-gm .bar{margin:0 0 3px;height:6px}
 .ps-priv{text-align:center}
 .ss-note{font-size:12px;opacity:.75;margin:6px 6px 0}
+
+/* sharper fighter photos when scaled down on desktop */
+.cr.hd img,.fp-ph img{image-rendering:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}
