@@ -2,6 +2,7 @@
 -- Run in Supabase SQL Editor AFTER schema.sql, admin.sql, saves.sql and settle_picks.sql.
 -- (If you ever re-run schema.sql, run this file again: schema.sql drops all public policies.)
 -- Prices live in the INSERT near the bottom of section 2. Edit them and re-run to change them.
+-- Prices are set high on purpose so big wins feel rewarding (daily SP is 500, a default pick costs 25).
 
 -- ============ 1) PROFILE + POST COLUMNS ============
 alter table profiles add column if not exists flair text;
@@ -37,15 +38,15 @@ create table if not exists user_items(
 create index if not exists idx_user_items_user on user_items(user_id);
 
 insert into shop_items(id,kind,name,price,sort,data) values
- ('flair:star',  'flair','Star',   150,10,'{}'),
- ('flair:bolt',  'flair','Bolt',   200,20,'{}'),
- ('flair:medal', 'flair','Medal',  250,30,'{}'),
- ('flair:trophy','flair','Trophy', 300,40,'{}'),
- ('flair:flame', 'flair','Flame',  400,50,'{}'),
- ('flair:crown', 'flair','Crown', 1000,60,'{}'),
- ('pin:3h','pin','Highlight 3 hours',400,10,'{"hours":3}'),
- ('pin:6h','pin','Highlight 6 hours',700,20,'{"hours":6}'),
- ('theme:team','theme','Team theme',500,10,'{}')
+ ('flair:star',  'flair','Star',   1500,10,'{}'),
+ ('flair:bolt',  'flair','Bolt',   2500,20,'{}'),
+ ('flair:medal', 'flair','Medal',  4000,30,'{}'),
+ ('flair:trophy','flair','Trophy', 6000,40,'{}'),
+ ('flair:flame', 'flair','Flame',  10000,50,'{}'),
+ ('flair:crown', 'flair','Crown', 25000,60,'{}'),
+ ('pin:3h','pin','Highlight 3 hours',3000,10,'{"hours":3}'),
+ ('pin:6h','pin','Highlight 6 hours',5000,20,'{"hours":6}'),
+ ('theme:team','theme','Team theme',7500,10,'{}')
 on conflict(id) do update set kind=excluded.kind,name=excluded.name,price=excluded.price,sort=excluded.sort,data=excluded.data;
 
 -- ============ 3) SECURITY (read-only from the app; every write goes through the functions below) ============
