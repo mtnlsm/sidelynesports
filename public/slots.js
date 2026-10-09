@@ -274,8 +274,8 @@ function openSlots(startTheme){
  if(!ME)return;slCss();let rows=3;
  if(startTheme&&THEMES[startTheme]&&!busy&&!autoOn){theme=startTheme;try{localStorage.setItem('fx-slt',theme)}catch(e){}}
  const start=Array.from({length:NR},()=>[rnd(),rnd(),rnd()]);
- const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">SP</span></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">SP</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in SP"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of SP? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. SP has no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
- const ptHtml=()=>`<div class="sl-pth">Line pays (× your bet, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 SP). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} SP.</div><div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
+ const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">chips</span> <button class="chip sl-cx" data-cx aria-label="Exchange SP and chips">Exchange</button></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">\ud83e\ude99</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in chips"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of chips? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. Chips and SP have no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
+ const ptHtml=()=>`<div class="sl-pth">Line pays (× your bet, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div><div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=fmt(v)};
  const setRows=async n=>{if(n===rows)return;const from=rows,rs=[...$m('#slr').children],hh=k=>`calc(var(--slh,56px)*${k})`;rows=n;
   const h0=rs.map(r=>r.offsetHeight);
@@ -285,29 +285,29 @@ function openSlots(startTheme){
   const an=rs.map((r,i)=>{try{return r.animate([{height:h0[i]+'px'},{height:r.offsetHeight+'px'}],{duration:750,easing:'cubic-bezier(.2,.8,.2,1)'}).finished}catch(e){return null}});
   await Promise.all(an.filter(Boolean).map(q=>q.catch(()=>{})));await wait(200)};
  /* keep the bet inside 1..max and never above what you can afford */
- const clampBet=()=>{bet=Math.max(MINBET,Math.min(MAXBET,Math.floor(bet)||MINBET));if(S.novas>=MINBET&&bet>S.novas)bet=S.novas};
+ const clampBet=()=>{bet=Math.max(MINBET,Math.min(MAXBET,Math.floor(bet)||MINBET));if(S.chips>=MINBET&&bet>S.chips)bet=S.chips};
  const saveBet=()=>{try{localStorage.setItem('fx-slbet',String(bet))}catch(e){}};
  const lk=()=>busy||autoOn;
  const defMsg=()=>'<span>'+TH().name+' · 3 '+SCP()+' = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
- const goBtn=()=>{const g=$m('#slgo');if(autoOn){g.disabled=false;g.textContent='Stop auto · '+(autoLeft===Infinity?'∞':autoLeft+' left')}else if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{const ok=bet>=MINBET&&bet<=S.novas;g.disabled=busy||!ok;g.textContent=busy?'Spinning…':bet<MINBET?'Enter a bet':S.novas<bet?'Not enough SP':'Spin · '+fmt(bet)+' SP'}
-  $m('#sltot').textContent='Min '+fmt(MINBET)+' · Max '+fmt(Math.min(MAXBET,Math.max(S.novas,MINBET)))};
+ const goBtn=()=>{const g=$m('#slgo');if(autoOn){g.disabled=false;g.textContent='Stop auto · '+(autoLeft===Infinity?'∞':autoLeft+' left')}else if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{const ok=bet>=MINBET&&bet<=S.chips;g.disabled=busy||!ok;g.textContent=busy?'Spinning…':bet<MINBET?'Enter a bet':S.chips<bet?'Not enough chips':'Spin · '+fmt(bet)+' chips'}
+  $m('#sltot').textContent='Min '+fmt(MINBET)+' · Max '+fmt(Math.min(MAXBET,Math.max(S.chips,MINBET)))};
  const uiExtra=()=>{$m('#slname').textContent=TH().name;
   $m('#slth').innerHTML=TORDER.map(k=>`<button class="chip ${k===theme?'on':''}" data-slth="${k}" aria-label="${THEMES[k].name}" ${lk()?'disabled':''}>${THEMES[k].s[5][0]}${k===theme?' '+THEMES[k].name:''}</button>`).join('');
   $m('#slmu').textContent=muted?'🔇 Sound off':'🔊 Sound on';
-  $m('#slq').innerHTML=QUICK.map(v=>`<button class="chip ${v===bet?'on':''}" data-slq="${v}" ${lk()||v>S.novas?'disabled':''}>${shortN(v)}</button>`).join('');
+  $m('#slq').innerHTML=QUICK.map(v=>`<button class="chip ${v===bet?'on':''}" data-slq="${v}" ${lk()||v>S.chips?'disabled':''}>${shortN(v)}</button>`).join('');
   const bi=$m('#slbet');bi.disabled=lk();m.querySelectorAll('[data-slhalf],[data-sldbl],[data-slmax]').forEach(b=>b.disabled=lk());
-  $m('#slau').innerHTML=(autoOn?'':`<div class="sl-ar"><span class="mu">Auto spin</span>`+[5,10,25,'inf'].map(n=>`<button class="chip" data-slau="${n}" ${n==='inf'?'title="Spin until you run out of SP or stop" aria-label="Infinite auto spin"':''} ${busy||(S.novas<bet&&!(wsv>0))?'disabled':''}>${n==='inf'?'∞':n}</button>`).join('')+`</div>`)+`<div class="sl-ar"><button class="chip ${turbo?'on':''}" data-sltg="turbo" aria-pressed="${turbo}">${turbo?'✓ ':''}Turbo</button><button class="chip ${stopBonus?'on':''}" data-sltg="bonus" aria-pressed="${stopBonus}">${stopBonus?'✓ ':''}Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" aria-pressed="${stopBig}" title="Any win of ${BIGX}× your total bet or more">${stopBig?'✓ ':''}Stop on big win</button></div>`};
- const draw=()=>{clampBet();const bi=$m('#slbet');if(document.activeElement!==bi)bi.value=String(bet);goBtn();bal(S.novas);saverUI();uiExtra()};
- /* wager saver: out of SP (1 to 24) = stake your last SP for a chance at 1 free spin. The server decides (supabase/wager_saver.sql) */
- function saverUI(){const p=$m('#slsv'),n=S.novas,low=n>=1&&n<MINBET&&!busy&&wsv===0;$m('#slsvre').hidden=!(low&&declined);
+  $m('#slau').innerHTML=(autoOn?'':`<div class="sl-ar"><span class="mu">Auto spin</span>`+[5,10,25,'inf'].map(n=>`<button class="chip" data-slau="${n}" ${n==='inf'?'title="Spin until you run out of chips or stop" aria-label="Infinite auto spin"':''} ${busy||(S.chips<bet&&!(wsv>0))?'disabled':''}>${n==='inf'?'∞':n}</button>`).join('')+`</div>`)+`<div class="sl-ar"><button class="chip ${turbo?'on':''}" data-sltg="turbo" aria-pressed="${turbo}">${turbo?'✓ ':''}Turbo</button><button class="chip ${stopBonus?'on':''}" data-sltg="bonus" aria-pressed="${stopBonus}">${stopBonus?'✓ ':''}Stop on bonus</button><button class="chip ${stopBig?'on':''}" data-sltg="big" aria-pressed="${stopBig}" title="Any win of ${BIGX}× your total bet or more">${stopBig?'✓ ':''}Stop on big win</button></div>`};
+ const draw=()=>{clampBet();const bi=$m('#slbet');if(document.activeElement!==bi)bi.value=String(bet);goBtn();bal(S.chips);saverUI();uiExtra()};
+ /* wager saver: out of chips (1 to 24) = stake your last chips for a chance at 1 free spin. The server decides (supabase/wager_saver.sql) */
+ function saverUI(){const p=$m('#slsv'),n=S.chips,low=false&&n>=1&&n<MINBET&&!busy&&wsv===0;$m('#slsvre').hidden=!(low&&declined);
   if(!low||declined){p.hidden=true;return}
   const w=Math.round((cl[0]+(cl[1]-cl[0])*(n-1)/23)*100);p.hidden=false;
-  p.innerHTML=`<div class="sl-svc"><div class="sl-svh">Out of SP? <span>Try a wager saver</span></div><div class="sl-svo"><span class="w" style="flex:${w}">Win ${w}%</span><span class="l" style="flex:${100-w}">Lose ${100-w}%</span></div><p>Your ${n} SP is gone either way. <b>Win:</b> 1 free spin. <b>Lose:</b> nothing. More SP = better odds.</p><div class="sl-svb"><button class="pri" data-svgo>Gamble ${n} SP</button><button class="chip" data-svno>No thanks</button></div></div>`}
- async function gamble(){if(busy||autoOn)return;busy=true;const n=S.novas,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();let r;
+  p.innerHTML=`<div class="sl-svc"><div class="sl-svh">Out of chips? <span>Try a wager saver</span></div><div class="sl-svo"><span class="w" style="flex:${w}">Win ${w}%</span><span class="l" style="flex:${100-w}">Lose ${100-w}%</span></div><p>Your ${n} chips is gone either way. <b>Win:</b> 1 free spin. <b>Lose:</b> nothing. More chips = better odds.</p><div class="sl-svb"><button class="pri" data-svgo>Gamble ${n} chips</button><button class="chip" data-svno>No thanks</button></div></div>`}
+ async function gamble(){if(busy||autoOn)return;busy=true;const n=S.chips,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();let r;
   try{const q=await FX_DB.rpc('slots_saver_gamble');if(q.error)throw q.error;r=q.data}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?'Wager saver not set up yet (run supabase/wager_saver.sql)':t;toast(msg.textContent);draw();return}
-  wsv=r.saver_spins||0;applyNovas(r.novas,null);
+  wsv=r.saver_spins||0;applyChips(r.chips,null);
   if(r.won){sfx.win(1);reels.classList.add('win');msg.innerHTML='WAGER SAVED!<small class="sl-sub">You won 1 free spin</small>';try{navigator.vibrate&&navigator.vibrate([40,30,40])}catch(e){}}
-  else{sfx.lose();msg.innerHTML='No luck<small class="sl-sub">Your last '+n+' SP is gone</small>'}
+  else{sfx.lose();msg.innerHTML='No luck<small class="sl-sub">Your last '+n+' chips is gone</small>'}
   busy=false;if(m.isConnected)draw()};
  $m('#slm').innerHTML=defMsg();draw();
  FX_DB.rpc('slots_saver_status').then(q=>{if(q.error||!q.data)return;wsv=q.data.saver_spins||0;if(q.data.chance_max>0)cl=[+q.data.chance_min,+q.data.chance_max];if(m.isConnected)draw()}).catch(()=>{});
@@ -322,7 +322,7 @@ function openSlots(startTheme){
   if(!busy&&!autoOn){
    if(e.target.closest('[data-slhalf]'))return setBet(Math.max(MINBET,Math.floor(bet/2)));
    if(e.target.closest('[data-sldbl]'))return setBet(bet*2);
-   if(e.target.closest('[data-slmax]'))return setBet(Math.min(MAXBET,S.novas));
+   if(e.target.closest('[data-slmax]'))return setBet(Math.min(MAXBET,S.chips));
    const q=e.target.closest('[data-slq]');if(q)return setBet(+q.dataset.slq)}
   if(e.target.closest('#slinfo')){const p=$m('#slpt');if(p.hidden)p.innerHTML=ptHtml();p.hidden=!p.hidden;return}
   if(e.target.closest('[data-svgo]')){gamble();return}if(e.target.closest('[data-svno]')){declined=true;draw();return}if(e.target.closest('[data-svre]')){declined=false;draw();return}
@@ -330,7 +330,8 @@ function openSlots(startTheme){
  /* typing a bet: update as you type, tidy up when you leave the box */
  m.addEventListener('input',e=>{if(e.target.id!=='slbet')return;const v=parseInt(e.target.value.replace(/[^\d]/g,''),10);bet=Number.isFinite(v)?Math.min(v,MAXBET):0;if(bet>0&&String(bet)!==e.target.value)e.target.value=String(bet);goBtn()});
  m.addEventListener('change',e=>{if(e.target.id==='slbet'){clampBet();saveBet();draw()}});
- m.addEventListener('keydown',e=>{if(e.target.id==='slbet'&&e.key==='Enter'){e.preventDefault();e.target.blur();if(!busy&&!autoOn&&bet>=MINBET&&bet<=S.novas)spin(wsv>0)}});
+ const onCx=()=>{if(!m.isConnected)document.removeEventListener('fx-chips',onCx);else if(!busy&&!autoOn)draw()};document.addEventListener('fx-chips',onCx);
+ m.addEventListener('keydown',e=>{if(e.target.id==='slbet'&&e.key==='Enter'){e.preventDefault();e.target.blur();if(!busy&&!autoOn&&bet>=MINBET&&bet<=S.chips)spin(wsv>0)}});
  const clearHi=()=>{m.querySelectorAll('.sl-c.hit,.sl-c.dim').forEach(c=>c.classList.remove('hit','dim'));m.querySelectorAll('.sl-pl').forEach(e=>e.remove())};
  /* draw each winning payline across the reels, so you can see exactly which line paid and how far it ran */
  const PLC=['#ffd43b','#4dabf7','#ff6b6b','#69db7c','#da77f2','#ffa94d','#3bc9db','#f783ac','#a9e34b'];
@@ -342,30 +343,30 @@ function openSlots(startTheme){
   rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')));drawLines(wins,reels)};
  /* turbo shortens the animation only; the server still spaces spins about a second apart */
  const T=n=>turbo?Math.round(n*.45):n;
- async function spin(free){if(busy||(!free&&(S.novas<bet||bet<MINBET)))return null;busy=true;const gap=1100-(Date.now()-lastAt);if(gap>0)await wait(gap);lastAt=Date.now();const stake=free?SAVER_STAKE:bet,off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.novas-off);
-  let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_bet:bet,p_theme:theme}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.novas);draw();return{ok:false}}
+ async function spin(free){if(busy||(!free&&(S.chips<bet||bet<MINBET)))return null;busy=true;const gap=1100-(Date.now()-lastAt);if(gap>0)await wait(gap);lastAt=Date.now();const stake=free?SAVER_STAKE:bet,off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.chips-off);
+  let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_bet:bet,p_theme:theme}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.chips);draw();return{ok:false}}
   const rs=[...reels.children];sfx.spinOn();await Promise.all(rs.map((el,i)=>runReel(el,r.reels[i],T(900)+i*T(300)).then(()=>sfx.stop(i))));sfx.spinOff();
-  if(!m.isConnected){applyNovas(r.novas,null);busy=false;return{ok:false}}
+  if(!m.isConnected){applyChips(r.chips,null);busy=false;return{ok:false}}
   const wins=r.wins||[];
   if(wins.length)hilite(wins,reels);
   if(r.kind==='bonus'&&r.free){
    reels.classList.add('bonus');sfx.bonus();msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+r.free.start+' FREE SPINS</small>';try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}
    await wait(calm()?400:T(1700));reels.classList.remove('bonus');
-   if(!m.isConnected){applyNovas(r.novas,null);busy=false;return{ok:false}}
+   if(!m.isConnected){applyChips(r.chips,null);busy=false;return{ok:false}}
    const ok=await freeSpins(r,off);
-   if(!ok){applyNovas(r.novas,null);busy=false;return{ok:false}}
-   $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;clearHi();await setRows(3);if(!m.isConnected){applyNovas(r.novas,null);busy=false;return{ok:false}}reels.classList.add('win');
-   msg.innerHTML='<span id="slct">+0 SP</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+fmt(r.line_pay)+' SP from lines':'')+' · '+xTxt(r.payout,stake)+'</small>';
+   if(!ok){applyChips(r.chips,null);busy=false;return{ok:false}}
+   $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;clearHi();await setRows(3);if(!m.isConnected){applyChips(r.chips,null);busy=false;return{ok:false}}reels.classList.add('win');
+   msg.innerHTML='<span id="slct">+0 chips</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+fmt(r.line_pay)+' chips from lines':'')+' · '+xTxt(r.payout,stake)+'</small>';
    sfx.bonusWin();await countUp($m('#slct'),r.payout,calm()?0:T(1400),true);await wait(calm()?200:T(700))}
   else if(r.payout>0){reels.classList.add('win');sfx.win(lvl(r.payout,stake));msg.innerHTML=winMsg(wins,r.payout,stake);try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}}
   else msg.textContent=r.scatters===2?'So close! Two '+SCP()+'…':'No luck. Spin again!';
-  applyNovas(r.novas,r.payout>stake?'Slots win':null);busy=false;if(m.isConnected)draw();
+  applyChips(r.chips,r.payout>stake?'Slots win':null);busy=false;if(m.isConnected)draw();
   return{ok:true,payout:r.payout,stake,bonus:r.kind==='bonus'}}
 
- /* auto spin: keeps spinning with the current bet until the count runs out, you tap Stop, you run low on SP, or a stop rule hits */
+ /* auto spin: keeps spinning with the current bet until the count runs out, you tap Stop, you run low on chips, or a stop rule hits */
  async function autoLoop(){let why='';
   while(autoOn&&autoLeft>0&&m.isConnected){
-   if(!(wsv>0||S.novas>=bet)){toast('Auto spin stopped: not enough SP');break}
+   if(!(wsv>0||S.chips>=bet)){toast('Auto spin stopped: not enough chips');break}
    const res=await spin(wsv>0);
    if(!res||!res.ok)break;
    autoLeft--;
@@ -383,7 +384,7 @@ function openSlots(startTheme){
  async function freeSpins(r,stake){r0bet=r.bet||1;
   const wrap=$m('.sl-wrap'),reels=$m('#slr'),msg=$m('#slm'),bar=$m('#slfs');
   let total=r.free.start,run=0;
-  const U=TH().bonus.unit,head=(n,x)=>{bar.innerHTML='<span>'+U+' <b>'+n+'</b> / '+total+(x?' · ×'+x:'')+(rows>3?' · 5 × '+rows:'')+'</span><span>Bonus win <b>+'+fmt(run)+'</b> SP</span>'};
+  const U=TH().bonus.unit,head=(n,x)=>{bar.innerHTML='<span>'+U+' <b>'+n+'</b> / '+total+(x?' · ×'+x:'')+(rows>3?' · 5 × '+rows:'')+'</span><span>Bonus win <b>+'+fmt(run)+'</b> chips</span>'};
   wrap.classList.add('fs');bar.hidden=false;$m('#slgo').textContent='Free spins…';head(1,r.free.spins[0]&&r.free.spins[0].x);
   for(const f of r.free.spins){
    if(!m.isConnected)return false;
@@ -394,13 +395,13 @@ function openSlots(startTheme){
    if(!m.isConnected)return false;
    if(f.wins.length)hilite(f.wins,reels);
    if(f.retrigger){const add=f.total-total;total=f.total;head(f.n,f.x);reels.classList.add('bonus');sfx.bonus();msg.innerHTML='+'+add+' FREE SPINS!<small class="sl-sub">'+total+' in total</small>';try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}await wait(calm()?400:T(1500));reels.classList.remove('bonus');if(!m.isConnected)return false}
-   run=f.run;head(f.n,f.x);bal(S.novas-stake+(r.line_pay||0)+run);
+   run=f.run;head(f.n,f.x);bal(S.chips-stake+(r.line_pay||0)+run);
    if(f.pay>0){reels.classList.add('win');sfx.win(lvl(f.pay,total0()));msg.innerHTML=winMsg(f.wins,f.pay,total0());try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}await wait(calm()?250:T(1150))}
    else await wait(calm()?150:T(500))}
   return m.isConnected}
  const xTxt=(pay,st)=>st?(Math.round(pay/st*10)/10)+'×':'';
- const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=MEGAX*st?'MEGA WIN! ':pay>=BIGX*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+fmt(pay)+' SP<small class="sl-sub">'+xTxt(pay,st)+' your bet'+(best?' · '+lname(best.line)+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
- const countUp=(el,to,ms,snd)=>new Promise(res=>{const t0=performance.now();let lc=0;const tick=t=>{const p=ms?Math.min(1,(t-t0)/ms):1;if(snd&&t-lc>70){lc=t;sfx.coin()}el.textContent='+'+fmt(Math.round(to*p))+' SP';p<1&&el.isConnected?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
+ const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=MEGAX*st?'MEGA WIN! ':pay>=BIGX*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+fmt(pay)+' chips<small class="sl-sub">'+xTxt(pay,st)+' your bet'+(best?' · '+lname(best.line)+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
+ const countUp=(el,to,ms,snd)=>new Promise(res=>{const t0=performance.now();let lc=0;const tick=t=>{const p=ms?Math.min(1,(t-t0)/ms):1;if(snd&&t-lc>70){lc=t;sfx.coin()}el.textContent='+'+fmt(Math.round(to*p))+' chips';p<1&&el.isConnected?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-slots]'))openSlots()});
 window.openSlots=openSlots;window.SL_THEMES=THEMES;window.SL_ORDER=TORDER;
 })();
