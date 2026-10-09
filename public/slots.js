@@ -1,47 +1,29 @@
 /* Slots + Sidelyne FREE SPINS bonus. Every spin (and every free spin) is decided by the server (supabase/slots.sql); this file only plays the animation. */
 (()=>{
 /* Server ids of the 6 symbol tiers, lowest to highest pay. Each theme draws its own icon on every tier (see THEMES). */
-const SYM=['soccer','ufc','nhl','mlb','nba','nfl'],H=56,DENOMS=[1,2,5,10,25,100],LNS=[1,3,5,9],CPLS=[1,2,3,5,10],MINBET=1,SAVER_STAKE=25,NR=5;
+const SYM=['t1','t2','t3','t4','t5','t6'],H=56,DENOMS=[1,2,5,10,25,100],LNS=[1,3,5,9],CPLS=[1,2,3,5,10],MINBET=1,SAVER_STAKE=25,NR=5;
 /* THEMES: s = [emoji,name] for each tier (low to high). bonus.m is for display only; the real multipliers live in supabase/slots.sql (slots_bonus_mults). */
 const THEMES={
- og:{name:'Lucky Classic',a:'var(--ab)',b:'var(--ab)',root:262,s:[['🍒','Cherry'],['🍋','Lemon'],['🔔','Bell'],['🍀','Clover'],['💎','Diamond'],['7️⃣','Lucky Seven']],sc:{e:'⭐',n:'Lucky Star',p:'Lucky Stars'},bonus:{name:'STAR SHOWER',unit:'Free spin',m:[2,2,2,2,2,2],d:'3 Lucky Stars = 6 free spins, and every line win pays ×2.'}},
- nfl:{name:'Gold Rush',a:'#d9a21b',b:'#8a5a00',root:262,s:[['⛏️','Pickaxe'],['🪔','Lantern'],['🚂','Steam train'],['🧭','Compass'],['💎','Gem'],['💰','Gold sack']],sc:{e:'🪙',n:'Gold Nugget',p:'Gold Nuggets'},bonus:{name:'MOTHER LODE',unit:'Level',m:[1,1,2,2,3,3],d:'Dig down the shaft. Each deeper level pays more, up to ×3 at the richest vein.'}},
- nba:{name:'Ocean Treasure',a:'#14b8c4',b:'#0b6e80',root:294,s:[['🐚','Seashell'],['🦀','Crab'],['⚓','Anchor'],['🐙','Octopus'],['🦈','Shark'],['🐋','Whale']],sc:{e:'🦪',n:'Pearl Oyster',p:'Pearl Oysters'},bonus:{name:'TIDAL SURGE',unit:'Wave',m:[1,1,1,1,2,2,2,2],d:'8 rolling waves. The second half crashes in at double.'}},
- nhl:{name:'Frozen Fortune',a:'#4f9cf5',b:'#1d4f9e',root:330,s:[['🧊','Ice cube'],['☃️','Snowman'],['🐧','Penguin'],['🦌','Reindeer'],['🏔️','Glacier'],['❄️','Snowflake']],sc:{e:'🌌',n:'Aurora',p:'Auroras'},bonus:{name:'DEEP FREEZE',unit:'Freeze',m:[3,3,3,3],d:'Only 4 freezes, but every single win is ×3.'}},
- mlb:{name:'Wild West',a:'#b45309',b:'#7c2d12',root:247,s:[['🌵','Cactus'],['🥾','Boot'],['🐎','Horse'],['🐂','Longhorn'],['🐍','Rattlesnake'],['🤠','Cowboy']],sc:{e:'📜',n:'Wanted Poster',p:'Wanted Posters'},bonus:{name:'HIGH NOON',unit:'Shot',m:[1,1,1,1,1,1,1,1,1,1,1,10],d:'11 shots at ×1, then the final shot at high noon pays ×10. Hold your nerve.'}},
- ufc:{name:'Dragon Dynasty',a:'#dc2626',b:'#7f1d1d',root:220,s:[['🏮','Lantern'],['🎋','Bamboo'],['🐟','Koi'],['🍵','Tea'],['🐼','Panda'],['🐉','Dragon']],sc:{e:'🧧',n:'Red Envelope',p:'Red Envelopes'},bonus:{name:'DRAGON FURY',unit:'Strike',m:[1,2,2,3,4],d:'5 strikes and the fury builds. The fifth breathes fire at ×4.'}},
- cfb:{name:'Cosmic Voyage',a:'#7c3aed',b:'#3b1a8f',root:350,s:[['☄️','Comet'],['🛰️','Satellite'],['🪐','Ringed planet'],['👽','Alien'],['🌙','Moon'],['🚀','Rocket']],sc:{e:'🌠',n:'Shooting Star',p:'Shooting Stars'},bonus:{name:'WARP RUN',unit:'Jump',m:[1,2,3,6],d:'4 warp jumps, each faster than the last. The final jump pays ×6.'}}};
+ classic:{name:'Lucky Classic',a:'var(--ab)',b:'var(--ab)',root:262,s:[['🍒','Cherry'],['🍋','Lemon'],['🔔','Bell'],['🍀','Clover'],['💎','Diamond'],['7️⃣','Lucky Seven']],sc:{e:'⭐',n:'Lucky Star',p:'Lucky Stars'},bonus:{name:'LUCKY SEVENS',unit:'Spin',m:[1,1,1,2,2,2,3],r:[3,3,3,3,3,3,3],d:'7 free spins. The multiplier steps up ×1, ×2, ×3 and the last spin pays ×3.'}},
+ gold:{name:'Gold Rush',a:'#d9a21b',b:'#8a5a00',root:262,s:[['⛏️','Pickaxe'],['🪔','Lantern'],['🚂','Steam train'],['🧭','Compass'],['💎','Gem'],['💰','Gold sack']],sc:{e:'🪙',n:'Gold Nugget',p:'Gold Nuggets'},bonus:{name:'SHAFT BLAST',unit:'Blast',m:[1,1,1,1,2],r:[6,6,6,6,6],open:'THE SHAFT BLASTS OPEN',d:'Dynamite! The reels blast open from 3 rows to 6 rows deep for all 5 free spins, with a second set of paylines on the lower rows. The last blast pays ×2.'}},
+ ocean:{name:'Ocean Treasure',a:'#14b8c4',b:'#0b6e80',root:294,s:[['🐚','Seashell'],['🦀','Crab'],['⚓','Anchor'],['🐙','Octopus'],['🦈','Shark'],['🐋','Whale']],sc:{e:'🦪',n:'Pearl Oyster',p:'Pearl Oysters'},bonus:{name:'PEARL DIVE',unit:'Dive',m:[1,1,1,1,1,2,2,3],r:[3,3,3,3,3,3,3,3],d:'8 dives, each one deeper. It pays ×1 near the surface, ×2 below, and ×3 on the ocean floor.'}},
+ frozen:{name:'Frozen Fortune',a:'#4f9cf5',b:'#1d4f9e',root:330,s:[['🧊','Ice cube'],['☃️','Snowman'],['🐧','Penguin'],['🦌','Reindeer'],['🏔️','Glacier'],['❄️','Snowflake']],sc:{e:'🌌',n:'Aurora',p:'Auroras'},bonus:{name:'AURORA STORM',unit:'Storm',m:[2,4,6],r:[3,3,3],d:'Only 3 storms, but they build fast: ×2, ×4, then a ×6 whiteout.'}},
+ west:{name:'Wild West',a:'#b45309',b:'#7c2d12',root:247,s:[['🌵','Cactus'],['🥾','Boot'],['🐎','Horse'],['🐂','Longhorn'],['🐍','Rattlesnake'],['🤠','Cowboy']],sc:{e:'📜',n:'Wanted Poster',p:'Wanted Posters'},bonus:{name:'BOUNTY HUNT',unit:'Chase',m:[1,1,1,1,4,4],r:[3,3,3,3,3,3],d:'6 chases. Four warm-up spins at ×1, then you catch the outlaw and the last two pay ×4.'}},
+ dragon:{name:'Dragon Dynasty',a:'#dc2626',b:'#7f1d1d',root:220,s:[['🏮','Lantern'],['🎋','Bamboo'],['🐟','Koi'],['🍵','Tea'],['🐼','Panda'],['🐉','Dragon']],sc:{e:'🧧',n:'Red Envelope',p:'Red Envelopes'},bonus:{name:'LANTERN FESTIVAL',unit:'Lantern',m:[1,1,1,1,1,1,2,2,2],r:[3,3,3,3,3,3,3,3,3],d:'9 lanterns float up. The first 6 pay ×1, and the last 3 glow at ×2.'}},
+ cosmic:{name:'Cosmic Voyage',a:'#7c3aed',b:'#3b1a8f',root:350,s:[['☄️','Comet'],['🛰️','Satellite'],['🪐','Ringed planet'],['👽','Alien'],['🌙','Moon'],['🚀','Rocket']],sc:{e:'🌠',n:'Shooting Star',p:'Shooting Stars'},bonus:{name:'SUPERNOVA',unit:'Pulse',m:[1,2,4,5],r:[3,3,3,3],d:'4 pulses and the star is about to go. ×1, ×2, ×4, then the supernova at ×5.'}}};
+/* SYMBOL ART}}};
 /* SYMBOL ART: every symbol is a glossy tile in the machine's colors with a glyph on it (higher tiers get a gold rim). The bonus scatter is a gold starburst medallion so it is easy to spot. All inline SVG, no image files. */
 const tile=(e,i,z)=>{const rim=i>=4?'#ffd86b':'rgba(255,255,255,.35)',id='slt'+theme+i;return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${TH().a}"/><stop offset="1" style="stop-color:${TH().b}"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" fill="url(#${id})" stroke="${rim}" stroke-width="${i>=4?2:1.2}"/><path d="M6 12Q6 5 14 5H26Q34 5 34 12Q20 17 6 12Z" fill="rgba(255,255,255,.22)"/><text x="20" y="27.500" text-anchor="middle" font-size="21" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text></svg>`};
 const medal=(e,z)=>{const pts=[];for(let k=0;k<24;k++){const r=k%2?13.500:16,a=k*Math.PI/12;pts.push((16+r*Math.sin(a)).toFixed(1)+','+(16-r*Math.cos(a)).toFixed(1))}return `<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><radialGradient id="slmd" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#f5c542"/><stop offset="1" stop-color="#b8860b"/></radialGradient></defs><polygon points="${pts.join(' ')}" fill="url(#slmd)" stroke="#8a6508" stroke-width=".6"/><circle cx="16" cy="16" r="10.500" fill="#2a1b05" stroke="#ffe680" stroke-width="1"/><text x="16" y="21.500" text-anchor="middle" font-size="14" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text></svg>`};
 const SCN=()=>TH().sc.n,SCP=()=>TH().sc.p;
-const TORDER=['og','nfl','nba','nhl','mlb','ufc','cfb'];
-let theme='og';try{const t=localStorage.getItem('fx-slt');if(THEMES[t])theme=t}catch(e){}
+const TORDER=['classic','gold','ocean','frozen','west','dragon','cosmic'];
+let theme='classic';try{const t=localStorage.getItem('fx-slt');if(THEMES[t])theme=t}catch(e){}
 const TH=()=>THEMES[theme];
-/* TEAM LOGOS: the 6 symbols of each theme are real team logos (UFC = fighter photos), drawn by the app's own crest() from the ESPN images it already loads.
-   Your favorite teams (the ★ ones) become the TOP symbols; the rest are filled from DEFT, then from any other team in that sport.
-   If the team list has not loaded yet, the emoji set above is used instead. */
-const SPF={nfl:['NFL'],nba:['NBA'],nhl:['NHL'],mlb:['MLB'],cfb:['CFB']};
-const DEFT={nfl:['Chiefs','Cowboys','49ers','Eagles','Packers','Steelers'],nba:['Lakers','Warriors','Celtics','Knicks','Bulls','Heat'],nhl:['Rangers','Bruins','Maple Leafs','Blackhawks','Canadiens','Penguins'],mlb:['Orioles','Yankees','Dodgers','Red Sox','Cubs','Braves']};
-let TSET=null;
-/* UFC default fighters (after your favorites). Names must match public/js/fighters.js. */
-const UFCTOP=['Sean Strickland',"Sean O'Malley",'Conor McGregor','Jon Jones','Islam Makhachev','Alex Pereira'];
-/* NFL: all 32 teams are in the draw. Only 6 symbol tiers exist, so each time the machine opens (or you tap the NFL theme) your favorite teams take the top tiers and the rest are picked at random from the 32. */
-const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function teamSet(){return null}
-/* Logo image for a team. We do NOT use the app's crest() here: it lazy-loads, and lazy images inside the clipped, moving reels often never load.
-   This loads eagerly, is preloaded when the machine opens, and falls back to the letter crest only if the image really fails. */
-function logoSrc(t,z){try{const v=IMG[t.sp+'|'+t.n];if(!v||!/^https:\/\//.test(v.slice(1)))return null;const hs=v[0]==='h',u=v.slice(1),dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u);return{src:imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs),o:imgUrl(u,z,hs),dk,hs}}catch(e){return null}}
-window.__slErr=im=>{if(im.dataset.d){im.removeAttribute('data-d');im.src=im.dataset.o;return}try{im.parentNode.innerHTML=crestSvg(im.dataset.n,im.dataset.sp,+im.dataset.z)}catch(e){im.remove()}};
-function logo(t,z){if(t.sp!=='UFC')return slotArt(t.n,z,t.sp,t.ab);const L=logoSrc(t,z);if(!L)return crest(t.n,t.sp,z);
- return `<span class="cr ${L.hs?'hd':'lg'}" style="width:${z}px;height:${z}px"><img class="ok" src="${esc(L.src)}" data-o="${esc(L.o)}" data-n="${esc(t.n)}" data-sp="${t.sp}" data-z="${z}"${L.dk?' data-d="1"':''} alt="" decoding="sync" referrerpolicy="no-referrer" onerror="__slErr(this)"></span>`}
-function preload(set){try{set.filter(t=>t.sp==='UFC').forEach(t=>[24,40].forEach(z=>{const L=logoSrc(t,z);if(L){const im=new Image();im.referrerPolicy='no-referrer';im.src=L.src}}))}catch(e){}}
-/* tier index 0 (lowest) .. 5 (highest); the first team in the set is the top tier */
-const tm=k=>TSET?TSET[5-SYM.indexOf(k)]:null;
-const tn=k=>{const t=tm(k);return t?['',t.n]:(TH().s[SYM.indexOf(k)]||['?','?'])};
+const tn=k=>TH().s[SYM.indexOf(k)]||['?','?'];
 const LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1]];
 const LNAME=['Middle row','Top row','Bottom row','V shape','Peak','Step down','Step up','Arch','Bowl'];
-const PAY={nfl:[34,110,500],nba:[22,70,300],mlb:[18,50,200],nhl:[14,40,140],ufc:[10,28,100],soccer:[8,22,70]};
+const PAY={t6:[34,110,500],t5:[22,70,300],t4:[18,50,200],t3:[14,40,140],t2:[10,28,100],t1:[8,22,70]};
+const lineRow=(l,c)=>LINES[l%9][c]+(l>=9?3:0),lname=l=>LNAME[l%9]+(l>=9?' (lower reels)':'');
 const SZ=()=>{try{return matchMedia('(min-width:900px)').matches?44:36}catch(e){return 36}};
 const sym=(k,z=SZ())=>k==='S'?medal(TH().sc.e,Math.round(z*1.32)):tile(TH().s[SYM.indexOf(k)][0],SYM.indexOf(k),Math.round(z*1.1));
 const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
@@ -68,28 +50,125 @@ function shower(n,span,g){for(let i=0;i<n;i++)clink(Math.pow(Math.random(),.8)*s
 function brass(f,t0,d,g){const c=ac(),o=out();if(!c||!o)return;const t=c.currentTime+t0,fl=c.createBiquadFilter(),v=c.createGain();fl.type='lowpass';fl.Q.value=1.5;fl.frequency.setValueAtTime(500,t);fl.frequency.exponentialRampToValueAtTime(2600,t+.09);fl.frequency.exponentialRampToValueAtTime(1100,t+d);v.gain.setValueAtTime(.0001,t);v.gain.linearRampToValueAtTime(g,t+.035);v.gain.setValueAtTime(g,t+d*.65);v.gain.exponentialRampToValueAtTime(.0001,t+d);[-7,7].forEach(dt=>{const x=c.createOscillator();x.type='sawtooth';x.frequency.value=f;x.detune.value=dt;x.connect(fl);x.start(t);x.stop(t+d+.05)});fl.connect(v);v.connect(o)}
 const SCALE=[0,2,4,7,9,12,14,16,19,21,24];
 const note=i=>TH().root*Math.pow(2,SCALE[Math.min(i,SCALE.length-1)]/12);
-const sfx={
- /* SPINNING REELS: a mechanical ratchet. Mid-range wooden "clack-clack-clack" ticks (short filtered-noise knocks with a little body), slightly irregular like real reels. No pitched beeps, no continuous noise, nothing shrill or low. */
- spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();
-  nz(0,.07,'bandpass',800,400,1.4,.3,.001);tone(190,0,.08,'sine',.12,110);
-  let n=0;const go=()=>{const acc=n++%3===0;
-   nz(0,.022,'bandpass',acc?1000:1250+Math.random()*250,0,3,acc?.3:.22,.001);tone(acc?300:380,0,.03,'sine',acc?.09:.05,acc?200:260);
-   tickT=setTimeout(go,60+Math.random()*14)};go()},
- spinOff(){clearTimeout(tickT);tickT=null;mot=null},
- /* each reel locking in: a solid mechanical clunk */
- stop(i){nz(0,.055,'bandpass',750,320,1.3,.36,.001);tone(200,0,.1,'sine',.2,95);nz(0,.012,'bandpass',1800,0,2,.12,.001)},
- /* line win: coins in the tray + a bell run; bigger wins get a bigger shower, more bells and brass */
- win(l){if(l<=0){shower(3,.25,.05);bell(note(5),.05,.7,.08);return}
-  if(l===1){shower(8,.7,.05);[5,7,9].forEach((s,i)=>bell(note(s),i*.11,.8,.08));return}
-  if(l===2){shower(18,1.3,.055);[5,7,9,10].forEach((s,i)=>bell(note(s),i*.1,.9,.085));brass(note(2),.05,.5,.05);brass(note(5),.05,.5,.045);return}
-  shower(34,2.3,.06);[5,7,9,10,9,10].forEach((s,i)=>bell(note(s),i*.09,1.1,.09));[0,2,5].forEach(s=>brass(note(s),0,.9,.055));brass(note(7),.5,.9,.05)},
- /* bonus triggered: rising whoosh, bell peal, brass stab */
- bonus(){nz(0,.9,'bandpass',200,2400,1.2,.1,.2);for(let k=0;k<5;k++){bell(note(7),.25+k*.2,1.2,.07);bell(note(9),.35+k*.2,1.2,.05)}[0,2,5].forEach(s=>brass(note(s),.9,.7,.05));[0,3,7].forEach(s=>brass(note(s+2),1.45,.9,.05))},
- coin(){clink(0,.035)},
- /* bonus finished: brass fanfare with a coin shower */
- bonusWin(){[[0,2,5],[2,4,7],[0,5,9]].forEach((ch,k)=>ch.forEach(s=>brass(note(s),k*.34,k===2?1.4:.36,.05)));shower(40,2.2,.055);[5,7,9,10,12].forEach((s,i)=>bell(note(s),1+i*.1,1.3,.08))},
- lose(){tone(392,0,.14,'sine',.06);tone(330,.14,.2,'sine',.05)},
- click(){nz(0,.02,'bandpass',2400,0,4,.06,.001);tone(500,0,.03,'square',.02)}};
+/* more building blocks (all WebAudio, no sound files) */
+const glass=(f,t0,d,g)=>[[1,1,1],[2.76,.5,.6],[5.4,.25,.35]].forEach(p=>tone(f*p[0],t0,d*p[2],'sine',g*p[1]));
+const gong=(f,t0,d,g)=>[[1,1],[1.5,.7],[2.02,.6],[2.76,.45],[3.9,.25]].forEach(p=>tone(f*p[0],t0,d,'sine',g*p[1],f*p[0]*.985));
+const pluck=(f,t0,d,g)=>{tone(f,t0,d,'triangle',g,f*.99);tone(f*2,t0,d*.45,'sine',g*.45);nz(t0,.014,'bandpass',f*3,0,2,g*.6,.001)};
+const boom=(t0,g)=>{tone(120,t0,.55,'sine',g,32);nz(t0,.6,'lowpass',1000,70,.7,g*.9,.004)};
+const zap=(f1,f2,t0,d,g,ty)=>tone(f1,t0,d,ty||'sawtooth',g,f2);
+const bubble=(t0,g)=>{const f=300+Math.random()*550;tone(f,t0,.075,'sine',g,f*2.3)};
+const sparkle=(n,span,g)=>{for(let i=0;i<n;i++)tone(1800+Math.random()*3200,Math.random()*span,.12,'sine',g*(.4+Math.random()*.6))};
+const jingle=(t0,g)=>{for(let k=0;k<5;k++){nz(t0+k*.032,.05,'highpass',6000+Math.random()*2000,0,1,g,.001);tone(3800+Math.random()*1600,t0+k*.032,.05,'sine',g*.4)}};
+const gun=(t0,g)=>{nz(t0,.28,'lowpass',5200,180,.8,g,.001);tone(150,t0,.22,'sine',g*.8,40)};
+const arp=(steps,t0,gap,fn)=>steps.forEach((s,i)=>fn(note(s),t0+i*gap,i));
+/* spinning-reel loop: calls fn(n) every ms (+ up to j ms of wobble) until spinOff() */
+const ticker=(fn,ms,j)=>{if(!ac()||!out())return;sfx.spinOff();let n=0;const go=()=>{fn(n++);tickT=setTimeout(go,ms+Math.random()*j)};go()};
+/* EVERY MACHINE HAS ITS OWN SOUND SET, matched to its name:
+   Lucky Classic = casino bells and brass, Gold Rush = pickaxe, rock and coin pours, dynamite, Ocean Treasure = bubbles, harp and whale song,
+   Frozen Fortune = ice cracks, glass chimes and sleigh bells, Wild West = twangy guitar, spurs, church bell and gunshots,
+   Dragon Dynasty = wood blocks, gongs, plucked strings and taiko drums, Cosmic Voyage = laser zaps, synth arps and warp whooshes. */
+const SFX={
+ classic:{
+  /* SPINNING REELS: a mechanical ratchet. Mid-range wooden "clack-clack-clack" ticks, slightly irregular like real reels. */
+  spinOn(){const c=ac(),o=out();if(!c||!o)return;sfx.spinOff();
+   nz(0,.07,'bandpass',800,400,1.4,.3,.001);tone(190,0,.08,'sine',.12,110);
+   let n=0;const go=()=>{const acc=n++%3===0;
+    nz(0,.022,'bandpass',acc?1000:1250+Math.random()*250,0,3,acc?.3:.22,.001);tone(acc?300:380,0,.03,'sine',acc?.09:.05,acc?200:260);
+    tickT=setTimeout(go,60+Math.random()*14)};go()},
+  stop(i){nz(0,.055,'bandpass',750,320,1.3,.36,.001);tone(200,0,.1,'sine',.2,95);nz(0,.012,'bandpass',1800,0,2,.12,.001)},
+  win(l){if(l<=0){shower(3,.25,.05);bell(note(5),.05,.7,.08);return}
+   if(l===1){shower(8,.7,.05);[5,7,9].forEach((s,i)=>bell(note(s),i*.11,.8,.08));return}
+   if(l===2){shower(18,1.3,.055);[5,7,9,10].forEach((s,i)=>bell(note(s),i*.1,.9,.085));brass(note(2),.05,.5,.05);brass(note(5),.05,.5,.045);return}
+   shower(34,2.3,.06);[5,7,9,10,9,10].forEach((s,i)=>bell(note(s),i*.09,1.1,.09));[0,2,5].forEach(s=>brass(note(s),0,.9,.055));brass(note(7),.5,.9,.05)},
+  bonus(){nz(0,.9,'bandpass',200,2400,1.2,.1,.2);for(let k=0;k<5;k++){bell(note(7),.25+k*.2,1.2,.07);bell(note(9),.35+k*.2,1.2,.05)}[0,2,5].forEach(s=>brass(note(s),.9,.7,.05));[0,3,7].forEach(s=>brass(note(s+2),1.45,.9,.05))},
+  bonusWin(){[[0,2,5],[2,4,7],[0,5,9]].forEach((ch,k)=>ch.forEach(s=>brass(note(s),k*.34,k===2?1.4:.36,.05)));shower(40,2.2,.055);[5,7,9,10,12].forEach((s,i)=>bell(note(s),1+i*.1,1.3,.08))},
+  lose(){tone(392,0,.14,'sine',.06);tone(330,.14,.2,'sine',.05)},
+  click(){nz(0,.02,'bandpass',2400,0,4,.06,.001);tone(500,0,.03,'square',.02)},
+  coin(){clink(0,.035)},
+  expand(){nz(0,.8,'bandpass',200,2200,1.2,.1,.15);boom(.55,.12)}},
+ /* GOLD RUSH: pickaxe tinks on rock, heavy coin pours, anvil rings, dynamite */
+ gold:{
+  spinOn(){ticker(n=>{if(n%2===0){nz(0,.03,'bandpass',2600,0,5,.2,.001);tone(2100+Math.random()*500,0,.06,'sine',.07,1700)}else{nz(0,.05,'lowpass',500,200,1,.28,.001);tone(130,0,.07,'sine',.14,80)}},85,18)},
+  stop(i){nz(0,.07,'lowpass',700,150,1,.4,.001);tone(110,0,.12,'sine',.22,60);tone(2300,.02,.1,'sine',.07,1900)},
+  win(l){if(l<=0){shower(4,.3,.05);return}
+   if(l===1){shower(10,.7,.055);glass(1100,0,.6,.045);return}
+   if(l===2){shower(22,1.4,.06);glass(1100,0,.8,.06);glass(1100,.25,.8,.06);boom(0,.05);return}
+   shower(40,2.4,.065);[0,.22,.44,.66].forEach(t=>glass(1100,t,1,.07));boom(0,.09);[0,2,5].forEach(s=>brass(note(s),.1,.8,.045))},
+  bonus(){nz(0,.95,'highpass',2000,9000,.8,.08,.3);for(let k=0;k<14;k++)tone(2600+Math.random()*900,k*.06,.03,'square',.015);boom(.95,.16);for(let k=0;k<10;k++)clink(1.2+k*.07,.05);[0,2,5].forEach(s=>brass(note(s),1.5,.8,.05))},
+  bonusWin(){shower(46,2.6,.06);[1,1.25,1.5,2].forEach((m,i)=>glass(1100*m,i*.3,1.1,.07));boom(0,.1);[0,2,5].forEach(s=>brass(note(s),0,1.3,.05))},
+  lose(){nz(0,.12,'lowpass',500,120,1,.25,.001);tone(98,0,.2,'sine',.14,60)},
+  click(){nz(0,.025,'bandpass',2400,0,5,.12,.001)},
+  coin(){clink(0,.04)},
+  expand(){nz(0,1,'lowpass',300,80,.8,.22,.1);boom(.35,.2);for(let k=0;k<8;k++)clink(.6+k*.06,.04)}},
+ /* OCEAN TREASURE: bubbles, harp, sonar, waves and whale song */
+ ocean:{
+  spinOn(){ticker(n=>{bubble(0,.07+Math.random()*.03);if(n%3===0)nz(0,.18,'bandpass',500+Math.random()*300,0,.8,.05,.05)},95,40)},
+  stop(i){tone(520+i*70,0,.1,'sine',.17,1300+i*100);nz(0,.05,'bandpass',900,0,2,.08,.002)},
+  win(l){if(l<=0){[5,7].forEach((s,i)=>pluck(note(s),i*.08,.35,.06));bubble(.1,.06);return}
+   const run=l===1?[5,7,9]:l===2?[2,4,7,9,12]:[0,2,4,7,9,12,14,16];
+   arp(run,0,.08,(f,t)=>pluck(f,t,.7,.07));for(let k=0;k<(l===1?4:l===2?9:16);k++)bubble(.1+Math.random()*(.6+l*.4),.05);
+   if(l>=2)nz(0,1,'bandpass',300,1800,.9,.07,.3);if(l>=3)tone(190,.3,1.6,'sine',.08,120)},
+  bonus(){tone(1100,0,1.6,'sine',.09);tone(1100,.7,1.6,'sine',.06);nz(0,1.8,'bandpass',200,1600,1,.1,.7);tone(170,.5,2,'sine',.1,110);tone(176,.5,2,'sine',.05,116);for(let k=0;k<18;k++)bubble(.3+Math.random()*1.5,.05);arp([0,4,7,9,12],1.3,.12,(f,t)=>pluck(f,t,.8,.06))},
+  bonusWin(){arp([0,2,4,7,9,12,14,16,19],0,.09,(f,t)=>pluck(f,t,.9,.07));nz(0,1.8,'bandpass',300,1400,1,.08,.5);for(let k=0;k<24;k++)bubble(Math.random()*2,.045);tone(190,.6,1.8,'sine',.08,120)},
+  lose(){tone(420,0,.18,'sine',.07,230);bubble(.2,.04)},
+  click(){bubble(0,.05)},
+  coin(){bubble(0,.04)},
+  expand(){nz(0,.9,'bandpass',200,1800,1,.12,.2);boom(.6,.08)}},
+ /* FROZEN FORTUNE: ice crackle, glass chimes, sleigh bells, aurora shimmer */
+ frozen:{
+  spinOn(){ticker(n=>{nz(0,.02,'highpass',5000,0,1,.12,.001);tone(2600+Math.random()*900,0,.05,'sine',.05,2200);if(n%4===0)nz(0,.06,'bandpass',3200,0,3,.08,.001)},62,12)},
+  stop(i){nz(0,.07,'highpass',3200,1500,.8,.3,.001);tone(1700,0,.12,'sine',.1,650);glass(note(5+(i%3)),.02,.4,.04)},
+  win(l){if(l<=0){glass(note(7),0,.6,.05);jingle(.1,.04);return}
+   const run=l===1?[5,7,9]:l===2?[5,7,9,10,12]:[5,7,9,10,12,14,16];
+   arp(run,0,.1,(f,t)=>glass(f*2,t,.9,.05));for(let k=0;k<l*2+1;k++)jingle(k*.18,.04);if(l>=3)sparkle(20,1.5,.04)},
+  bonus(){nz(0,1.6,'highpass',1500,8000,.7,.07,.5);[1,1.5,2,3,4].forEach(m=>{tone(note(0)*m*2,0,2.2,'sine',.045);tone(note(0)*m*2*1.005,.1,2.2,'sine',.035)});arp([9,10,12,14,16],.8,.14,(f,t)=>glass(f*2,t,1.1,.05));sparkle(18,1.8,.045)},
+  bonusWin(){arp([5,7,9,10,12,14,16,17],0,.1,(f,t)=>glass(f*2,t,1.2,.055));for(let k=0;k<8;k++)jingle(k*.22,.04);sparkle(30,2.4,.04)},
+  lose(){glass(note(7),0,.5,.04);glass(note(4),.18,.6,.035)},
+  click(){glass(note(10),0,.18,.03)},
+  coin(){tone(3200+Math.random()*800,0,.07,'sine',.035)},
+  expand(){nz(0,1,'highpass',2000,8000,.8,.1,.3);sparkle(10,.8,.04)}},
+ /* WILD WEST: revolver-cylinder clicks, spurs, twangy guitar, church bell, gunshots */
+ west:{
+  spinOn(){ticker(n=>{const a=n%6===0;nz(0,.014,'bandpass',a?1500:2300,0,4,a?.3:.2,.001);tone(a?260:420,0,.035,'square',a?.05:.03,a?180:300);if(n%6===3)jingle(0,.02)},66,12)},
+  stop(i){nz(0,.06,'lowpass',900,200,1,.38,.001);tone(95,0,.14,'sine',.24,55);nz(.02,.02,'bandpass',2000,0,3,.1,.001)},
+  win(l){if(l<=0){pluck(note(5),0,.55,.06);pluck(note(5)*1.5,.01,.4,.03);shower(3,.2,.04);return}
+   const run=l===1?[2,4,7]:l===2?[2,4,7,9,12]:[0,2,4,7,9,12,14];
+   arp(run,0,.1,(f,t)=>{pluck(f,t,.6,.07);pluck(f*1.5,t+.012,.4,.035)});shower(l*8,.4+l*.5,.05);jingle(.05,.05);if(l>=3){gun(.7,.12);gun(.95,.1)}},
+  bonus(){nz(0,1.6,'bandpass',500,900,2,.05,.6);[0,.9,1.8].forEach(t=>bell(196,t,1.6,.11));gun(2.7,.2);zap(1800,300,2.9,.5,.04,'sine')},
+  bonusWin(){arp([0,4,7,9,12,16],0,.12,(f,t)=>pluck(f,t,.7,.08));shower(30,2,.055);gun(.9,.16);gun(1.05,.14);jingle(1,.05);bell(392,1.4,1.4,.08)},
+  lose(){tone(520,0,.5,'sine',.07,190);tone(525,0,.5,'triangle',.03,185)},
+  click(){nz(0,.015,'bandpass',2200,0,4,.1,.001)},
+  coin(){clink(0,.035)},
+  expand(){nz(0,.8,'bandpass',300,1200,1,.1,.1);gun(.5,.16)}},
+ /* DRAGON DYNASTY: wood blocks, temple gongs, plucked strings, taiko drums, firecrackers */
+ dragon:{
+  spinOn(){ticker(n=>{const hi=n%2;nz(0,.035,'bandpass',hi?1250:760,0,6,.26,.001);tone(hi?330:210,0,.06,'sine',.12,hi?250:150);if(n%8===0)tone(note(0)*2,0,.15,'triangle',.03)},80,14)},
+  stop(i){tone(150,0,.2,'sine',.26,80);nz(0,.05,'bandpass',600,0,2,.18,.001);gong(note(0),.02,.5,.025)},
+  win(l){if(l<=0){pluck(note(7),0,.5,.07);pluck(note(9),.1,.5,.06);return}
+   const run=l===1?[5,7,9,12]:l===2?[2,4,7,9,12,14,16]:[0,2,4,7,9,12,14,16,19];
+   arp(run,0,.07,(f,t)=>{pluck(f*2,t,.7,.07);tone(f*2,t,.3,'sine',.03)});if(l>=2)gong(note(0),0,2,.08);if(l>=3){boom(.3,.1);for(let k=0;k<12;k++)nz(.8+k*.045,.03,'bandpass',3000,0,2,.1,.001)}},
+  bonus(){gong(note(0),0,3,.14);let t=.6;for(let k=0;k<14;k++){boom(t,.06+k*.006);t+=Math.max(.05,.18-k*.01)}zap(110,55,1.9,1.2,.07,'sawtooth');nz(1.9,1.3,'lowpass',700,150,1,.12,.2);gong(note(0)*1.5,2.6,2.5,.1)},
+  bonusWin(){gong(note(0),0,3,.13);arp([0,2,4,7,9,12,14,16,19,21],.2,.08,(f,t)=>pluck(f*2,t,.8,.07));for(let k=0;k<30;k++)nz(.6+Math.random()*1.8,.025,'bandpass',2500+Math.random()*2000,0,2,.12,.001);gong(note(0)*1.5,1.3,2.5,.09)},
+  lose(){gong(note(0),0,1.2,.05)},
+  click(){nz(0,.03,'bandpass',900,0,6,.12,.001)},
+  coin(){pluck(note(10),0,.2,.04)},
+  expand(){gong(note(0),0,2,.1);boom(.1,.12)}},
+ /* COSMIC VOYAGE: laser zaps, synth arps, warp whooshes, sparkle */
+ cosmic:{
+  spinOn(){ticker(n=>{const s=[0,2,4,7,9,12,9,7][n%8];tone(note(s)*2,0,.05,'square',.04);if(n%8===0)tone(note(0)/2,0,.1,'sine',.08)},58,6)},
+  stop(i){zap(1200,240,0,.1,.07,'sawtooth');tone(note(0)/2,0,.12,'sine',.18,60);nz(0,.02,'bandpass',3000,0,3,.1,.001)},
+  win(l){if(l<=0){zap(500,1500,0,.18,.05,'square');sparkle(4,.3,.04);return}
+   const run=l===1?[0,4,7,12]:l===2?[0,2,4,7,9,12,16]:[0,2,4,7,9,12,14,16,19,21,24];
+   arp(run,0,.06,(f,t)=>{tone(f*2,t,.18,'square',.04);tone(f*4,t,.1,'sine',.025)});sparkle(l*6,.5+l*.6,.04);if(l>=3)zap(100,1600,.4,1.2,.05,'sawtooth')},
+  bonus(){nz(0,1.5,'bandpass',100,6000,1.3,.14,.4);zap(60,1200,0,1.4,.06,'sawtooth');arp([0,4,7,12,16,19,24],1.3,.07,(f,t)=>tone(f*2,t,.25,'square',.05));sparkle(16,1.6,.05)},
+  bonusWin(){arp([0,4,7,12,7,12,16,19,24],0,.08,(f,t)=>{tone(f*2,t,.3,'square',.045);tone(f,t,.4,'sine',.05)});zap(80,2000,.2,1.6,.05,'sawtooth');sparkle(34,2.4,.045)},
+  lose(){zap(420,90,0,.4,.05,'sawtooth')},
+  click(){tone(1200,0,.03,'square',.025)},
+  coin(){tone(2600+Math.random()*800,0,.05,'sine',.04)},
+  expand(){nz(0,1.1,'bandpass',100,5000,1.2,.14,.3);zap(60,900,0,1,.06,'sawtooth')}}};
+const cur=()=>SFX[theme]||SFX.classic;
+const sfx={spinOn:()=>cur().spinOn(),spinOff(){clearTimeout(tickT);tickT=null;mot=null},stop:i=>cur().stop(i),win:l=>cur().win(l),bonus:()=>cur().bonus(),coin:()=>cur().coin(),bonusWin:()=>cur().bonusWin(),lose:()=>cur().lose(),click:()=>cur().click(),expand:()=>cur().expand()};
+
 /* BIGX = a "big win" is any win of this many times your TOTAL bet. It drives the BIG WIN banner, the louder win sound and the Stop on big win rule. */
 const BIGX=10,MEGAX=40;
 const lvl=(pay,st)=>!st?1:pay>=MEGAX*st?3:pay>=BIGX*st?2:pay>=4*st?1:0;
@@ -101,11 +180,11 @@ const mini=l=>`<svg width="60" height="36" viewBox="0 0 60 36" aria-hidden="true
 function runReel(reel,final,dur){return new Promise(res=>{const st=reel.firstElementChild;
  const fin0=()=>{st.style.transition='none';st.style.transform='none';st.innerHTML=col3(final);reel.classList.remove('go');res()};
  if(calm())return fin0();
- const prev=[...st.children].slice(-3).map(e=>e.dataset.k);while(prev.length<3)prev.push(rnd());
+ const R=final.length,prev=[...st.children].slice(-R).map(e=>e.dataset.k);while(prev.length<R)prev.push(rnd());
  const n=14+Math.floor(Math.random()*6);let h=col3(prev);for(let i=0;i<n;i++)h+=cell(rnd());h+=col3(final);
  st.style.transition='none';st.style.transform='translateY(0)';st.innerHTML=h;void st.offsetHeight;reel.classList.add('go');
  /* Spin with the Web Animations API, not a CSS transition: the app's "prefers-reduced-motion" rule in style.css sets transition:none!important, which made the reels sit still and snap for anyone with OS-level reduced motion (Windows animation effects off, macOS/iOS Reduce Motion). The in-app Reduce motion switch still skips the spin (calm() above). */
- const dist=(n+3)*(st.firstElementChild.offsetHeight||H),ease='cubic-bezier(.2,.8,.2,1)';let done=false,anim=null;
+ const dist=(n+R)*(st.firstElementChild.offsetHeight||H),ease='cubic-bezier(.2,.8,.2,1)';let done=false,anim=null;
  const fin=()=>{if(done)return;done=true;try{anim&&anim.cancel()}catch(e){}fin0()};
  try{anim=st.animate([{transform:'translateY(0)'},{transform:`translateY(-${dist}px)`}],{duration:dur,easing:ease,fill:'forwards'});anim.onfinish=fin}
  catch(e){st.style.transition=`transform ${dur}ms ${ease}`;st.style.transform=`translateY(-${dist}px)`;st.addEventListener('transitionend',ev=>{if(ev.target===st)fin()})}
@@ -119,17 +198,24 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-wrap .sl-fs{background:linear-gradient(90deg,var(--sla),var(--sla2));color:#fff}
 .sl-wrap.fs .sl-reels{box-shadow:0 0 0 2px var(--sla),0 0 22px color-mix(in srgb,var(--sla) 55%,transparent),inset 0 2px 10px rgba(0,0,0,.18)}
 .sl-wrap .sl-go{background:var(--sla);border-color:var(--sla);color:#fff}.sl-wrap .sl-go:disabled{opacity:.55}
-.sl-wrap[data-th="og"] .sl-reels{background:var(--sf2);border-color:var(--bd)}.sl-wrap[data-th="og"] .sl-fs{background:linear-gradient(90deg,#f5c542,#e8a317);color:#3a2a00}.sl-wrap[data-th="og"].fs .sl-reels{box-shadow:0 0 0 2px #f5c542,0 0 20px rgba(245,197,66,.45),inset 0 2px 10px rgba(0,0,0,.18)}.sl-wrap[data-th="og"] .sl-th .chip.on,.sl-wrap[data-th="og"] .sl-auto .chip.on,.sl-wrap[data-th="og"] .sl-go{color:var(--abx,#fff)}.sl-c .cr{display:block}.sl-ptr .cr{flex:none}.sl-em{display:block;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.sl-wrap[data-th="classic"] .sl-reels{background:var(--sf2);border-color:var(--bd)}.sl-wrap[data-th="classic"] .sl-fs{background:linear-gradient(90deg,#f5c542,#e8a317);color:#3a2a00}.sl-wrap[data-th="classic"].fs .sl-reels{box-shadow:0 0 0 2px #f5c542,0 0 20px rgba(245,197,66,.45),inset 0 2px 10px rgba(0,0,0,.18)}.sl-wrap[data-th="classic"] .sl-th .chip.on,.sl-wrap[data-th="classic"] .sl-auto .chip.on,.sl-wrap[data-th="classic"] .sl-go{color:var(--abx,#fff)}.sl-c .cr{display:block}.sl-ptr .cr{flex:none}.sl-em{display:block;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .sl-reels{position:relative}.sl-pl{position:absolute;left:0;top:0;pointer-events:none;z-index:3;overflow:visible}
 .sl-auto{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px}.sl-ar{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}.sl-th .chip{white-space:nowrap}.sl-auto .mu{font-size:12px}.sl-auto .chip.on{background:var(--sla);border-color:var(--sla);color:#fff}`;
  document.head.appendChild(st)}
 
 function openSlots(){
- if(!ME)return;slCss();TSET=teamSet();
+ if(!ME)return;slCss();let rows=3;
  const start=Array.from({length:NR},()=>[rnd(),rnd(),rnd()]);
  const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3>Slots</h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal mu">Balance <b id="slb"></b> SP<span id="slcr"></span></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div></div><div class="sl-msg" id="slm"></div><div class="sl-bets" style="flex-direction:column;align-items:center;gap:4px"><div class="mu" style="font-size:12px">Denom (SP per credit)</div><div class="seg" id="sld"></div><div class="mu" style="font-size:12px">Lines</div><div class="seg" id="sll"></div><div class="mu" style="font-size:12px">Credits per line</div><div class="seg" id="slc"></div><div class="row sp" style="width:100%;margin-top:4px"><span id="sltot" class="mu"></span><button class="chip" data-slmax>Max bet</button></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of SP? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
- const ptHtml=()=>`<div class="sl-pth">Line pays (x credits bet per line, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}. Land 3 more ${SCP()} during the bonus for another full round (up to ${theme==='og'?6:4} rounds). ${TSET?'The symbols are team logos, and your ★ favorite teams are the top symbols. ':''}Every machine has its own bonus. Total bet = denom × lines × credits per line. Bigger denoms bet more, win more, and pay back a little better.</div><div class="sl-pth" style="margin-top:12px">Paylines · play 1, 3, 5 or 9 (in this order)</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
+ const ptHtml=()=>`<div class="sl-pth">Line pays (x credits bet per line, 3 / 4 / 5 in a row from the left)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${PAY[k].join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. Total bet = denom × lines × credits per line. Bigger denoms bet more, win more, and pay back a little better.</div><div class="sl-pth" style="margin-top:12px">Paylines · play 1, 3, 5 or 9 (in this order)</div><div class="sl-lines">${LINES.map((l,i)=>`<div>${mini(l)}<small>${LNAME[i]}</small></div>`).join('')}</div>`;
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=Number(v).toLocaleString();$m('#slcr').textContent=' · '+Math.floor(v/denom).toLocaleString()+' credits'};
+ const setRows=async n=>{if(n===rows)return;const from=rows,rs=[...$m('#slr').children],hh=k=>`calc(var(--slh,56px)*${k})`;rows=n;
+  const h0=rs.map(r=>r.offsetHeight);
+  rs.forEach(r=>{const st=r.firstElementChild;st.style.transition='none';st.style.transform='none';const ks=[...st.children].map(e=>e.dataset.k).slice(0,n);while(ks.length<n)ks.push(rnd());st.innerHTML=col3(ks);r.style.height=hh(n)});
+  if(n>from)sfx.expand();else sfx.click();
+  if(calm())return;
+  const an=rs.map((r,i)=>{try{return r.animate([{height:h0[i]+'px'},{height:r.offsetHeight+'px'}],{duration:750,easing:'cubic-bezier(.2,.8,.2,1)'}).finished}catch(e){return null}});
+  await Promise.all(an.filter(Boolean).map(q=>q.catch(()=>{})));await wait(200)};
  const fit=()=>{if(S.novas<MINBET)return;while(total()>S.novas){if(cpl>1)cpl=CPLS[CPLS.indexOf(cpl)-1];else if(lines>1)lines=LNS[LNS.indexOf(lines)-1];else if(denom>1)denom=DENOMS[DENOMS.indexOf(denom)-1];else break}};
  const lk=()=>busy||autoOn;
  const seg=(a,cur,at,lab,ok)=>a.map(v=>`<button data-${at}="${v}" class="${v===cur?'on':''}" ${lk()||!ok(v)?'disabled':''}>${lab(v)}</button>`).join('');
@@ -155,24 +241,23 @@ function openSlots(){
   else{sfx.lose();msg.innerHTML='No luck<small class="sl-sub">Your last '+n+' SP is gone</small>'}
   busy=false;if(m.isConnected)draw()};
  $m('#slm').innerHTML=defMsg();draw();
- if(false){let tries=0;const iv=setInterval(()=>{if(!m.isConnected||TSET||++tries>30){clearInterval(iv);return}const ts=teamSet();if(!ts)return;clearInterval(iv);TSET=ts;if(!busy){m.querySelectorAll('.sl-strip').forEach(st=>{st.innerHTML=[...st.children].map(c=>cell(c.dataset.k)).join('')});$m('#slpt').innerHTML=ptHtml()}},1000)}
  FX_DB.rpc('slots_saver_status').then(q=>{if(q.error||!q.data)return;wsv=q.data.saver_spins||0;if(q.data.chance_max>0)cl=[+q.data.chance_min,+q.data.chance_max];if(m.isConnected)draw()}).catch(()=>{});
  m.addEventListener('click',e=>{const b=e.target.closest('[data-sld],[data-sll],[data-slc],[data-slmax]');if(e.target.closest('[data-slmute]')){muted=!muted;try{localStorage.setItem('fx-slm',muted?'1':'0')}catch(x){}if(!muted)sfx.click();draw();return}
   const tg=e.target.closest('[data-sltg]');if(tg){if(tg.dataset.sltg==='bonus')stopBonus=!stopBonus;else stopBig=!stopBig;draw();return}
-  const th=e.target.closest('[data-slth]');if(th&&!busy&&!autoOn){theme=th.dataset.slth;try{localStorage.setItem('fx-slt',theme)}catch(x){}TSET=teamSet();$m('.sl-wrap').dataset.th=theme;m.querySelectorAll('.sl-strip').forEach(st=>{st.innerHTML=[...st.children].map(c=>cell(c.dataset.k)).join('')});$m('#slpt').innerHTML=ptHtml();$m('#slm').innerHTML=defMsg();sfx.click();draw();return}
+  const th=e.target.closest('[data-slth]');if(th&&!busy&&!autoOn){theme=th.dataset.slth;try{localStorage.setItem('fx-slt',theme)}catch(x){}$m('.sl-wrap').dataset.th=theme;m.querySelectorAll('.sl-strip').forEach(st=>{st.innerHTML=[...st.children].map(c=>cell(c.dataset.k)).join('')});$m('#slpt').innerHTML=ptHtml();$m('#slm').innerHTML=defMsg();sfx.click();draw();return}
   const au=e.target.closest('[data-slau]');if(au&&!busy&&!autoOn){autoLeft=+au.dataset.slau;autoOn=true;ac();draw();autoLoop();return}
   if(e.target.closest('#slgo')&&autoOn){autoOn=false;autoLeft=0;draw();return}
   if(b&&!busy&&!autoOn){if(b.dataset.sld)denom=+b.dataset.sld;else if(b.dataset.sll)lines=+b.dataset.sll;else if(b.dataset.slc)cpl=+b.dataset.slc;else{lines=9;cpl=10}draw();return}if(e.target.closest('#slinfo')){const p=$m('#slpt');if(p.hidden)p.innerHTML=ptHtml();p.hidden=!p.hidden;return}if(e.target.closest('[data-svgo]')){gamble();return}if(e.target.closest('[data-svno]')){declined=true;draw();return}if(e.target.closest('[data-svre]')){declined=false;draw();return}if(e.target.closest('#slgo'))spin(wsv>0)});
  const clearHi=()=>{m.querySelectorAll('.sl-c.hit,.sl-c.dim').forEach(c=>c.classList.remove('hit','dim'));m.querySelectorAll('.sl-pl').forEach(e=>e.remove())};
  /* draw each winning payline across the reels, so you can see exactly which line paid and how far it ran */
  const PLC=['#ffd43b','#4dabf7','#ff6b6b','#69db7c','#da77f2','#ffa94d','#3bc9db','#f783ac','#a9e34b'];
- const drawLines=(wins,reels)=>{try{const rs=[...reels.children];if(!rs.length)return;const W=reels.clientWidth,Ht=reels.clientHeight,ch=rs[0].clientHeight/3;
-  const pts=(w)=>{const a=[];for(let c=0;c<w.count;c++){const r=rs[c];a.push((r.offsetLeft+r.offsetWidth/2).toFixed(1)+','+(r.offsetTop+(LINES[w.line][c]+.5)*ch).toFixed(1))}return a.join(' ')};
+ const drawLines=(wins,reels)=>{try{const rs=[...reels.children];if(!rs.length)return;const W=reels.clientWidth,Ht=reels.clientHeight,ch=rs[0].clientHeight/rows;
+  const pts=(w)=>{const a=[];for(let c=0;c<w.count;c++){const r=rs[c];a.push((r.offsetLeft+r.offsetWidth/2).toFixed(1)+','+(r.offsetTop+(lineRow(w.line,c)+.5)*ch).toFixed(1))}return a.join(' ')};
   const g=wins.map(w=>{const col=PLC[w.line%PLC.length],p=pts(w);return `<polyline points="${p}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${p}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`}).join('');
   reels.insertAdjacentHTML('beforeend',`<svg class="sl-pl" width="${W}" height="${Ht}" viewBox="0 0 ${W} ${Ht}" aria-hidden="true">${g}</svg>`)}catch(e){}};
  /* a line that matched 3+ from the left but was not active (you played fewer than 9 lines) pays nothing: tell the player so it does not look like a missed win */
  const missHint=(g,ln)=>{if(!Array.isArray(g)||ln>=9)return'';const out=[];for(let i=ln;i<9;i++){const L=LINES[i],b=g[0]&&g[0][L[0]];if(!b||b==='S')continue;let n=1;while(n<5&&g[n]&&g[n][L[n]]===b)n++;if(n>=3)out.push(LNAME[i]+' '+n+'×')}return out.length?'<small class="sl-sub" style="color:var(--sla);font-weight:800">Not paid, line not active: '+out.join(', ')+'. Play 9 lines to cover them.</small>':''};
- const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=0;c<w.count;c++)keep.add(c+','+LINES[w.line][c])});
+ const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=0;c<w.count;c++)keep.add(c+','+lineRow(w.line,c))});
   rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')));drawLines(wins,reels)};
  async function spin(free){if(busy||(!free&&S.novas<total()))return null;busy=true;lastAt=Date.now();const stake=free?SAVER_STAKE:total(),off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.novas-off);
   let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_denom:denom,p_lines:lines,p_cpl:cpl,p_theme:theme}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NR)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.novas);draw();return{ok:false}}
@@ -186,7 +271,7 @@ function openSlots(){
    if(!m.isConnected){applyNovas(r.novas,null);busy=false;return{ok:false}}
    const ok=await freeSpins(r,off);
    if(!ok){applyNovas(r.novas,null);busy=false;return{ok:false}}
-   $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;reels.classList.add('win');
+   $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;clearHi();await setRows(3);if(!m.isConnected){applyNovas(r.novas,null);busy=false;return{ok:false}}reels.classList.add('win');
    msg.innerHTML='<span id="slct">+0 SP</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+r.line_pay.toLocaleString()+' SP from lines':'')+'</small>';
    sfx.bonusWin();await countUp($m('#slct'),r.payout,calm()?0:1400,true);await wait(calm()?200:700)}
   else if(r.payout>0){reels.classList.add('win');sfx.win(lvl(r.payout,stake));msg.innerHTML=winMsg(wins,r.payout,stake);try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}}
@@ -216,11 +301,13 @@ function openSlots(){
  async function freeSpins(r,stake){r0bet=r.bet||1;
   const wrap=$m('.sl-wrap'),reels=$m('#slr'),msg=$m('#slm'),bar=$m('#slfs');
   let total=r.free.start,run=0;
-  const U=TH().bonus.unit,head=(n,x)=>{bar.innerHTML='<span>'+U+' <b>'+n+'</b> / '+total+(x?' · ×'+x:'')+'</span><span>Bonus win <b>+'+run.toLocaleString()+'</b> SP</span>'};
+  const U=TH().bonus.unit,head=(n,x)=>{bar.innerHTML='<span>'+U+' <b>'+n+'</b> / '+total+(x?' · ×'+x:'')+(rows>3?' · 5 × '+rows:'')+'</span><span>Bonus win <b>+'+run.toLocaleString()+'</b> SP</span>'};
   wrap.classList.add('fs');bar.hidden=false;$m('#slgo').textContent='Free spins…';head(1,r.free.spins[0]&&r.free.spins[0].x);
   for(const f of r.free.spins){
    if(!m.isConnected)return false;
-   clearHi();reels.className='sl-reels';msg.textContent='';head(f.n,f.x);
+   clearHi();reels.className='sl-reels';msg.textContent='';
+   if((f.rows||3)!==rows){reels.classList.add('bonus');msg.innerHTML=(TH().bonus.open||'THE REELS OPEN UP')+'<small class="sl-sub">5 reels × '+f.rows+' rows · lower rows pay too</small>';await setRows(f.rows||3);reels.classList.remove('bonus');if(!m.isConnected)return false;await wait(calm()?200:500);msg.textContent=''}
+   head(f.n,f.x);
    sfx.spinOn();await Promise.all([...reels.children].map((el,i)=>runReel(el,f.reels[i],650+i*190).then(()=>sfx.stop(i))));sfx.spinOff();
    if(!m.isConnected)return false;
    if(f.wins.length)hilite(f.wins,reels);
@@ -229,7 +316,7 @@ function openSlots(){
    if(f.pay>0){reels.classList.add('win');sfx.win(lvl(f.pay,total0()));msg.innerHTML=winMsg(f.wins,f.pay,stake);try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}await wait(calm()?250:1150)}
    else await wait(calm()?150:500)}
   return m.isConnected}
- const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=MEGAX*st?'MEGA WIN! ':pay>=BIGX*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+pay.toLocaleString()+' SP<small class="sl-sub">'+(best?LNAME[best.line]+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
+ const winMsg=(wins,pay,st)=>{const best=wins.slice().sort((a,b)=>b.pay-a.pay)[0],tier=st?(pay>=MEGAX*st?'MEGA WIN! ':pay>=BIGX*st?'BIG WIN! ':''):'';return tier+(wins.length>1?wins.length+' lines! ':'')+'+'+pay.toLocaleString()+' SP<small class="sl-sub">'+(best?lname(best.line)+' · '+best.count+'× '+(tn(best.sym)[0]?tn(best.sym)[0]+' ':'')+tn(best.sym)[1]:'')+'</small>'};
  const countUp=(el,to,ms,snd)=>new Promise(res=>{const t0=performance.now();let lc=0;const tick=t=>{const p=ms?Math.min(1,(t-t0)/ms):1;if(snd&&t-lc>70){lc=t;sfx.coin()}el.textContent='+'+Math.round(to*p).toLocaleString()+' SP';p<1&&el.isConnected?requestAnimationFrame(tick):res()};requestAnimationFrame(tick)})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-slots]'))openSlots()});
 window.openSlots=openSlots;
