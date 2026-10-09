@@ -58,7 +58,7 @@ function teamSet(){if(theme==='og')return null;try{const out=[],seen=new Set(),a
    This loads eagerly, is preloaded when the machine opens, and falls back to the letter crest only if the image really fails. */
 function logoSrc(t,z){try{const v=IMG[t.sp+'|'+t.n];if(!v||!/^https:\/\//.test(v.slice(1)))return null;const hs=v[0]==='h',u=v.slice(1),dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u);return{src:imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs),o:imgUrl(u,z,hs),dk,hs}}catch(e){return null}}
 window.__slErr=im=>{if(im.dataset.d){im.removeAttribute('data-d');im.src=im.dataset.o;return}try{im.parentNode.innerHTML=crestSvg(im.dataset.n,im.dataset.sp,+im.dataset.z)}catch(e){im.remove()}};
-function logo(t,z){if(t.sp!=='UFC')return helmetSvg(t.n,z);const L=logoSrc(t,z);if(!L)return crest(t.n,t.sp,z);
+function logo(t,z){if(t.sp!=='UFC')return helmetSvg(t.n,z,t.sp);const L=logoSrc(t,z);if(!L)return crest(t.n,t.sp,z);
  return `<span class="cr ${L.hs?'hd':'lg'}" style="width:${z}px;height:${z}px"><img class="ok" src="${esc(L.src)}" data-o="${esc(L.o)}" data-n="${esc(t.n)}" data-sp="${t.sp}" data-z="${z}"${L.dk?' data-d="1"':''} alt="" decoding="sync" referrerpolicy="no-referrer" onerror="__slErr(this)"></span>`}
 function preload(set){try{set.filter(t=>t.sp==='UFC').forEach(t=>[24,40].forEach(z=>{const L=logoSrc(t,z);if(L){const im=new Image();im.referrerPolicy='no-referrer';im.src=L.src}}))}catch(e){}}
 /* tier index 0 (lowest) .. 5 (highest); the first team in the set is the top tier */
