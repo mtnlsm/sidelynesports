@@ -343,7 +343,7 @@ const empty=t=>`<p class="mu" style="margin-top:8px">${t}</p>`;
 const sportRows=a=>(a||[]).length?`<div class="ps-sub">By sport</div>`+a.map(x=>{const dec=N(x.w)+N(x.l),v=pc(N(x.w),dec);return`<div class="ps-sp"><b>${esc(x.sport)}</b><div><div class="bar"><div style="width:${v||0}%"></div></div><span class="mu" style="font-size:12px">${N(x.w)}W \u00b7 ${N(x.l)}L \u00b7 ${N(x.n)} total</span></div><b class="${cl(x.net)}">${sg(x.net)}</b></div>`}).join(''):'';
 const p=d.picks||{},q=d.props||{},s=d.slots||{},so=d.social||{},fav=d.slots_fav||{},ca=d.casino||{},cg=d.casino_games||[];
 const pd=N(p.wins)+N(p.losses),qd=N(q.wins)+N(q.losses),allW=N(p.wins)+N(q.wins),allD=pd+qd,allN=N(p.total)+N(q.total);
-const profit=N(p.net)+N(q.net)+(N(s.won)-N(s.wagered));
+const profit=N(p.net)+N(q.net)+(N(ca.rounds)?N(ca.net):(N(s.won)-N(s.wagered)));/* casino net covers every game (slots, coin flip, blackjack, poker), not just slots */
 const lvN=LV(N(d.lifetime)),lo=NEED(lvN-1),hi=NEED(lvN),lp=Math.max(0,Math.min(100,(N(d.lifetime)-lo)/(hi-lo)*100));
 const days=d.joined?Math.max(1,Math.floor((Date.now()-Date.parse(d.joined))/864e5)):0;
 let h=d.hide_stats?'<div class="glass card ps-priv"><b>Your stats are hidden</b><p class="mu" style="margin-top:6px">Only you can see this tab. Show or hide it any time in Settings.</p></div>':'';
