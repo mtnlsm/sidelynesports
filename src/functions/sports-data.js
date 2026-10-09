@@ -131,18 +131,30 @@ function normTeam(sp, ev) {
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
 function normUfc(ev, sp = 'UFC') {
-  return (ev.competitions || []).map((c) => {
+  const comps = (ev.competitions || []).slice().reverse(); // ESPN lists the opener first: reverse so index 0 = main event, 1 = co-main
+  const segOf = (c, i) => { const t = String((c.cardSegment && (c.cardSegment.description || c.cardSegment.name)) || '').toLowerCase(); return /prelim/.test(t) ? 'pre' : /main/.test(t) ? 'main' : i < 5 ? 'main' : 'pre'; };
+  const venue = (ev.venues && ev.venues[0]) || (ev.competitions && ev.competitions[0] && ev.competitions[0].venue) || {};
+  const ad = venue.address || {};
+  const vn = [venue.fullName, [ad.city, ad.state || ad.country].filter(Boolean).join(', ')].filter(Boolean).join(' \u00b7 ').slice(0, 90);
+  const times = { main: 0, pre: 0 };
+  comps.forEach((c, i) => { const k = segOf(c, i), t = Date.parse(c.date || ev.date); if (t && (!times[k] || t < times[k])) times[k] = t; });
+  const rec = (x) => { const r = (x.records || []).find((y) => y && y.summary); return r ? String(r.summary).slice(0, 12) : ''; };
+  const flag = (x) => { const u = x.athlete && x.athlete.flag && x.athlete.flag.href; return u ? String(u).replace(/^http:/, 'https:') : ''; };
+  return comps.map((c, i) => {
     const f = (c.competitors || []).slice().sort((x, y) => (x.order || 0) - (y.order || 0));
     if (f.length < 2) return null;
     if (f.some((x) => !x.athlete || !x.athlete.displayName || /\b(TBA|TBD)\b|opponent/i.test(x.athlete.displayName))) return null; // fighter not confirmed
     const st = state(c.status && c.status.type ? c.status.type.state : ev.status.type.state);
     if (st === 'up' && /TBD|TBA/i.test(((c.status && c.status.type && c.status.type.shortDetail) || '') + ' ' + ((ev.status && ev.status.type && ev.status.type.shortDetail) || ''))) return null; // no confirmed start time
     if (!fresh(st, c.date || ev.date)) return null;
+    const wc = String((c.type && (c.type.text || c.type.abbreviation)) || '').replace(/\s*bout$/i, '').slice(0, 40);
+    const rd = Number(c.format && c.format.regulation && c.format.regulation.periods) || (i === 0 ? 5 : 3);
     return { id: sp + ':' + c.id, sp, ev: String(ev.name || ev.shortName || '').slice(0, 80), evi: String(ev.id || ''), a: f[0].athlete.displayName, b: f[1].athlete.displayName, ia: hs(f[0].athlete, sp, f[0].id), ib: hs(f[1].athlete, sp, f[1].id),
       sa: st === 'final' ? (f[0].winner ? 'W' : f[1].winner ? 'L' : 'D') : '', sb: st === 'final' ? (f[1].winner ? 'W' : f[0].winner ? 'L' : 'D') : '', st, date: c.date || ev.date,
       od: st === 'up' ? normMmaOdds(c, f) : undefined,
+      pos: i, seg: segOf(c, i), wc, rd, ra: rec(f[0]), rb: rec(f[1]), fa: flag(f[0]), fb: flag(f[1]), vn, tm: times.main ? new Date(times.main).toISOString() : '', tp: times.pre ? new Date(times.pre).toISOString() : '',
       clk: st === 'final' ? 'Final' : st === 'live' ? ((c.status && c.status.type && c.status.type.shortDetail) || 'Live') : '' };
-  }).filter(Boolean).reverse().slice(0, 8);
+  }).filter(Boolean).slice(0, 20);
 }
 // ESPN's default scoreboard only covers "today"/the current week, so ask for an explicit window (yesterday .. +7 days; UFC +14).
 const ymd = (o) => new Date(Date.now() + o * 864e5).toISOString().slice(0, 10).replace(/-/g, '');
