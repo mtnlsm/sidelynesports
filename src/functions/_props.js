@@ -104,13 +104,13 @@ const pickGames = (map, n) => { const old = [], young = [];
 const reply = (o) => ({ statusCode: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) });
 
 async function create(c, errors, group) {
-  const names = ['UFC', ...Object.keys(sports.LEAGUES)];
+  const names = ['UFC', 'PFL', ...Object.keys(sports.LEAGUES)];
   const grp = Number.isInteger(group) ? group % 4 : Math.floor(Date.now() / 9e5) % 4;
   const mine = names.filter((_, i) => i % 4 === grp);
   const res = await Promise.allSettled(mine.map((sp) => sports.load(sp)));
   res.forEach((r, i) => { if (r.status === 'rejected') errors.push(mine[i] + ': ' + String((r.reason && r.reason.message) || r.reason)); });
   const items = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
-  const up = items.filter((g) => g.st === 'up' && Date.parse(g.date) - Date.now() < 7 * 864e5), isM = (g) => g.sp === 'UFC';
+  const up = items.filter((g) => g.st === 'up' && Date.parse(g.date) - Date.now() < 7 * 864e5), isM = (g) => g.sp === 'UFC' || g.sp === 'PFL';
   // games whose scoreboard had no team leaders: ask the game summary (max 8 per run)
   await Promise.all(up.filter((g) => !isM(g) && !(g.ld && g.ld.length) && sports.LEAGUES[g.sp]).slice(0, 8).map(async (g) => {
     try { const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/' + sports.LEAGUES[g.sp] + '/summary?event=' + g.id.split(':')[1]); if (!r.ok) return;
@@ -133,7 +133,7 @@ async function create(c, errors, group) {
 async function settle(c, errors) {
   const op = (await c.from('props').select('id,game_id,subject,stat,starts_at').eq('status', 'open').lt('starts_at', new Date().toISOString()).limit(2000)).data || [];
   const team = new Map(), mma = new Map();
-  for (const p of op) { const m = /^UFC:\d+$/.test(p.game_id) ? mma : /^[A-Z0-9]+:\d+$/.test(p.game_id) ? team : null; if (!m) continue; if (!m.has(p.game_id)) m.set(p.game_id, []); m.get(p.game_id).push(p); }
+  for (const p of op) { const m = /^(UFC|PFL):\d+$/.test(p.game_id) ? mma : /^[A-Z0-9]+:\d+$/.test(p.game_id) ? team : null; if (!m) continue; if (!m.has(p.game_id)) m.set(p.game_id, []); m.get(p.game_id).push(p); }
   let settled = 0, voided = 0, waiting = 0, paid = 0;
   const doSettle = async (items) => { if (!items.length) return; const x = await c.rpc('settle_props', { p_items: items }); if (x.error) errors.push('settle_props: ' + x.error.message); else { settled += items.length; paid += Number(x.data) || 0; } };
   const doVoid = async (ids) => { if (!ids.length) return; const x = await c.rpc('void_props', { p_ids: ids }); if (x.error) errors.push('void_props: ' + x.error.message); else voided += ids.length; };
