@@ -625,3 +625,13 @@ html.nopop .pop{display:none}
 .ps-d{width:22px;height:22px;border-radius:7px;font-size:11px}
 .ps-h b{font-size:15px}
 @media(min-width:700px){.ps-g{grid-template-columns:repeat(3,1fr)}.ps-rg{grid-template-columns:repeat(3,1fr)}}
+
+/* chips + exchange + casino stats + privacy */
+.cz-ex{margin-left:10px;padding:9px 16px;border-radius:999px;border:0;background:#ffd86b;color:#3a2a00;font-weight:800;cursor:pointer;position:relative;z-index:1}
+.cz-sp{margin-top:10px;font-size:12px;opacity:.85;position:relative;z-index:1}.cz-sp b{font-weight:800}
+.cz-bal{position:relative;z-index:1}
+.cz-cx,.sl-cx{margin-left:6px;padding:3px 10px;min-height:0;font-size:12px}
+.ps-gm{display:grid;grid-template-columns:116px 1fr auto;gap:10px;align-items:center;padding:5px 0;font-size:13px}
+.ps-gm .bar{margin:0 0 3px;height:6px}
+.ps-priv{text-align:center}
+.ss-note{font-size:12px;opacity:.75;margin:6px 6px 0}
