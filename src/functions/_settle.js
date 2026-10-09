@@ -19,7 +19,7 @@ if (!globalThis.fetch.__counted) {
 }
 
 function winner(g) {
-  if (g.sp === 'UFC') return g.sa === 'W' ? g.a : g.sb === 'W' ? g.b : g.sa === 'D' && g.sb === 'D' ? 'Draw' : null; // no winner flag yet: leave pending
+  if (g.sp === 'UFC' || g.sp === 'PFL') return g.sa === 'W' ? g.a : g.sb === 'W' ? g.b : g.sa === 'D' && g.sb === 'D' ? 'Draw' : null; // no winner flag yet: leave pending
   const a = Number(g.sa), b = Number(g.sb);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return a > b ? g.a : b > a ? g.b : 'Draw'; // a tie pays everyone the +50
