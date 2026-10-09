@@ -164,7 +164,7 @@ input:focus,textarea:focus{border-color:var(--ab);box-shadow:0 0 0 3px color-mix
 .sl-wrap{--slh:70px}
 .sl-wrap .sl-reels{gap:10px;padding:14px 18px;width:max-content;max-width:100%;margin:0 auto;box-sizing:border-box}
 .sl-th{gap:6px}.sl-th .chip{padding:6px 10px;font-size:12.5px}
-.ps-g{gap:10px}.ps-t b{font-family:var(--fb);font-size:22px}
+.ps-g{gap:8px}.ps-t b{font-family:var(--fb);font-size:19px}
 
 /* ===== SPACING PASS (desktop) ===== */
 .pf{margin-bottom:var(--sp4)}
