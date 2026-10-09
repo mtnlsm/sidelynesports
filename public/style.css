@@ -609,3 +609,19 @@ html.nopop .pop{display:none}
 .sl-rg{margin:12px 0 0;font-size:11.5px;line-height:1.45;text-align:center;color:var(--mu)}
 .sl-rg b{color:var(--tx)}
 .sl-rg a{color:var(--ab);font-weight:600}
+
+/* compact profile stats */
+.ps-g{gap:6px;margin:8px 0 4px}
+.ps-t{padding:9px 4px;border-radius:12px}
+.ps-t b{font-size:17px}
+.ps-t span{font-size:10px;margin-top:2px;letter-spacing:.02em;text-transform:uppercase}
+.ps-rg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.ps-rg .ps-r{display:flex;flex-direction:column;justify-content:flex-start;gap:2px;padding:8px 10px;border:0;border-radius:10px;background:var(--sf2);font-size:13px;min-width:0}
+.ps-rg .ps-r span{font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+.ps-rg .ps-r b{text-align:left;font-size:13px}
+.ps-sub{margin:12px 0 4px;font-size:11px}
+.ps-sp{padding:4px 0}
+.ps-lv{margin:6px 0 8px;padding:8px 10px}
+.ps-d{width:22px;height:22px;border-radius:7px;font-size:11px}
+.ps-h b{font-size:15px}
+@media(min-width:700px){.ps-g{grid-template-columns:repeat(3,1fr)}.ps-rg{grid-template-columns:repeat(3,1fr)}}
