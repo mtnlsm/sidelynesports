@@ -67,7 +67,7 @@ exports.run = async (opts = {}) => {
   }
 
   let paid = 0;
-  const settle = async (id, x) => { const r = await c.rpc('settle_game', { p_game: id, p_winner: x.w, p_start: x.date }); if (r.error) errors.push('settle_game ' + id + ': ' + r.error.message); else paid += r.data || 0; };
+  const settle = async (id, x) => { const r = await c.rpc('settle_game', { p_game: id, p_winner: x.w, p_start: /^(UFC|PFL):/.test(String(id)) ? null : x.date }); if (r.error) errors.push('settle_game ' + id + ': ' + r.error.message); else paid += r.data || 0; };
 
   // 4) pay games we already know are final (1 request each)
   const due = [...games].filter(([id]) => open.has(id));
