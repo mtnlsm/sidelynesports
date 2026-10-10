@@ -28,6 +28,7 @@ const MMA=sp=>sp==='UFC'||sp==='PFL';
 const SOC=['SOCCER','EPL','MLS','UCL','LALIGA','SERIEA','BUNDESLIGA','LIGUE1']; // sports where a match can end in a draw (adds the Draw pick tile)
 P.mlb='<circle cx="12" cy="12" r="9"/><path d="M7 4.6c2.8 3.2 2.8 11.6 0 14.8M17 4.6c-2.8 3.2-2.8 11.6 0 14.8"/><path d="M8.9 8l-1.7.4M9.3 11.2l-1.8 0M9.1 14.4l-1.7-.5M15.1 8l1.7.4M14.7 11.2l1.8 0M14.9 14.4l1.7-.5"/>';
 P.nhl='<ellipse cx="12" cy="8.5" rx="8" ry="3.5"/><path d="M4 8.5v6.5c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5V8.5"/><path d="M8.5 8.2c1-.5 2.2-.7 3.5-.7"/>';
+P.pfl='<circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.8"/><path d="M7.6 9.6H2.5v4.8h5.1M16.4 9.6h5.1v4.8h-5.1"/>';
 P.soccer='<circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20 10l-4.5.5M17 19l-2.8-4.5M7 19l2.8-4.5M4 10l4.5.5"/>';
 const SPG=[['NFL','NFL',['NFL']],['NBA','NBA',['NBA']],['MLB','MLB',['MLB']],['NHL','NHL',['NHL']],['WNBA','WNBA',['WNBA']],['CFB','College FB',['CFB']],['UFC','UFC',['UFC']],['PFL','PFL',['PFL']]];
 const SPN={CFB:'College Football',CBB:'College Basketball',CBASE:'College Baseball'};
