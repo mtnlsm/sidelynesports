@@ -1,7 +1,9 @@
 -- SLOTS 3: everything new for the slots in ONE file. Run in the Supabase SQL editor after slots.sql and Slots-2.sql. Safe to re-run, and any future slot changes go in this same file.
 --   1) 3 new machines: olympus (Gods of Olympus), heist (Diamond Heist) and pinball (OG Pinball, with a lever), 20 in total.
 --      pinball Multiball: 5 balls, 1,1,1,3,6 on 3 rows (value 12)
---      pinball is a 3 reel x 1 row machine with ONE payline: match all 3 symbols to win, the whole bet rides on that line (see slots_play_p below)
+--      pinball is modeled on IGT Pinball: 3 reels x 1 row, ONE payline (match all 3 to win). A diamond on the RIGHT reel triggers the pinball bonus.
+--      The bonus shoots pinballs (bet 1-99 chips = 1 shot, 100-999 = 2 shots, 1,000+ = 5 shots). Each ball lands in a pocket (x0.5 to x3 your bet) or in the
+--      bonus chamber, which fills left to right (x5, x10, x20, x100, x200). All of it is decided in slots_pb_play below.
 --   2) Different odds on every machine (slots_theme_pay and slots_theme_bon below).
 -- Most bonuses are worth 12 (sum of multiplier x rows/3). These two are worth more (see below) and trigger less often, so the payback stays the same.
 --   olympus Thunder of Zeus: 3 spins 2,2,20 on 3 rows (value 24)  |  heist Vault Crack: 3 spins 2,2,7, rows 3,3,6 (value 2+2+14 = 18)
@@ -105,14 +107,11 @@ create or replace function slots_play_p(p_unit numeric,p_adj numeric,p_scat int,
 declare
   pool constant text[]:=array_fill('t1'::text,array[24])||array_fill('t2'::text,array[22])||array_fill('t3'::text,array[18])||array_fill('t4'::text,array[14])||array_fill('t5'::text,array[12])||array_fill('t6'::text,array[10]);
   c_k constant numeric:=1.61;
-  g text[]:=array['x','x','x']; c int; lp numeric; pay numeric:=0; scat int:=0; cols int[];
+  g text[]:=array['x','x','x']; c int; lp numeric; pay numeric:=0; scat int:=0;
   wins jsonb:='[]'::jsonb; reels jsonb:='[]'::jsonb;
 begin
   for c in 1..3 loop g[c]:=pool[1+floor(random()*array_length(pool,1))::int]; end loop;
-  if p_scat>0 then
-    cols:=(select array_agg(x) from (select x from generate_series(1,3) x order by random() limit p_scat) q);
-    foreach c in array cols loop g[c]:='S'; end loop;
-  end if;
+  if p_scat>0 then g[3]:='S'; end if;   -- the diamond only ever shows on the RIGHT reel
   if g[1]<>'S' and g[2]=g[1] and g[3]=g[1] then
     lp:=slots_mult(g[1],3)*p_unit*p_adj*p_x*c_k; pay:=lp;
     wins:=jsonb_build_array(jsonb_build_object('line',0,'sym',g[1],'count',3,'pay',round(lp)::bigint));
@@ -122,6 +121,38 @@ begin
     if g[c]='S' then scat:=scat+1; end if;
   end loop;
   return jsonb_build_object('reels',reels,'wins',wins,'pay',least(round(pay)::bigint,1000000000),'scatters',scat);
+end $$;
+
+-- OG PINBALL BONUS (modeled on IGT Pinball). One call plays every shot.
+--   pocket pays (x your bet): x0.5, x1, x2, x3, x1 with chances 30%, 28%, 12%, 5%, 25%   <== TUNE
+--   each ball has a 5% chance (c_pc) to land in the BONUS CHAMBER instead. The chamber fills left to right and pays x5, x10, x20, x100, x200.
+--   slots_pb_ev = average total bonus pay (x bet) for 1, 2 and 5 shots. If you change the numbers above, recompute these 3 values.
+create or replace function slots_pb_shots(p_bet int) returns int language sql immutable as $$
+  select case when p_bet>=1000 then 5 when p_bet>=100 then 2 else 1 end $$;   -- <== TUNE: bet size needed for 2 and 5 shots
+
+create or replace function slots_pb_ev(p_shots int) returns numeric language sql immutable as $$
+  select case p_shots when 1 then 1.2665 when 2 then 2.5455 else 6.4657 end $$;
+
+create or replace function slots_pb_play(p_bet int,p_adj numeric,p_shots int) returns jsonb language plpgsql volatile as $$
+declare
+  pv  constant numeric[]:=array[0.5,1,2,3,1];
+  pw  constant int[]:=array[30,28,12,5,25];
+  cv  constant numeric[]:=array[5,10,20,100,200];
+  c_pc constant numeric:=0.05;
+  i int; k int; sel int; acc int; r numeric; cnt int:=0; kind text; idx int; mult numeric; pay bigint; run bigint:=0; shots jsonb:='[]'::jsonb;
+begin
+  for i in 1..p_shots loop
+    if cnt<5 and random()<c_pc then
+      cnt:=cnt+1; kind:='c'; idx:=cnt-1; mult:=cv[cnt];
+    else
+      r:=random()*100; acc:=0; sel:=5;
+      for k in 1..5 loop acc:=acc+pw[k]; if r<acc then sel:=k; exit; end if; end loop;
+      kind:='u'; idx:=sel-1; mult:=pv[sel];
+    end if;
+    pay:=round(mult*p_bet*p_adj)::bigint; run:=run+pay;
+    shots:=shots||jsonb_build_array(jsonb_build_object('n',i,'kind',kind,'idx',idx,'mult',mult,'pay',pay,'run',run));
+  end loop;
+  return jsonb_build_object('shots',shots,'pay',run);
 end $$;
 
 create or replace function slots_spin(p_bet int,p_theme text default 'classic') returns jsonb language plpgsql security definer set search_path=public as $$
@@ -143,6 +174,7 @@ begin
   if mults is null or rws is null then raise exception 'Unknown machine, reload the page'; end if;
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
   c_bonus_p:=c_bonus_p*12.0/(select sum(tm*tr/3.0) from unnest(mults,rws) as t(tm,tr));
+  if p_theme='pinball' then c_bonus_p:=0.012*12.0/(slots_pb_ev(slots_pb_shots(p_bet))/0.6778); end if;   -- pinball: the bonus is worth shots x pocket pays, so the trigger chance is scaled to keep the payback
   c_bonus_p:=c_bonus_p*slots_theme_bon(p_theme);   -- each machine has its own bonus frequency
   total:=p_bet; unit:=p_bet/case when p_theme='pinball' then 1.0 else 9.0 end; adj:=slots_adj_bet(p_bet)*slots_theme_pay(p_theme);   -- each machine has its own payback
 
@@ -154,7 +186,7 @@ begin
 
   if roll<c_bonus_p then
     kind:='bonus'; sc:=3;
-  elsif random()<c_tease then
+  elsif p_theme<>'pinball' and random()<c_tease then
     sc:=2;
   else
     sc:=0;
@@ -162,7 +194,10 @@ begin
   if p_theme='pinball' then b:=slots_play_p(unit,adj,sc,1); else b:=slots_play_b(9,unit,adj,sc,1,3); end if;
   lpay:=(b->>'pay')::bigint; pay:=lpay;
 
-  if kind='bonus' then
+  if kind='bonus' and p_theme='pinball' then
+    f:=slots_pb_play(p_bet,adj,slots_pb_shots(p_bet)); run:=(f->>'pay')::bigint; pay:=pay+run;
+    free:=jsonb_build_object('theme',p_theme,'pinball',true,'start',slots_pb_shots(p_bet),'shots',f->'shots');
+  elsif kind='bonus' then
     fs_total:=len;
     while n<fs_total loop
       n:=n+1;
@@ -190,9 +225,9 @@ begin
 end $$;
 
 revoke all on function slots_play_p(numeric,numeric,int,int) from public,anon,authenticated;
+revoke all on function slots_pb_play(int,numeric,int) from public,anon,authenticated;
 revoke all on function slots_theme_pay(text) from public,anon;
 revoke all on function slots_theme_bon(text) from public,anon;
 revoke all on function slots_spin(int,text) from public,anon;
 grant execute on function slots_spin(int,text) to authenticated;
 notify pgrst,'reload schema';
-
