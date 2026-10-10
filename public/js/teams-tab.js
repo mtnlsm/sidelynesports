@@ -5,7 +5,7 @@
   'use strict';
   var API = '/.netlify/functions/team';
   var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'CFB'];
-  var st = { sp: 'NFL', conf: 0, cf: 'TOP25', poll: 0, view: 'stand', pb: {}, tg: {}, ts: {} }, SD = {}, sbusy = {}, serr = {}, ST = {}, busy = {}, err = {}, RK = {}, rkBusy = {}, rkErr = {};
+  var st = { sp: 'NFL', conf: 0, cf: 'TOP25', poll: 0, view: 'stand', pb: {}, tg: {}, ts: {}, q: '' }, PLM = {}, jsp = '', SD = {}, sbusy = {}, serr = {}, ST = {}, busy = {}, err = {}, RK = {}, rkBusy = {}, rkErr = {};
 
   var E = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var label = function (c) { try { return spl(c); } catch (e) { return c; } };
@@ -50,6 +50,9 @@
     '.st-lead{display:flex;align-items:center;gap:14px;padding:14px;margin-top:12px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--ab,#0e8f4a) 22%,var(--sf2)),var(--sf2))}',
     '.st-lead .st-ph{width:64px;height:64px;border:3px solid var(--ab,#0e8f4a)}.st-lead small{color:var(--mu);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}',
     '.st-lead b{display:block;font-size:17px;line-height:1.15}.st-lead .big{font-family:var(--fd);font-style:italic;font-weight:900;font-size:34px;line-height:1;margin-left:auto;text-align:right}.st-lead .big small{display:block;margin-top:3px}',
+    '.tt-q{margin-top:12px}.tt-q input{width:100%;font-size:16px}',
+    '.tt-sr{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-top:8px;cursor:pointer}.tt-sr:active{background:var(--sf2)}',
+    '.tt-sr .st-pl{flex:1;min-width:0}.tt-sr .go{color:var(--mu);font-size:13px;font-weight:700;flex:none}',
     '.tt-nm{font-family:var(--fd);font-size:26px;font-weight:800;text-transform:uppercase;line-height:1.05;margin:0;overflow-wrap:anywhere}'
   ].join('');
   document.head.appendChild(css);
@@ -58,7 +61,7 @@
     return fetch(API + '?' + qs).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'error'); return j; }); });
   }
 
-  function jr(n, z, ab) { try { return jerseySvg(n, z, st.sp, ab); } catch (e) { return ''; } }
+  function jr(n, z, ab) { try { return jerseySvg(n, z, jsp || st.sp, ab); } catch (e) { return ''; } }
   function load(sp) {
     var c = ST[sp];
     if ((c && Date.now() - c.at < 300000) || busy[sp]) return;
@@ -183,7 +186,72 @@
     if (SD[key]) return '';
     return serr[key] ? '<p class="mu" style="margin:10px 0">These stats aren\u2019t available right now.</p><button class="chip" data-ttsretry="' + E(key) + '">Retry</button>' : '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
   }
+  // ---- search: finds players across every leaderboard of the league (top 25 per category) plus UFC/PFL fighters ----
+  var nz = function (s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+  var hitQ = function (hay, q) { var h = nz(hay); return q.split(' ').every(function (t) { return h.indexOf(t) >= 0; }) || h.replace(/ /g, '').indexOf(q.replace(/ /g, '')) >= 0; };
+  function aggregate(sp) {
+    var by = {}, order = [], pending = 0, failed = 0;
+    (BOARDS[sp] || []).forEach(function (b) {
+      var key = 'p:' + sp + ':' + b[0];
+      if (!SD[key] && !serr[key]) sload(key, 'sport=' + sp + '&kind=players&id=' + b[0]);
+      var c = SD[key];
+      if (!c) { if (serr[key]) failed++; else pending++; return; }
+      var d = c.d;
+      d.rows.forEach(function (r, i) {
+        var k = sp + ':' + (r.id || nz(r.n)), p = by[k];
+        if (!p) { p = by[k] = { key: k, n: r.n, t: r.t, pos: r.pos, img: r.img, b: [] }; order.push(k); }
+        if (!p.img && r.img) p.img = r.img;
+        p.b.push({ label: d.label, cols: d.cols, v: r.v, rank: i + 1, sortCol: d.sortCol });
+      });
+    });
+    return { by: by, order: order, pending: pending, failed: failed };
+  }
+  function fightersList() {
+    try { if (typeof FIGHTERS !== 'undefined' && FIGHTERS.length) return FIGHTERS.map(function (f) { return { n: f.n, d: f.d || '', nk: f.nk || '' }; }); } catch (e) {}
+    return (window.UFC_FIGHTERS || []).map(function (f) { return { n: f[0], d: f[1] || '', nk: '' }; });
+  }
+  function searchBody() {
+    var q = nz(st.q), sp = st.sp, ag = aggregate(sp), h = '';
+    var res = ag.order.map(function (k) { return ag.by[k]; }).filter(function (p) { return hitQ(p.n + ' ' + p.t + ' ' + p.pos, q); });
+    res.sort(function (a, b) { var as = nz(a.n).indexOf(q) === 0 ? 0 : 1, bs = nz(b.n).indexOf(q) === 0 ? 0 : 1; return as - bs || b.b.length - a.b.length || a.n.localeCompare(b.n); });
+    var fs = fightersList().filter(function (f) { return hitQ(f.n + ' ' + f.d + ' ' + f.nk, q); }).slice(0, 8);
+    PLM = {}; res.forEach(function (p) { PLM[p.key] = p; });
+    if (res.length) {
+      h += '<h3 class="tt-h">Players \u00b7 ' + E(label(sp)) + ' <span class="mu">' + res.length + '</span></h3>';
+      res.slice(0, 25).forEach(function (p) {
+        var f = p.b[0], sc = f.cols[f.sortCol] || f.cols[0], val = f.v[f.sortCol] != null ? f.v[f.sortCol] : f.v[0];
+        h += '<div class="glass card tt-sr" role="button" tabindex="0" data-tpl="' + E(p.key) + '"><div class="st-pl">' +
+          (p.img ? '<img class="st-ph" src="' + E(p.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '<i class="st-ph"></i>') +
+          '<span><b>' + E(p.n) + '</b><small>' + E([p.t, p.pos].filter(Boolean).join(' \u00b7 ')) + '</small></span></div>' +
+          '<span class="go">' + E(val) + ' ' + E(sc ? sc.l : '') + ' \u203a</span></div>';
+      });
+      if (res.length > 25) h += '<p class="mu" style="margin-top:8px">Keep typing to narrow it down\u2026</p>';
+    }
+    if (fs.length) {
+      h += '<h3 class="tt-h">Fighters \u00b7 UFC <span class="mu">' + fs.length + '</span></h3>';
+      fs.forEach(function (f) {
+        var cr = ''; try { cr = crest(f.n, 'UFC', 34); } catch (e) {}
+        h += '<div class="glass card tt-sr" role="button" tabindex="0" data-fprof="' + E(f.n) + '"><div class="st-pl"><span class="st-ph" style="display:grid;place-items:center;overflow:hidden">' + cr + '</span><span><b>' + E(f.n) + '</b><small>' + E(f.d + (f.nk ? ' \u00b7 \u201c' + f.nk + '\u201d' : '')) + '</small></span></div><span class="go">Profile \u203a</span></div>';
+      });
+    }
+    if (!res.length && !fs.length) {
+      if (ag.pending) h += '<div class="sk"></div><div class="sk"></div>';
+      else h += '<p class="mu" style="margin:14px 0">No players or fighters match \u201c' + E(st.q) + '\u201d.' + (ag.failed ? ' Some stats didn\u2019t load, so try again in a moment.' : '') + '</p>';
+    } else if (ag.pending) h += '<div class="sk" style="margin-top:8px"></div>';
+    return h + '<p class="tt-note">Players come from ' + E(label(sp)) + ' season leaders (top 25 in each stat category). Tap anyone to see their stats.</p>';
+  }
+  function openPlayer(key) {
+    var p = PLM[key]; if (!p) return;
+    var m = modal(''), box = m.firstChild;
+    var h = '<div class="tt-hd"><div class="tt-lg">' + (p.img ? '<img class="st-ph" style="width:60px;height:60px" src="' + E(p.img) + '" alt="" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '') + '</div><div style="min-width:0"><h3 class="tt-nm">' + E(p.n) + '</h3><div class="mu" style="margin-top:4px">' + E([p.t, p.pos, label(st.sp)].filter(Boolean).join(' \u00b7 ')) + '</div></div></div>';
+    p.b.forEach(function (x) {
+      h += '<h3 class="tt-h">' + E(x.label) + ' <span class="mu">#' + x.rank + ' in the league</span></h3><div class="tt-bio">' +
+        x.cols.map(function (c, i) { return '<div><small title="' + E(c.t) + '">' + E(c.l) + '</small><span>' + E(x.v[i]) + '</span></div>'; }).join('') + '</div>';
+    });
+    box.innerHTML = h + '<p class="tt-note">Season stats from ESPN. Shown for each leaderboard this player ranks in.</p><button class="chip" style="margin-top:12px" data-x>Close</button>';
+  }
   function playersBody() {
+    if (nz(st.q).length >= 2) return searchBody();
     var sp = st.sp, bs = BOARDS[sp] || [], id = st.pb[sp] && bs.some(function (b) { return b[0] === st.pb[sp]; }) ? st.pb[sp] : (bs[0] || [])[0];
     var key = 'p:' + sp + ':' + id;
     sload(key, 'sport=' + sp + '&kind=players&id=' + id);
@@ -232,7 +300,7 @@
       return '<button class="chip ' + (c === st.sp ? 'on' : '') + '" role="tab" data-tts="' + c + '">' + E(label(c)) + '</button>';
     }).join('') + '</div><div class="st-sw" role="tablist">' + [['stand', 'Standings'], ['players', 'Player stats'], ['teams', 'Team stats']].map(function (v) {
       return '<button class="' + (v[0] === st.view ? 'on' : '') + '" role="tab" data-tsv="' + v[0] + '">' + v[1] + '</button>';
-    }).join('') + '</div><div id="tmx">' + body() + '</div>';
+    }).join('') + '</div>' + (st.view === 'players' ? '<div class="tt-q"><input id="tpq" type="search" placeholder="Search players &amp; fighters\u2026" value="' + E(st.q) + '" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" aria-label="Search players and fighters"></div>' : '') + '<div id="tmx">' + body() + '</div>';
   };
 
   // ---- small team sheet ----
@@ -254,13 +322,13 @@
     return h;
   }
 
-  function openTeam(id, name) {
-    var m = modal(''), box = m.firstChild, sp = st.sp;
+  function openTeam(id, name, sp0) {
+    var m = modal(''), box = m.firstChild, sp = sp0 || st.sp;
     var shell = function (inner) { box.innerHTML = '<h3 class="tt-nm" style="margin-bottom:12px">' + E(name) + '</h3>' + inner + '<button class="chip" style="margin-top:12px" data-x>Close</button>'; };
     var go = function () {
       shell('<div class="sk"></div><div class="sk"></div>');
-      fetchJson('sport=' + sp + '&id=' + encodeURIComponent(id)).then(function (d) {
-        if (m.isConnected) box.innerHTML = sheet(d, name) + '<button class="chip" style="margin-top:12px" data-x>Close</button>';
+      fetchJson('sport=' + sp + (id ? '&id=' + encodeURIComponent(id) : '&name=' + encodeURIComponent(name))).then(function (d) {
+        jsp = sp; try { if (m.isConnected) box.innerHTML = sheet(d, name) + '<button class="chip" style="margin-top:12px" data-x>Close</button>'; } finally { jsp = ''; }
       }).catch(function () {
         if (m.isConnected) shell('<p class="mu" style="margin:6px 0 12px">Team data is unavailable right now.</p><button class="chip" data-ttretry2>Retry</button>');
       });
@@ -269,8 +337,17 @@
     go();
   }
 
+  document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'tpq') return;
+    st.q = e.target.value; paint();
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.matches && e.target.matches('[data-tpl],[data-ftm],[data-fprof]')) { e.preventDefault(); e.target.click(); }
+  });
   document.addEventListener('click', function (e) {
     var c;
+    if ((c = e.target.closest('[data-tpl]'))) { openPlayer(c.dataset.tpl); return; }
+    if ((c = e.target.closest('[data-ftm]'))) { openTeam('', c.dataset.ftm, c.dataset.fsp || 'NFL'); return; }
     if ((c = e.target.closest('[data-tsv]'))) { st.view = c.dataset.tsv; go('teams'); return; }
     if ((c = e.target.closest('[data-tpb]'))) { st.pb[st.sp] = c.dataset.tpb; paint(); return; }
     if ((c = e.target.closest('[data-tgc]'))) { st.tg[st.sp] = c.dataset.tgc; paint(); return; }
