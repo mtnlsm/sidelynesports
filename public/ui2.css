@@ -175,3 +175,45 @@ button.ss-row:active{background:color-mix(in srgb,var(--tx) 6%,transparent);tran
 .mc-me .mc-ft{background:none;color:inherit;border-top:1px solid var(--bd)}
 .mc-me .mc-ft .mu{color:var(--mu)}
 .mc-me .mc-r{color:var(--ab)}
+
+/* ===================================================================
+   NAVIGATION: bottom tab bar (mobile) + left sidebar (desktop)
+   Icons carry class="f" shapes that fill softly when the tab is active.
+   =================================================================== */
+#nav.nav button{position:relative;-webkit-tap-highlight-color:transparent}
+#nav.nav button::before{display:none}
+#nav.nav svg{width:24px;height:24px;stroke-width:1.8;color:inherit;transition:transform .25s cubic-bezier(.3,1.5,.5,1)}
+#nav.nav svg .f{transition:fill .2s,fill-opacity .2s}
+#nav.nav button.on svg{stroke-width:2}
+#nav.nav button.on svg .f{fill:currentColor;fill-opacity:.24}
+#nav.nav button.on svg{animation:nvpop .32s cubic-bezier(.3,1.5,.5,1)}
+@keyframes nvpop{0%{transform:scale(.78)}100%{transform:scale(1)}}
+
+/* live dot on the Live tab */
+#nav.nav button.has-live::after{content:"";position:absolute;top:2px;left:calc(50% + 11px);width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--sf);animation:nvlive 1.6s ease-out infinite}
+@keyframes nvlive{0%{box-shadow:0 0 0 2px var(--sf),0 0 0 2px color-mix(in srgb,var(--bad) 60%,transparent)}100%{box-shadow:0 0 0 2px var(--sf),0 0 0 8px transparent}}
+
+/* ---- mobile: bottom tab bar, active tab gets a pill behind the icon ---- */
+@media(max-width:899px){
+  :root{--nav-h:64px}
+  #nav.nav.glass{gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--sf) 90%,transparent);backdrop-filter:saturate(1.8) blur(22px);-webkit-backdrop-filter:saturate(1.8) blur(22px);border-top:1px solid var(--bd);box-shadow:0 -8px 28px rgba(0,0,0,.06)}
+  #nav.nav button,#nav.nav.has-admin button{flex:1;min-width:0;max-width:none;min-height:52px;gap:3px;padding:2px 0 0;border-radius:14px;font:600 10.5px/1 var(--fb);letter-spacing:.01em;text-transform:none;color:var(--mu);white-space:nowrap;transition:color .18s}
+  #nav.nav.has-admin button{font-size:9.5px}
+  #nav.nav button span{display:grid;place-items:center;width:min(54px,calc(100% - 4px));height:30px;border-radius:999px;font-size:0;line-height:0;transition:background .2s,transform .15s}
+  #nav.nav button.on{color:var(--ab);font-weight:700}
+  #nav.nav button.on span{background:color-mix(in srgb,var(--ab) 16%,transparent)}
+  #nav.nav button:active span{transform:scale(.9)}
+}
+
+/* ---- desktop: left sidebar, icon tile + label, accent edge on the active row ---- */
+@media(min-width:900px){
+  #nav.nav.glass{gap:4px;padding:18px 14px;box-shadow:none}
+  #nav.nav button,#nav.nav.has-admin button{min-height:46px;gap:12px;padding:0 12px 0 8px;border-radius:12px;font:600 15px/1 var(--fb);color:var(--mu);transition:background .15s,color .15s}
+  #nav.nav button span{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:10px;transition:background .2s,color .2s}
+  #nav.nav button:hover{background:var(--sf2);color:var(--tx)}
+  #nav.nav button.on{background:color-mix(in srgb,var(--ab) 10%,var(--sf));color:var(--ab);font-weight:700}
+  #nav.nav button.on span{background:var(--ab);color:var(--abx,#fff)}
+  #nav.nav button.on span svg{color:var(--abx,#fff)}
+  #nav.nav button.has-live::after{top:50%;left:auto;right:14px;transform:translateY(-50%);box-shadow:none;animation:nvlive2 1.6s ease-out infinite}
+  @keyframes nvlive2{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--bad) 55%,transparent)}100%{box-shadow:0 0 0 7px transparent}}
+}
