@@ -47,7 +47,7 @@ function normOdds(c) {
   const o = c && c.odds && c.odds[0]; if (!o) return undefined;
   const fmt = (v) => { if (v == null || v === '') return ''; let t = String(v).trim(); if (/^even$/i.test(t)) return '+100'; if (/^\d/.test(t)) t = '+' + t; return /^[+-]\d+$/.test(t) ? t : ''; };
   const ml = (side) => { const t = o[side + 'TeamOdds'] || {}; const m = o.moneyline && o.moneyline[side] && o.moneyline[side].close && o.moneyline[side].close.odds; return fmt(t.moneyLine != null ? t.moneyLine : m); };
-  const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' };
+  const out = { a: ml('away'), b: ml('home'), d: o.details ? String(o.details).slice(0, 24) : '', ou: o.overUnder != null && o.overUnder !== '' ? Number(o.overUnder) : '', p: '' };
   return out.a || out.b || out.d || out.ou ? out : undefined;
 }
 // UFC fight odds: ESPN lists a moneyline per fighter on upcoming bouts (awayAthleteOdds / homeAthleteOdds). We match each line to the right fighter
@@ -64,7 +64,7 @@ function normMmaOdds(c, f) {
     return k ? S[k].ml : ''; };
   const a = pick(f[0]), b = pick(f[1]);
   if (a && b && a === b && a !== '+100') return undefined; // same line twice = a bad match, do not show it
-  return a || b ? { a, b, d: '', ou: '', p: o.provider && o.provider.name ? String(o.provider.name).slice(0, 24) : '' } : undefined;
+  return a || b ? { a, b, d: '', ou: '', p: '' } : undefined;
 }
 // ESPN does NOT put fight odds on the scoreboard. They live on the core API, one request per fight:
 //   sports.core.api.espn.com/v2/sports/mma/leagues/ufc/events/{eventId}/competitions/{fightId}/odds
