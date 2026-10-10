@@ -158,3 +158,15 @@ button.ss-row:active{background:color-mix(in srgb,var(--tx) 6%,transparent);tran
 .sb .sbtn{flex:none;padding:4px 0;border:0;border-radius:0;background:none;color:var(--mu);font:600 13px/1.2 var(--fb);letter-spacing:0;text-transform:none;cursor:pointer}
 .sb .sbtn.on{color:var(--ab);text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:2px}
 @media(min-width:900px){.sg{max-width:380px}.sg.sm{max-width:none}.hs.tb,.hs.sb{margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}}
+
+/* UFC / PFL fight cards: same surface as the team game cards */
+.mc{background:var(--sf);border:1px solid var(--bd);border-left:4px solid var(--ab);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:10px}
+:root[data-theme="dark"] .mc{box-shadow:0 2px 14px rgba(0,0,0,.45)}
+.mc:hover{border-color:var(--ab)}
+.mc:active{transform:scale(.985)}
+.mc.lv{border-color:var(--bad)}
+@media(max-width:899px){
+  .mc{border-radius:14px;border-left:1px solid var(--bd);box-shadow:none;margin-bottom:12px}
+  :root[data-theme="dark"] .mc{box-shadow:none}
+  .mc.lv{border-color:color-mix(in srgb,var(--bad) 35%,var(--bd))}
+}
