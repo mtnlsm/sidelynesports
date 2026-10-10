@@ -203,7 +203,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
     document.body.className = 'bd';
     document.getElementById('stage').remove();
     const app = document.getElementById('app');
-    const S = { games: [], gid: '', all: false, key: '', user: null, signed: null, show: { score: true, pick: true }, theme: 'dark', pos: 'bottom', scale: 1, logos: true, accent: '#' + DEF, q: '' };
+    const S = { games: [], gid: (/^[A-Z0-9]+:\d{3,}$/.test(P.get('setup') || '') ? P.get('setup') : ''), all: !!P.get('setup'), key: '', user: null, signed: null, show: { score: true, pick: true }, theme: 'dark', pos: 'bottom', scale: 1, logos: true, accent: '#' + DEF, q: '' };
     app.innerHTML = `<div class="wrap"><div class="hd"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M22 10.5h-9.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 1 0 7H10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg><h1>Stream Overlay</h1></div>
       <p class="sub">A live scoreboard with your pick, for OBS, Streamlabs Desktop and any streaming software with a Browser Source. Your pick only appears on the overlay when you've made one on that game.</p>
       <div class="cd"><h2><span>1</span>Your account</h2><div class="acct" id="acct">Checking sign-in\u2026</div></div>
@@ -252,6 +252,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
     $('#gl').onclick = (e) => { const b = e.target.closest('[data-id]'); if (!b) return; S.gid = b.dataset.id; $('#gid').value = ''; games(); sync(); };
     $('#gid').oninput = (e) => { const v = e.target.value.trim(); if (/^[A-Z0-9]+:\d{3,}$/.test(v)) { S.gid = v; games(); sync(); } };
     $('#all').onchange = (e) => { S.all = e.target.checked; games(); };
+    if (S.all) $('#all').checked = true;
     $('#oS').onchange = (e) => { S.show.score = e.target.checked; sync(); }; $('#oP').onchange = (e) => { S.show.pick = e.target.checked; sync(); }; $('#oL').onchange = (e) => { S.logos = e.target.checked; sync(); };
     $('#oZ').oninput = (e) => { S.scale = +e.target.value / 100; $('#oZv').textContent = e.target.value + '%'; sync(); };
     $('#oC').oninput = (e) => { S.accent = e.target.value; sync(); };
