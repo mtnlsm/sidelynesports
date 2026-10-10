@@ -6,7 +6,8 @@
 --   3) 3 in a row pays slots_mult x c_k (c_k = 1.00).
 --   4) Payback: raw return 0.744 (bonus 0.167 + line 0.420 + pairs 0.157), times the bet-size factor and the 1.02 machine factor =
 --      about 92% on tiny bets up to about 98% at 9,000+ chips.
---   public/slots.js must match (PK, PAIR, PBX, PBC and the help text).
+--   5) HIGH STAKES: OG Pinball needs a bet of at least 500 chips per spin (checked in slots_spin).
+--   public/slots.js must match (PK, PAIR, PBX, PBC, PIN_MIN and the help text).
 --   Everything is decided here; public/slots.js only plays the animation.
 
 create or replace function slots_pb_shots(p_bet int) returns int language sql immutable as $$ select 6 $$;   -- <== TUNE: shots per bonus (the same on every bet)
@@ -81,6 +82,7 @@ declare
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
+  if p_theme='pinball' and p_bet<500 then raise exception 'OG Pinball is high stakes: the minimum bet is 500 chips'; end if;   -- <== TUNE: pinball minimum bet (keep it equal to PIN_MIN in public/slots.js)
   mults:=slots_bonus_mults(p_theme); rws:=slots_bonus_rows(p_theme);
   if mults is null or rws is null then raise exception 'Unknown machine, reload the page'; end if;
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
