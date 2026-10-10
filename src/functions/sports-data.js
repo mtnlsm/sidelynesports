@@ -226,10 +226,9 @@ async function load(sp) {
   if (MMA_SP.has(sp)) { try { await addMmaOdds(sp, events, out); } catch (e) {} }
   if (sp === 'UFC') { // qa/qb = 'C' (champion) or rank number
     let rk = {}; try { rk = (await ufcRanks()).map || {}; } catch (e) {}
-    // Backup so the gold C still shows when ESPN's rankings feed is down or has no champion marks. Edit this list when a belt changes hands (heavyweight is vacant).
-    const hasC = Object.values(rk).includes('C'), CH = ['alexandervolkanovski', 'petryan', 'carlosulberg', 'seanstrickland', 'islammakhachev', 'justingaethje', 'joshuavan', 'kaylaharrison', 'valentinashevchenko', 'mackenziedern'];
-    const tag = (n) => { const k = nkey(n); return rk[k] != null ? rk[k] : (!hasC && CH.includes(k) ? 'C' : null); };
-    out.forEach((g) => { const a = tag(g.a), b = tag(g.b); if (a != null) g.qa = a; if (b != null) g.qb = b; });
+    // If ESPN's rankings are down or carry no champion marks, use the backup snapshot in _ufc-ranks.js (champion + top 15 per division).
+    if (!Object.values(rk).includes('C')) rk = require('./_ufc-ranks').map;
+    out.forEach((g) => { const a = rk[nkey(g.a)], b = rk[nkey(g.b)]; if (a != null) g.qa = a; if (b != null) g.qb = b; });
   }
   return out;
 }
