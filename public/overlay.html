@@ -19,9 +19,9 @@ body.ov.light{--bg:rgba(255,255,255,.95);--tx:#0f1713;--mu:rgba(15,23,19,.6);--b
 body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:column}
 #stage.on{opacity:1}
 #strip{display:flex;justify-content:center}
-.bnd{font:800 10px/1 'Barlow Condensed',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--ac);white-space:nowrap}
+.bnd{font:800 14px/1 'Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--ac);white-space:nowrap}
 .ct{gap:3px!important}
-.bar{display:grid;grid-template-columns:1fr 236px 1fr;align-items:stretch;height:92px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
+.bar{display:grid;grid-template-columns:1fr 270px 1fr;align-items:stretch;height:92px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
 .tm{position:relative;display:flex;align-items:center;gap:14px;padding:0 22px}
 .tm.h{flex-direction:row-reverse;text-align:right}
 .tm .lg{width:54px;height:54px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
@@ -134,7 +134,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
     const logos = P.get('logos') !== '0', mult = Math.min(3, Math.max(0.4, parseFloat(P.get('scale')) || 1));
     B.style.setProperty('--ac', '#' + hex(P.get('accent')));
     const stage = document.getElementById('stage'), barEl = document.getElementById('bar'), stripEl = document.getElementById('strip');
-    const fit = () => stage.style.setProperty('--s', String(Math.min(1.6, Math.max(0.35, innerWidth / 1920)) * mult));
+    const fit = () => stage.style.setProperty('--s', String(Math.min(2.6, Math.max(0.35, innerWidth / 1920 * 1.4)) * mult));
     fit(); addEventListener('resize', fit);
 
     let D = null, K = null, prev = { a: null, b: null }, barSig = '', stripSig = '', stripHad = false;
@@ -214,7 +214,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       <div class="cd"><h2><span>3</span>Customize</h2><div class="opts">
         <div class="opt"><label class="t">Show</label><label class="ck"><input type="checkbox" id="oS" checked> Score bar</label><label class="ck"><input type="checkbox" id="oP" checked> My pick</label><label class="ck"><input type="checkbox" id="oL" checked> Team logos</label></div>
         <div class="opt"><label class="t">Theme</label><div class="seg" id="oT"><button data-v="dark" class="on">Dark</button><button data-v="light">Light</button></div><label class="t" style="margin-top:12px">Position</label><div class="seg" id="oPos"><button data-v="bottom" class="on">Bottom</button><button data-v="top">Top</button></div></div>
-        <div class="opt"><label class="t">Size <span id="oZv" style="text-transform:none;letter-spacing:0">100%</span></label><input type="range" id="oZ" min="60" max="160" value="100"><label class="t" style="margin-top:12px">Accent color</label><input type="color" id="oC" value="#${DEF}"></div></div></div>
+        <div class="opt"><label class="t">Size <span id="oZv" style="text-transform:none;letter-spacing:0">100%</span></label><input type="range" id="oZ" min="60" max="200" value="100"><label class="t" style="margin-top:12px">Accent color</label><input type="color" id="oC" value="#${DEF}"></div></div></div>
       <div class="cd"><h2><span>4</span>Your overlay link</h2><div class="url"><input id="url" readonly placeholder="Choose a game to generate your link"><button class="btn" id="cp" disabled>Copy</button></div>
         <ol class="how"><li><b>OBS:</b> Sources \u2192 + \u2192 <b>Browser</b>. <b>Streamlabs Desktop:</b> + \u2192 <b>Browser Source</b>.</li><li>Paste the link into the URL field. Set <b>Width 1920</b> and <b>Height 1080</b>.</li><li>Leave the custom CSS empty. The background is already transparent.</li></ol>
         <div class="warn" id="warn"></div></div>
