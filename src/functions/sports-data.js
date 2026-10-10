@@ -224,7 +224,13 @@ async function load(sp) {
     kept: out.length, games: events.filter((e) => e && !MMA_SP.has(sp)).map((e) => (e.shortName || e.name) + ' | ' + (e.status && e.status.type && e.status.type.state) + ' | ' + e.date), kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
     next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && !MMA_SP.has(sp) && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
   if (MMA_SP.has(sp)) { try { await addMmaOdds(sp, events, out); } catch (e) {} }
-  if (sp === 'UFC') { try { const rk = (await ufcRanks()).map || {}; out.forEach((g) => { const a = rk[nkey(g.a)], b = rk[nkey(g.b)]; if (a != null) g.qa = a; if (b != null) g.qb = b; }); } catch (e) {} } // qa/qb = 'C' (champion) or rank number
+  if (sp === 'UFC') { // qa/qb = 'C' (champion) or rank number
+    let rk = {}; try { rk = (await ufcRanks()).map || {}; } catch (e) {}
+    // Backup so the gold C still shows when ESPN's rankings feed is down or has no champion marks. Edit this list when a belt changes hands (heavyweight is vacant).
+    const hasC = Object.values(rk).includes('C'), CH = ['alexandervolkanovski', 'petryan', 'carlosulberg', 'seanstrickland', 'islammakhachev', 'justingaethje', 'joshuavan', 'kaylaharrison', 'valentinashevchenko', 'mackenziedern'];
+    const tag = (n) => { const k = nkey(n); return rk[k] != null ? rk[k] : (!hasC && CH.includes(k) ? 'C' : null); };
+    out.forEach((g) => { const a = tag(g.a), b = tag(g.b); if (a != null) g.qa = a; if (b != null) g.qb = b; });
+  }
   return out;
 }
 // ESPN gives team colors as 6-digit hex without '#'. Used by the SP Shop team themes.
