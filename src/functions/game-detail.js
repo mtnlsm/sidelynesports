@@ -100,8 +100,98 @@ function build(sp, id, j) {
     box: [box[ids.a] || [], box[ids.b] || []], lu: [lu[ids.a] || null, lu[ids.b] || null], ts: normTS(j, ids), plays, updated: new Date().toISOString() };
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// UFC / PFL fights: per-fighter strike + grappling stats and round/clock.
+// Call: /game-detail?id=UFC:401234567&evi=600012345   (id = fight id, evi = event id; both are on every UFC game in the feed)
+// Source: ESPN core API  /events/{evi}/competitions/{fight}/competitors/{fighter}/statistics  (falls back to the site summary).
+// Add &debug=1 to see the raw stat names ESPN sent, if a row ever shows up empty.
+// ---------------------------------------------------------------------------------------------------------------------
+const MMA = new Set(['UFC', 'PFL']);
+const CORE = 'https://sports.core.api.espn.com/v2/sports/mma/leagues/';
+const jget = async (u) => { const r = await fetch(String(u).replace(/^http:/, 'https:')); if (!r.ok) throw new Error('espn ' + r.status); return r.json(); };
+const key = (n) => String(n || '').toLowerCase().replace(/[^a-z]/g, '');
+
+// Walk any ESPN stats payload and collect { normalizedName: {v, t} } (works for splits.categories[].stats[] and flat lists alike).
+function flatStats(j) {
+  const m = {};
+  const walk = (o) => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { o.forEach(walk); return; }
+    if (typeof o.name === 'string' && (o.value !== undefined || o.displayValue !== undefined) && !o.stats && !o.categories) {
+      const k = key(o.name); if (k && !(k in m)) m[k] = { v: Number(o.value), t: o.displayValue != null ? String(o.displayValue) : '' };
+    }
+    for (const k of Object.keys(o)) if (o[k] && typeof o[k] === 'object') walk(o[k]);
+  };
+  walk(j); return m;
+}
+const pick = (m, re) => { const k = Object.keys(m).find((x) => re.test(x)); return k ? m[k] : null; };
+const num = (x) => (x && Number.isFinite(x.v) ? x.v : x && /^\d+(\.\d+)?$/.test(x.t) ? Number(x.t) : null);
+// "34 of 61" / "34/61" -> [34, 61]
+const ofPair = (x) => { const t = x && x.t ? x.t.match(/(\d+)\s*(?:of|\/)\s*(\d+)/i) : null; return t ? [Number(t[1]), Number(t[2])] : null; };
+const mmss = (sec) => Math.floor(sec / 60) + ':' + String(Math.round(sec % 60)).padStart(2, '0');
+
+// One landed/attempted stat: { n: landed, d: attempted|undefined }
+function pair(m, landRe, attRe) {
+  const L = pick(m, landRe), A = attRe ? pick(m, attRe) : null;
+  const p = ofPair(L) || ofPair(A);
+  const n = p ? p[0] : num(L), d = p ? p[1] : num(A);
+  return n == null ? null : d != null && d >= n ? { n, d } : { n };
+}
+function fighterRows(m) {
+  const ctl = pick(m, /^(timeincontrol|controltime|control|ctrl|timecontrol)/);
+  let ct = null; if (ctl) { const sec = Number.isFinite(ctl.v) ? ctl.v : null; ct = /:/.test(ctl.t) ? { n: sec != null ? sec : 0, t: ctl.t } : sec != null ? { n: sec, t: mmss(sec) } : null; }
+  return {
+    sig: pair(m, /^sig(nificant)?strikes?(landed|made|thrown)?$/, /^sig(nificant)?strikes?(attempted|attempts)$/),
+    tot: pair(m, /^(total)?strikes?(landed|made)$/, /^(total)?strikes?(attempted|attempts)$/),
+    td: pair(m, /^takedowns?(landed|completed|made)?$/, /^takedowns?(attempted|attempts)$/),
+    kd: pair(m, /^knock?downs?$/),
+    sub: pair(m, /^submissions?(attempted|attempts)?$|^subattempts?$/),
+    rev: pair(m, /^reversals?$/),
+    ctl: ct,
+    head: pair(m, /^(sig)?headstrikes?(landed)?$|^head$/), body: pair(m, /^(sig)?bodystrikes?(landed)?$|^body$/), leg: pair(m, /^(sig)?legstrikes?(landed)?$|^leg$/),
+    dist: pair(m, /^(sig)?distancestrikes?(landed)?$|^distance$/), clinch: pair(m, /^(sig)?clinchstrikes?(landed)?$|^clinch$/), grd: pair(m, /^(sig)?groundstrikes?(landed)?$|^ground$/)
+  };
+}
+const ROWS = [['sig', 'Significant strikes', 'main'], ['tot', 'Total strikes', 'main'], ['td', 'Takedowns', 'main'], ['kd', 'Knockdowns', 'main'], ['sub', 'Submission attempts', 'main'], ['rev', 'Reversals', 'main'], ['ctl', 'Control time', 'main'],
+  ['head', 'Head', 'tgt'], ['body', 'Body', 'tgt'], ['leg', 'Leg', 'tgt'], ['dist', 'Distance', 'pos'], ['clinch', 'Clinch', 'pos'], ['grd', 'Ground', 'pos']];
+
+async function buildMma(sp, id, evi, debug) {
+  const m = id.match(/:(\d+)$/), cid = m && m[1], base = CORE + sp.toLowerCase() + '/events/' + evi + '/competitions/' + cid;
+  const [comp, status] = await Promise.all([jget(base), jget(base + '/status').catch(() => null)]);
+  const fs = (comp.competitors || []).slice().sort((x, y) => (x.order || 0) - (y.order || 0));
+  if (fs.length < 2) throw new Error('no fighters');
+  let sts = await Promise.all(fs.slice(0, 2).map((f) => jget(base + '/competitors/' + f.id + '/statistics').then(flatStats).catch(() => ({}))));
+  if (!sts.some((x) => Object.keys(x).length)) { // fallback: site summary
+    try {
+      const sm = await jget('https://site.api.espn.com/apis/site/v2/sports/mma/' + sp.toLowerCase() + '/summary?event=' + evi);
+      const hc = ((sm.header && sm.header.competitions) || []).find((c) => String(c.id) === cid) || ((sm.competitions || []).find((c) => String(c.id) === cid));
+      if (hc) sts = fs.slice(0, 2).map((f) => flatStats((hc.competitors || []).find((c) => String(c.id) === String(f.id)) || {}));
+    } catch (e) {}
+  }
+  const A = fighterRows(sts[0]), B = fighterRows(sts[1]);
+  const stats = ROWS.map(([k, l, grp]) => ({ k, l, g: grp, a: A[k], b: B[k] })).filter((r) => r.a || r.b)
+    .map((r) => ({ ...r, a: r.a || { n: 0 }, b: r.b || { n: 0 } }));
+  const t = (status && status.type) || {}, res = status && status.result;
+  const out = { id, sp, mma: 1, st: state(t.state || 'pre'), clk: t.shortDetail || t.detail || '',
+    rd: status && status.period ? Number(status.period) : 0, ck: (status && status.displayClock) || '',
+    res: res ? String(res.displayName || res.shortDisplayName || res.description || res.name || '').slice(0, 60) : '',
+    win: fs[0].winner ? 0 : fs[1].winner ? 1 : -1, stats, updated: new Date().toISOString() };
+  if (debug) out.debug = { statNames: sts.map((x) => Object.keys(x)), sample: sts.map((x) => Object.fromEntries(Object.entries(x).slice(0, 8))) };
+  return out;
+}
+
 exports.handler = async (event) => {
-  const id = String(((event && event.queryStringParameters) || {}).id || ''), m = id.match(/^([A-Z0-9]+):(\d{3,})$/);
+  const q = (event && event.queryStringParameters) || {};
+  const id = String(q.id || ''), m = id.match(/^([A-Z0-9]+):(\d{3,})$/);
+  if (m && MMA.has(m[1])) { // UFC / PFL fight stats
+    const evi = String(q.evi || '');
+    if (!/^\d{3,}$/.test(evi)) return json(400, { error: 'missing event id (evi)' });
+    try {
+      if (q.debug) return json(200, await buildMma(m[1], id, evi, true));
+      return json(200, await cached('detail1:' + id, TTL.live, () => buildMma(m[1], id, evi), { provider: 'espn' }));
+    } catch (e) { return json(502, { error: 'upstream unavailable', detail: String(e.message || e) }); }
+  }
   if (!m || !LEAGUES[m[1]]) return json(400, { error: 'bad id' });
   try {
     const data = await cached('detail1:' + id, TTL.live, async () => {
