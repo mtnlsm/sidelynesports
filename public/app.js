@@ -112,8 +112,21 @@ function drawFM(){const c=curFM,l=c.m.querySelector('#fml');if(!l)return;const k
 l.innerHTML=r.slice(0,80).map(x=>frow(k,x)).join('')+(r.length>80?'<p class="mu" style="margin-top:8px">Showing 80 of '+r.length+'. Search to narrow it down…</p>':'')||`<p class="mu">${all.length?'No matches for "'+esc(c.q)+'".':TSTAT==='error'&&k==='T'?'Teams unavailable right now. Retrying…':'Loading teams…'}</p>`;l.scrollTop=st}
 function favModal(k){const m=modal('');m.firstChild.innerHTML=`<h3 style="margin-bottom:10px">${k==='T'?'Favorite teams':'Favorite fighters'}</h3><input id="fmq" type="search" placeholder="${k==='T'?'Search teams…':'Search fighters…'}" aria-label="${k==='T'?'Search teams':'Search fighters'}" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="font-size:16px;margin-bottom:10px"><div id="fml" style="max-height:52vh;overflow:auto;overscroll-behavior:contain"></div><button class="pri" style="margin-top:10px" data-x>Done</button>`;curFM={m,k,q:''};drawFM();setTimeout(()=>{const i=m.querySelector('#fmq');if(i)i.focus()},50)}
 document.addEventListener('input',e=>{if(e.target.id==='gq'){const was=!!sq(GQ);GQ=e.target.value;searchPeople();if(was!==!!sq(GQ)){const p=$('#m .page');p.innerHTML=R.discover();LASTH=null;const i=$('#gq');i.focus();i.setSelectionRange(i.value.length,i.value.length)}else{const r=$('#gqr');if(r)r.innerHTML=gsearch()}return}if(e.target.id==='fmq'&&curFM){curFM.q=e.target.value;drawFM();const l=curFM.m.querySelector('#fml');if(l)l.scrollTop=0}});
-const NAV=[['community','home','Home'],['predict','predict','Picks'],['teams','teams','Teams'],['discover','discover','Discover'],['live','live','Live'],['board','board','Ranks'],['profile','profile','Profile']];
-$('#nav').innerHTML=NAV.map(n=>`<button data-t="${n[0]}" aria-label="${n[2]}"><span>${ic(n[1],22)}</span>${n[2]}</button>`).join('');
+/* Nav icons: one shape set, drawn on a 24 grid. Paths marked class="f" get a soft fill when the tab is active (see ui2.css). */
+Object.assign(P,{
+nv_home:'<path class="f" d="M4 10.4 12 3.6l8 6.8V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-4.8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4.8"/>',
+nv_predict:'<path class="f" d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5V10a2 2 0 0 0 0 4v2.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5V14a2 2 0 0 0 0-4z"/><path d="m9.3 12.1 1.9 1.9 3.5-3.8"/>',
+nv_teams:'<path class="f" d="M8.6 3.6 3.4 6.2l1.8 4.1 2.3-.9v11.1h9V9.4l2.3.9 1.8-4.1-5.2-2.6a3.5 3.5 0 0 1-6.8 0z"/>',
+nv_discover:'<circle class="f" cx="12" cy="12" r="9"/><path d="m15.4 8.6-1.8 4.9-4.9 1.9 1.9-4.9z"/>',
+nv_live:'<circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M8 8.2a5.6 5.6 0 0 0 0 7.6M16 8.2a5.6 5.6 0 0 1 0 7.6M5 5.3a9.8 9.8 0 0 0 0 13.4M19 5.3a9.8 9.8 0 0 1 0 13.4"/>',
+nv_board:'<path class="f" d="M3.5 20.5v-8a1 1 0 0 1 1-1H8v9z"/><path class="f" d="M8 20.5v-15a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v15z"/><path class="f" d="M16 20.5v-6h3.5a1 1 0 0 1 1 1v5z"/>',
+nv_profile:'<circle class="f" cx="12" cy="8" r="3.9"/><path class="f" d="M4.5 20.5c0-4 3.3-6.5 7.5-6.5s7.5 2.5 7.5 6.5z"/>',
+nv_admin:'<path class="f" d="M12 3 19.5 5.8v5.7c0 4.4-3 7.7-7.5 9.5-4.5-1.8-7.5-5.1-7.5-9.5V5.8z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/>'});
+const NAV=[['community','nv_home','Home'],['predict','nv_predict','Picks'],['teams','nv_teams','Teams'],['discover','nv_discover','Discover'],['live','nv_live','Live'],['board','nv_board','Ranks'],['profile','nv_profile','Profile']];
+const navBtn=(t,i,l,on)=>`<button data-t="${t}" aria-label="${l}"${on?' class="on"':''}><span>${ic(i,24)}</span>${l}</button>`;
+$('#nav').innerHTML=NAV.map(n=>navBtn(n[0],n[1],n[2])).join('');
+/* red dot on the Live tab while any game is live */
+setInterval(()=>{const b=$('#nav [data-t=live]');if(b)b.classList.toggle('has-live',typeof G!=='undefined'&&G.some(g=>g.st==='live'))},3000);
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.t)};
 $('#th').onclick=()=>{const d=document.documentElement,dk=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;S.theme=dk?'light':'dark';d.dataset.theme=S.theme;try{localStorage.setItem('fx-theme',S.theme)}catch(e){}repaint()};
 try{matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>repaint())}catch(e){}
@@ -197,7 +210,7 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function gate(h){let g=document.getElementById('gate');if(!g){g=document.createElement('div');g.id='gate';g.className='modal';g.style.zIndex=30;document.body.append(g)}g.innerHTML=`<div class="glass" role="dialog" aria-modal="true">${h}</div>`;return g}
 const ungate=()=>{const g=document.getElementById('gate');if(g)g.remove()};
 const ERR='<p class="mu" id="gerr" style="color:#ff6b6b;min-height:1.3em;margin:8px 0"></p>';
-async function enter(p){ME={id:p.id,username:p.username,display_name:p.display_name,bio:p.bio||'',avatar_url:p.avatar_url||null,banner_url:p.banner_url||null,role:p.role||'user',created_at:p.created_at||null,flair:p.flair||null,border:p.border||null,team_theme:p.team_theme||null,hide_stats:!!p.hide_stats};applyTheme(ME.team_theme);if(isAdmin()&&!$('#nav [data-t=admin]')){$('#nav').classList.add('has-admin');$('#nav').insertAdjacentHTML('beforeend',`<button data-t="admin" aria-label="Admin"><span>${ic('shield',22)}</span>Admin</button>`)}startRealtime();loadFollowing();await loadSaved();ungate();hdr();loadDaily();route(true)}
+async function enter(p){ME={id:p.id,username:p.username,display_name:p.display_name,bio:p.bio||'',avatar_url:p.avatar_url||null,banner_url:p.banner_url||null,role:p.role||'user',created_at:p.created_at||null,flair:p.flair||null,border:p.border||null,team_theme:p.team_theme||null,hide_stats:!!p.hide_stats};applyTheme(ME.team_theme);if(isAdmin()&&!$('#nav [data-t=admin]')){$('#nav').classList.add('has-admin');$('#nav').insertAdjacentHTML('beforeend',navBtn('admin','nv_admin','Admin'))}startRealtime();loadFollowing();await loadSaved();ungate();hdr();loadDaily();route(true)}
 /* Cloudflare Turnstile (bot check on sign up / log in). Paste your Site Key between the quotes. Leave it empty to turn the check off. Needs Supabase > Authentication > Attack Protection set up with the Secret Key. */
 const TS_KEY='0x4AAAAAAFTWAIMzZttuIlqy';
 let tsWid=null,tsTok='';
