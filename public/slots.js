@@ -23,7 +23,7 @@ const THEMES={
  racing:{name:'Turbo Racer',a:'#ef4444',b:'#1f2937',root:370,s:[['🛞','Tire'],['⛽','Fuel'],['🏁','Flag'],['🏎️','Race car'],['🏆','Trophy'],['🏍️','Superbike']],sc:{e:'🚦',n:'Green Light',p:'Green Lights'},bonus:{name:'CHECKERED FLAG',unit:'Lap',m:[1,1,2,2,2,4],r:[3,3,3,3,3,3],d:'6 laps and the pace keeps rising: ×1, ×1, three at ×2, and the final lap at ×4.'}},
  olympus:{name:'Gods of Olympus',a:'#3b82f6',b:'#1e3a8a',root:196,s:[['🍇','Grapes'],['🏺','Amphora'],['🏛️','Temple'],['🦅','Eagle'],['🔱','Trident'],['⚡','Zeus']],sc:{e:'🌩️',n:'Storm Cloud',p:'Storm Clouds'},bonus:{name:'THUNDER OF ZEUS',unit:'Bolt',m:[2,2,20],r:[3,3,3],d:'3 bolts from the sky. Two warm-up strikes at ×2, then Zeus hurls the final thunderbolt and it pays ×20. Rare to trigger, huge when it lands.'}},
  heist:{name:'Diamond Heist',a:'#0d9488',b:'#042f2e',root:185,s:[['🔦','Flashlight'],['🔑','Key'],['🕶️','Shades'],['🚗','Getaway car'],['💎','Diamond'],['🏦','Vault']],sc:{e:'🚨',n:'Alarm',p:'Alarms'},bonus:{name:'VAULT CRACK',unit:'Safe',m:[2,2,7],r:[3,3,6],open:'THE VAULT DOOR BLASTS OPEN',d:'3 safes. Two quick cracks at ×2, then the vault door blasts open to 6 rows deep and the last safe pays ×7 on both sets of paylines.'}},
- pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'💎',n:'Pinball Diamond',p:'Pinball Diamonds'},bonus:{name:'PINBALL BONUS',unit:'Shot',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'A diamond on the right reel launches the pinball bonus: pull the plunger and shoot the ball into the pockets or the bonus hole. Bets of 100+ chips get 2 shots and 1,000+ chips get 5 shots.'}}};
+ pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'💎',n:'Pinball Diamond',p:'Pinball Diamonds'},bonus:{name:'PINBALL BONUS',unit:'Shot',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'A diamond on the right reel launches the pinball bonus: 6 shots at big pockets, and a rare chance at the 5 diamond prizes. Every bet gets all 6 shots.'}}};
 /* SYMBOL ART: every symbol is a glossy tile in the machine's colors with a glyph on it (higher tiers get a gold rim). The bonus scatter is a gold starburst medallion so it is easy to spot. All inline SVG, no image files. */
 const tile=(e,i,z)=>{const rim=i>=4?'#ffd86b':'rgba(255,255,255,.35)',id='slt'+theme+i;return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${TH().a}"/><stop offset="1" style="stop-color:${TH().b}"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" fill="url(#${id})" stroke="${rim}" stroke-width="${i>=4?2:1.2}"/><path d="M6 12Q6 5 14 5H26Q34 5 34 12Q20 17 6 12Z" fill="rgba(255,255,255,.22)"/>${e==='7️⃣'?`<text x="20" y="29" text-anchor="middle" font-size="26" font-weight="900" font-family="Georgia,'Times New Roman',serif" fill="#ef233c" stroke="#fff" stroke-width="1.4" paint-order="stroke">7</text>`:`<text x="20" y="27.500" text-anchor="middle" font-size="21" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text>`}</svg>`};
 const medal=(e,z)=>{const pts=[];for(let k=0;k<24;k++){const r=k%2?13.500:16,a=k*Math.PI/12;pts.push((16+r*Math.sin(a)).toFixed(1)+','+(16-r*Math.cos(a)).toFixed(1))}return `<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><radialGradient id="slmd" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#f5c542"/><stop offset="1" stop-color="#b8860b"/></radialGradient></defs><polygon points="${pts.join(' ')}" fill="url(#slmd)" stroke="#8a6508" stroke-width=".6"/><circle cx="16" cy="16" r="10.500" fill="#2a1b05" stroke="#ffe680" stroke-width="1"/><text x="16" y="21.500" text-anchor="middle" font-size="14" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text></svg>`};
@@ -36,7 +36,7 @@ const LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,
 const LNAME=['Middle row','Top row','Bottom row','V shape','Peak','Step down','Step up','Arch','Bowl'];
 const PAY={t6:[34,110,500],t5:[22,70,300],t4:[18,50,200],t3:[14,40,140],t2:[10,28,100],t1:[8,22,70]};
 /* OG Pinball is 3 reels x 1 row with ONE payline (supabase/Slots-3.sql, slots_play_p). useP is on while a pinball spin is being shown. */
-const PLINES=[[0,0,0]],PNAME=['Payline'],PK=1.61;
+const PLINES=[[0,0,0]],PNAME=['Payline'],PK=1.20,PAIR={t1:.25,t2:.3,t3:.35,t4:.4,t5:.5,t6:.7};
 let useP=false;
 const nrNow=()=>theme==='pinball'?3:5,baseRows=()=>theme==='pinball'?1:3;
 const lineRow=(l,c)=>useP?PLINES[l%PLINES.length][c]:LINES[l%9][c]+(l>=9?3:0),lname=l=>useP?PNAME[l%PNAME.length]:LNAME[l%9]+(l>=9?' (lower reels)':'');
@@ -350,11 +350,11 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 /* ---- OG Pinball bonus physics (headless). The server picks where each ball ends; we search for a physically
    simulated shot that really ends there, then replay it. ---- */
 const PB={W:360,H:612,C:[180,185],R:160,BR:8,LX:20,RX:340,LANE:316,G:640,DT:1/240,
- FL:505,PT:440,PCW:296/5,
+ FL:505,PT:440,PCW:296/6,
  BUMP:[{x:104,y:238,r:19},{x:182,y:214,r:19},{x:246,y:270,r:19}],
  PEGS:[[58,318],[128,330],[198,312],[238,326],[92,380],[165,392],[236,388]],
  SAUCER:{x:170,y:352,rc:12},
- ORDER:[0,1,3,2,4],
+ ORDER:[0,2,4,5,3,1],
  SEG:[[20,258,84,304],[316,318,262,364]]};
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 /* power 0..1. want = {kind:'u',pos:0..4} or {kind:'c'} or null (just simulate). steer = {k} optional gentle homing. */
@@ -366,8 +366,8 @@ function pbRun(power,seed,want,steer){
  const tx=want?(want.kind==='c'?P.SAUCER.x:20+P.PCW*(want.pos+.5)):0;
  const maxSteps=Math.round(26/dt);
  const segs=[]; // vertical dividers
- for(let k=1;k<5;k++)segs.push([20+P.PCW*k,P.PT,P.FL]);
- const posts=[];for(let k=1;k<5;k++)posts.push([20+P.PCW*k,P.PT,3.5]);
+ for(let k=1;k<6;k++)segs.push([20+P.PCW*k,P.PT,P.FL]);
+ const posts=[];for(let k=1;k<6;k++)posts.push([20+P.PCW*k,P.PT,3.5]);
  while(step<maxSteps){
   step++;
   vy+=G*dt;
@@ -417,7 +417,7 @@ function pbRun(power,seed,want,steer){
   const sp=Math.hypot(vx,vy);if(sp<12&&y<P.FL-r-2){slow++;if(slow>60){vx+=(rnd()-.5)*160;vy-=40+rnd()*60;slow=0}}else slow=0;
   xs.push(x);ys.push(y);
   // landed in a pocket
-  if(y>P.PT+10&&x<P.LANE&&x>P.LX){const pos=Math.max(0,Math.min(4,Math.floor((x-20)/P.PCW)));res={kind:'u',pos};
+  if(y>P.PT+10&&x<P.LANE&&x>P.LX){const pos=Math.max(0,Math.min(5,Math.floor((x-20)/P.PCW)));res={kind:'u',pos};
    if(Math.abs(vy)<35&&y>P.FL-r-1.5){rest++;if(rest>50)break}else rest=0;
    if(step>maxSteps-5)break}
   // fell out of lane back down: invalid (power too low)
@@ -439,7 +439,7 @@ function openSlots(startTheme){
  if(startTheme&&THEMES[startTheme]&&!busy&&!autoOn){theme=startTheme;try{localStorage.setItem('fx-slt',theme)}catch(e){}}
  rows=baseRows();const start=Array.from({length:nrNow()},()=>Array.from({length:rows},rnd));
  const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">chips</span> <button class="chip sl-cx" data-cx aria-label="Exchange SP and chips">Exchange</button></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-lev" id="sllev" role="button" aria-label="Pull the lever to spin"><i class="sl-lev-groove"></i><i class="sl-lev-arm"></i><i class="sl-lev-ball"></i><i class="sl-lev-base"></i></div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">\ud83e\ude99</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in chips"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of chips? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. Chips and SP have no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
- const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ${P?'on the right reel':'×3 anywhere'}</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div>${P?`<div class="sl-note">Land a ${SCN()} on the right reel to launch the bonus. It costs nothing. You get 1 shot on bets up to 99 chips, 2 shots from 100 chips and 5 shots from 1,000 chips. You pull the plunger yourself (hold, then release) and the ball runs round the arch, bounces off the pop bumpers and pegs, and drops into a pocket worth ×0.5, ×1, ×2, ×3 or ×1 your bet, or into the BONUS HOLE, which sends it to the bonus chamber. The chamber fills from left to right and pays ×5, ×10, ×20, ×100 and ×200, so the biggest prize needs all 5 balls in the chamber. How hard you pull never changes what you win. OG Pinball is 3 reels × 1 row with a single payline: line up all 3 symbols to win, and your whole bet rides on that line. Bigger bets pay back a little better. Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`:`<div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`}<div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
+ const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}${P?`<div class="sl-pth" style="margin-top:12px">2 in a row (× your bet, left two reels or right two reels)</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>×${PAIR[k].toFixed(2)}</b></div>`).join('')}`:''}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ${P?'on the right reel':'×3 anywhere'}</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div>${P?`<div class="sl-note">Land a ${SCN()} on the right reel to launch the bonus. It costs nothing, and every bet gets 6 shots. Pull the plunger yourself (hold, then release): the ball runs round the arch, bounces off the pop bumpers and pegs, and drops into one of 6 pockets worth ×3, ×4, ×5, ×8, ×10 or ×12 your bet. Rarely it falls into the BONUS HOLE, which drops it into the DIAMOND chamber. The 5 diamond slots fill from left to right and pay ×35, ×40, ×50, ×75 and ×100 your bet, each one bigger than any pocket. A bonus averages about ×35 your bet and comes around once in 200 spins or so. How hard you pull never changes what you win. OG Pinball is 3 reels × 1 row with a single payline: 3 in a row pays the line prize and 2 matching symbols next to each other pay a small prize. Bigger bets pay back a little better. Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`:`<div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`}<div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=fmt(v)};
  /* the reel count depends on the machine: OG Pinball has 3 reels, every other machine has 5 */
  const fitReels=n=>{const R=$m('#slr');if(!R)return;R.querySelectorAll('.sl-pl').forEach(e=>e.remove());let k=R.querySelectorAll('.sl-reel').length;while(k>n){R.querySelectorAll('.sl-reel')[--k].remove()}while(k<n){const d=document.createElement('div');d.className='sl-reel';d.innerHTML='<div class="sl-strip">'+col3(Array.from({length:rows},rnd))+'</div>';if(rows!==baseRows())d.style.height=`calc(var(--slh,56px)*${rows})`;R.appendChild(d);k++}};
@@ -503,10 +503,10 @@ function openSlots(startTheme){
  /* draw each winning payline across the reels, so you can see exactly which line paid and how far it ran */
  const PLC=['#ffd43b','#4dabf7','#ff6b6b','#69db7c','#da77f2','#ffa94d','#3bc9db','#f783ac','#a9e34b'];
  const drawLines=(wins,reels)=>{try{const rs=[...reels.children];if(!rs.length)return;const W=reels.clientWidth,Ht=reels.clientHeight,ch=rs[0].clientHeight/rows;
-  const pts=(w)=>{const a=[];for(let c=0;c<w.count;c++){const r=rs[c];a.push((r.offsetLeft+r.offsetWidth/2).toFixed(1)+','+(r.offsetTop+(lineRow(w.line,c)+.5)*ch).toFixed(1))}return a.join(' ')};
+  const pts=(w)=>{const a=[];for(let c=(w.from||0);c<(w.from||0)+w.count;c++){const r=rs[c];a.push((r.offsetLeft+r.offsetWidth/2).toFixed(1)+','+(r.offsetTop+(lineRow(w.line,c)+.5)*ch).toFixed(1))}return a.join(' ')};
   const g=wins.map(w=>{const col=PLC[w.line%PLC.length],p=pts(w);return `<polyline points="${p}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${p}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`}).join('');
   reels.insertAdjacentHTML('beforeend',`<svg class="sl-pl" width="${W}" height="${Ht}" viewBox="0 0 ${W} ${Ht}" aria-hidden="true">${g}</svg>`)}catch(e){}};
- const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=0;c<w.count;c++)keep.add(c+','+lineRow(w.line,c))});
+ const hilite=(wins,reels)=>{const rs=[...reels.children];const keep=new Set();wins.forEach(w=>{for(let c=(w.from||0);c<(w.from||0)+w.count;c++)keep.add(c+','+lineRow(w.line,c))});
   rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')));drawLines(wins,reels)};
  /* turbo shortens the animation only; the server still spaces spins about a second apart */
  const T=n=>turbo?Math.round(n*.45):n;
@@ -552,10 +552,10 @@ function openSlots(startTheme){
   /* PINBALL BONUS (modeled on IGT Pinball). The server decides where every ball ends (supabase/Slots-3.sql, slots_pb_play). For each shot we run a real physics
     simulation (pbRun: gravity, arc, pop bumpers, pegs, rubber guides, pocket dividers) with a hidden random seed until the simulated ball ends exactly where the server said,
     then replay that run. You pull the plunger yourself; the pull strength changes the launch, never the prize. */
- const PBX=[0.5,1,2,3,1],PBC=[5,10,20,100,200];
+ const PBX=[3,4,5,8,10,12],PBC=[35,40,50,75,100];
  async function pinballBonus(r,stake){r0bet=r.bet||1;
   const wrap=$m('.sl-wrap'),rw=$m('.sl-rw'),msg=$m('#slm'),bar=$m('#slfs'),sh=r.free.shots,N=sh.length,P=PB;
-  const fx=v=>'×'+(Math.round(v*10)/10),px=i=>20+P.PCW*(i+.5),posOf=idx=>P.ORDER.indexOf(idx);
+  const fx=v=>'×'+(Math.round(v*10)/10),px=i=>20+P.PCW*(i+.5),pxC=i=>20+296/5*(i+.5),posOf=idx=>P.ORDER.indexOf(idx);
   let g='';
   g+='<defs><radialGradient id="pbg" cx=".34" cy=".28" r=".9"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#b6c0cf"/><stop offset="1" stop-color="#1e293b"/></radialGradient>'
    +'<linearGradient id="pbf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1646"/><stop offset=".55" stop-color="#241a5e"/><stop offset="1" stop-color="#0f0c2e"/></linearGradient>'
@@ -585,12 +585,12 @@ function openSlots(startTheme){
   // bonus hole
   const S=P.SAUCER;g+='<g id="pbsc"><circle cx="'+S.x+'" cy="'+S.y+'" r="20" fill="none" stroke="#fbbf24" stroke-width="3" class="sl-pbring"/><circle cx="'+S.x+'" cy="'+S.y+'" r="16" fill="url(#pbh)" stroke="#fde68a" stroke-width="1.5"/><text x="'+S.x+'" y="'+(S.y-26)+'" text-anchor="middle" font-size="9" font-weight="900" letter-spacing="1.6" fill="#fbbf24">BONUS HOLE</text></g>';
   // pockets
-  for(let k=1;k<5;k++){const x=20+P.PCW*k;g+='<line x1="'+x+'" y1="'+P.PT+'" x2="'+x+'" y2="'+P.FL+'" stroke="#e2e8f0" stroke-width="4"/><circle cx="'+x+'" cy="'+P.PT+'" r="4.5" fill="#fda4af" stroke="#be123c" stroke-width="1.5"/>'}
-  for(let k=0;k<5;k++){const idx=P.ORDER[k],v=PBX[idx];g+='<g id="pbu'+idx+'" class="sl-pbpk"><rect x="'+(px(k)-P.PCW/2+3)+'" y="'+(P.PT+8)+'" width="'+(P.PCW-6)+'" height="'+(P.FL-P.PT-9)+'" rx="6" fill="'+(v>=3?'#7c2d12':v>=2?'#5b21b6':'#312e81')+'" opacity=".55" stroke="#94a3b8" stroke-width="1.3"/><text x="'+px(k)+'" y="'+(P.PT+34)+'" text-anchor="middle" font-size="17" font-weight="900" fill="'+(v>=3?'#fbbf24':'#fff')+'">'+fx(v)+'</text></g>'}
+  for(let k=1;k<6;k++){const x=20+P.PCW*k;g+='<line x1="'+x+'" y1="'+P.PT+'" x2="'+x+'" y2="'+P.FL+'" stroke="#e2e8f0" stroke-width="4"/><circle cx="'+x+'" cy="'+P.PT+'" r="4.5" fill="#fda4af" stroke="#be123c" stroke-width="1.5"/>'}
+  for(let k=0;k<6;k++){const idx=P.ORDER[k],v=PBX[idx];g+='<g id="pbu'+idx+'" class="sl-pbpk"><rect x="'+(px(k)-P.PCW/2+3)+'" y="'+(P.PT+8)+'" width="'+(P.PCW-6)+'" height="'+(P.FL-P.PT-9)+'" rx="6" fill="'+(v>=10?'#7c2d12':v>=8?'#5b21b6':'#312e81')+'" opacity=".55" stroke="#94a3b8" stroke-width="1.3"/><text x="'+px(k)+'" y="'+(P.PT+34)+'" text-anchor="middle" font-size="16" font-weight="900" fill="'+(v>=10?'#fbbf24':'#fff')+'">'+fx(v)+'</text></g>'}
   g+='<rect x="20" y="'+P.FL+'" width="296" height="6" fill="#e2e8f0"/>';
   // bonus chamber (lower section)
-  g+='<text x="168" y="528" text-anchor="middle" font-size="10" font-weight="900" letter-spacing="2.5" fill="#fca5a5">BONUS CHAMBER</text><path d="M168 531v7" stroke="#fbbf24" stroke-width="2"/>';
-  for(let k=0;k<5;k++)g+='<g id="pbc'+k+'" class="sl-pbch"><rect x="'+(px(k)-P.PCW/2+3)+'" y="542" width="'+(P.PCW-6)+'" height="56" rx="8" fill="#0b0b1e" stroke="#fbbf24" stroke-width="2"/><text x="'+px(k)+'" y="'+(k===4?566:566)+'" text-anchor="middle" font-size="'+(PBC[k]>=100?14:15)+'" font-weight="900" fill="#fbbf24">'+fx(PBC[k])+'</text></g>';
+  g+='<text x="168" y="528" text-anchor="middle" font-size="10" font-weight="900" letter-spacing="2.5" fill="#fca5a5">DIAMOND CHAMBER</text><path d="M168 531v7" stroke="#fbbf24" stroke-width="2"/>';
+  for(let k=0;k<5;k++)g+='<g id="pbc'+k+'" class="sl-pbch"><rect x="'+(pxC(k)-296/10+3)+'" y="542" width="'+(296/5-6)+'" height="56" rx="8" fill="#0b0b1e" stroke="#67e8f9" stroke-width="2"/><text x="'+pxC(k)+'" y="560" text-anchor="middle" font-size="13" fill="#67e8f9">&#9670;</text><text x="'+pxC(k)+'" y="582" text-anchor="middle" font-size="16" font-weight="900" fill="#fbbf24">'+fx(PBC[k])+'</text></g>';
   // shooter lane + plunger
   g+='<g id="pbpl"><rect x="326" y="478" width="6" height="44" fill="#94a3b8"/><path d="M322 486h14M322 494h14M322 502h14M322 510h14M322 518h14" stroke="#64748b" stroke-width="2.2"/><rect x="321" y="478" width="16" height="6" rx="2" fill="#e2e8f0"/><circle cx="329" cy="530" r="9" fill="#ef4444" stroke="#fecaca" stroke-width="2" id="pbknob" style="cursor:pointer"/></g>';
   // balls
@@ -600,7 +600,7 @@ function openSlots(startTheme){
   const svg=rw.querySelector('#slpb svg'),ballG=svg.querySelector('#pbball'),plG=svg.querySelector('#pbpl'),go=rw.querySelector('#slpbgo'),pw=rw.querySelector('#slpbpw'),gtx=rw.querySelector('#slpbtx'),$s=id=>svg.querySelector(id);
   const ghosts=[];for(let k=0;k<5;k++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r',String(7-k*1.1));c.setAttribute('fill','#e2e8f0');c.setAttribute('opacity','0');$s('#pbtr').appendChild(c);ghosts.push(c)}
   let run=0,hist=[];
-  const head=n=>{bar.innerHTML='<span>'+TH().bonus.unit+' <b>'+n+'</b> / '+N+'</span><span>Bonus win <b>+'+fmt(run)+'</b> chips</span>'};
+  const head=n=>{bar.innerHTML='<span>'+TH().bonus.unit+' <b>'+n+'</b> / '+N+'</span><span>Win <b>+'+fmt(run)+'</b></span>'};
   const put=(x,y)=>{ballG.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');hist.unshift([x,y]);if(hist.length>12)hist.pop();ghosts.forEach((c,k)=>{const h=hist[(k+1)*2];if(h){c.setAttribute('cx',(h[0]-x).toFixed(1));c.setAttribute('cy',(h[1]-y).toFixed(1));c.setAttribute('opacity',String(.22-k*.04))}else c.setAttribute('opacity','0')})};
   const say=(a,b,col)=>{const t1=$s('#pbt1'),t2=$s('#pbt2');if(!t1||!t2)return;t1.textContent=a;t1.setAttribute('font-size',a.length>10?'25':a.length>8?'30':'34');t1.setAttribute('fill',col||'#f43f5e');t2.textContent=b||'';t2.setAttribute('letter-spacing',(b||'').length>18?'1.2':(b||'').length>12?'3':'6')};
   const clearTrail=()=>{hist=[];ghosts.forEach(c=>c.setAttribute('opacity','0'))};
@@ -661,17 +661,17 @@ function openSlots(startTheme){
    run=q.run;head(q.n);
    if(q.kind==='c'){
     flash($s('#pbsc'),'hit',700);snd.hole();ballG.style.opacity=0;clearTrail();
-    msg.innerHTML='BONUS HOLE!<small class="sl-sub">the ball drops into the bonus chamber</small>';say('BONUS HOLE!','DROPS INTO THE CHAMBER','#fbbf24');
+    msg.innerHTML='BONUS HOLE!<small class="sl-sub">the ball drops into the diamond chamber</small>';say('BONUS HOLE!','INTO THE DIAMOND CHAMBER','#67e8f9');
     await wait(calm()?150:T(550));if(!m.isConnected)return false;
     put(168,540);ballG.style.opacity=1;
-    await along([[168,540],[168,566],[px(q.idx),574]],T(calm()?0:700));
+    await along([[168,540],[168,566],[pxC(q.idx),574]],T(calm()?0:700));
     const el=$s('#pbc'+q.idx);if(el){el.classList.add('lit');flash(el,'hit',700)}
    }else{
     const el=$s('#pbu'+q.idx);if(el){el.classList.add('lit');flash(el,'hit',700)}
    }
    snd.land();sfx.coin();
-   msg.innerHTML=(q.kind==='c'?'BONUS CHAMBER! ':'')+'+'+fmt(q.pay)+' chips<small class="sl-sub">'+fx(q.mult)+' your bet'+(q.kind==='c'?' · chamber slot '+(q.idx+1)+' of 5':'')+'</small>';
-   say('+'+fmt(q.pay),fx(q.mult)+' YOUR BET'+(q.kind==='c'?' · CHAMBER '+(q.idx+1)+'/5':''),q.kind==='c'?'#fbbf24':'#4ade80');
+   msg.innerHTML=(q.kind==='c'?'DIAMOND! ':'')+'+'+fmt(q.pay)+' chips<small class="sl-sub">'+fx(q.mult)+' your bet'+(q.kind==='c'?' · diamond slot '+(q.idx+1)+' of 5':'')+'</small>';
+   say('+'+fmt(q.pay),fx(q.mult)+' YOUR BET'+(q.kind==='c'?' · DIAMOND '+(q.idx+1)+'/5':''),q.kind==='c'?'#fbbf24':'#4ade80');
    bal(S.chips-stake+(r.line_pay||0)+run);
    await wait(calm()?200:T(1100));
    if(!m.isConnected)return false;
