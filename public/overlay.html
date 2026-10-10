@@ -22,10 +22,11 @@ body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:co
 .bnd{font:800 14px/1 'Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--ac);white-space:nowrap}
 .ct{gap:3px!important}
 .ovc{background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
-.bar{display:grid;grid-template-columns:1fr 270px 1fr;align-items:stretch;height:92px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 270px minmax(0,1fr);align-items:stretch;height:92px}
 .pkr{display:flex;align-items:center;justify-content:center;gap:18px;padding:8px 22px;border-top:1px solid var(--bd);background:var(--chip)}
 .pkr>*{flex:none}
-.tm{position:relative;display:flex;align-items:center;gap:14px;padding:0 22px}
+.tm{position:relative;display:flex;align-items:center;gap:14px;padding:0 22px;min-width:0}
+.tm .nm,.tm .nm b,.tm .nm small{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tm.h{flex-direction:row-reverse;text-align:right}
 .tm .jy,.pt .jy{display:block;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
 .jy svg{display:block;width:100%;height:100%}
@@ -59,7 +60,9 @@ body.ov.light .strip .pt .k b,body.ov.light .pkr .pt .k b{filter:brightness(.8)}
 .strip .num b,.pkr .num b{color:var(--tx);font-weight:800}
 .res{display:inline-flex;align-items:center;gap:8px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .res::before{content:'';width:9px;height:9px;border-radius:50%;background:currentColor}
-.res.win{color:#26c06a}.res.loss{color:#e5534b}.res.void{color:var(--mu)}
+.res.win{color:#26c06a}
+body.ov.light .res.win{color:#14803f}
+body.ov.light .res.loss{color:#c62f27}.res.loss{color:#e5534b}.res.void{color:var(--mu)}
 .strip.enter{animation:rise .55s cubic-bezier(.2,.8,.2,1)}
 body.top .strip.enter{animation-name:drop}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -200,7 +203,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       const clk = d.st === 'final' ? '' : d.clk;
       barEl.innerHTML = `<div class="ovc"><div class="bar"><div class="tm a${sd === 'a' ? ' pk' : ''}">${sd === 'a' ? '<span class="tag">PICK</span>' : ''}${logo(d.away)}<div class="nm"><b>${E(d.away.ab || d.away.n)}</b><small>${E(d.away.n)}</small></div><div class="sc${bumpA}">${E(sa === '' ? '–' : sa)}</div></div>
         <div class="ct"><span class="bnd">Sidelyne Sports</span>${pill}${clk ? `<div class="clk">${E(clk)}</div>` : ''}${sit(d)}</div>
-        <div class="tm h${sd === 'b' ? ' pk' : ''}">${sd === 'b' ? '<span class="tag">PICK</span>' : ''}${logo(d.home)}<div class="nm"><b>${E(d.home.ab || d.home.n)}</b><small>${E(d.home.n)}</small></div><div class="sc${bumpB}">${E(sb === '' ? '–' : sb)}</div></div>${pk ? `<div class="pkr">${pk}</div>` : ''}</div>`;
+        <div class="tm h${sd === 'b' ? ' pk' : ''}">${sd === 'b' ? '<span class="tag">PICK</span>' : ''}${logo(d.home)}<div class="nm"><b>${E(d.home.ab || d.home.n)}</b><small>${E(d.home.n)}</small></div><div class="sc${bumpB}">${E(sb === '' ? '–' : sb)}</div></div></div>${pk ? `<div class="pkr">${pk}</div>` : ''}</div>`;
     }
 
     const hue = (s) => { let h = 0; for (const c of String(s || '')) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
