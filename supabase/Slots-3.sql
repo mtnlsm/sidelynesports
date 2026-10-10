@@ -1,6 +1,7 @@
 -- SLOTS 3: everything new for the slots in ONE file. Run in the Supabase SQL editor after slots.sql and Slots-2.sql. Safe to re-run, and any future slot changes go in this same file.
 --   1) 3 new machines: olympus (Gods of Olympus), heist (Diamond Heist) and pinball (OG Pinball, with a lever), 20 in total.
 --      pinball Multiball: 5 balls, 1,1,1,3,6 on 3 rows (value 12)
+--      pinball is a 3 reel x 1 row machine with ONE payline: match all 3 symbols to win, the whole bet rides on that line (see slots_play_p below)
 --   2) Different odds on every machine (slots_theme_pay and slots_theme_bon below).
 -- Most bonuses are worth 12 (sum of multiplier x rows/3). These two are worth more (see below) and trigger less often, so the payback stays the same.
 --   olympus Thunder of Zeus: 3 spins 2,2,20 on 3 rows (value 24)  |  heist Vault Crack: 3 spins 2,2,7, rows 3,3,6 (value 2+2+14 = 18)
@@ -97,6 +98,32 @@ create or replace function slots_theme_bon(p_theme text) returns numeric languag
     when 'pirate'  then 1.10
     else 1.00 end $$;
 
+-- OG PINBALL grid: 3 reels x 1 row, ONE payline. All 3 symbols must match. p_unit = the whole bet (one line).
+-- The pay table is the 3-in-a-row pay of slots_mult x 1.61 (c_k). That keeps the payback the same as the 5 reel machines (a 3 reel line can only
+-- hit 3 in a row, so each hit pays more and hits are rarer).   <== TUNE c_k
+create or replace function slots_play_p(p_unit numeric,p_adj numeric,p_scat int,p_x int) returns jsonb language plpgsql volatile as $$
+declare
+  pool constant text[]:=array_fill('t1'::text,array[24])||array_fill('t2'::text,array[22])||array_fill('t3'::text,array[18])||array_fill('t4'::text,array[14])||array_fill('t5'::text,array[12])||array_fill('t6'::text,array[10]);
+  c_k constant numeric:=1.61;
+  g text[]:=array['x','x','x']; c int; lp numeric; pay numeric:=0; scat int:=0; cols int[];
+  wins jsonb:='[]'::jsonb; reels jsonb:='[]'::jsonb;
+begin
+  for c in 1..3 loop g[c]:=pool[1+floor(random()*array_length(pool,1))::int]; end loop;
+  if p_scat>0 then
+    cols:=(select array_agg(x) from (select x from generate_series(1,3) x order by random() limit p_scat) q);
+    foreach c in array cols loop g[c]:='S'; end loop;
+  end if;
+  if g[1]<>'S' and g[2]=g[1] and g[3]=g[1] then
+    lp:=slots_mult(g[1],3)*p_unit*p_adj*p_x*c_k; pay:=lp;
+    wins:=jsonb_build_array(jsonb_build_object('line',0,'sym',g[1],'count',3,'pay',round(lp)::bigint));
+  end if;
+  for c in 1..3 loop
+    reels:=reels||jsonb_build_array(jsonb_build_array(g[c]));
+    if g[c]='S' then scat:=scat+1; end if;
+  end loop;
+  return jsonb_build_object('reels',reels,'wins',wins,'pay',least(round(pay)::bigint,1000000000),'scatters',scat);
+end $$;
+
 create or replace function slots_spin(p_bet int,p_theme text default 'classic') returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
@@ -108,7 +135,7 @@ declare
   c_rounds  constant int:=4;           -- max rounds of free spins in one bonus (first round + 3 retriggers)
   mults int[]; rws int[]; len int; c_ret numeric; c_fsmax int; mx int; rw int; unit numeric; adj numeric;
   total int; bal int; last timestamptz; roll numeric:=random(); b jsonb; f jsonb; kind text; pay bigint:=0; lpay bigint:=0; run bigint:=0;
-  fs_total int:=0; n int:=0; ret boolean; spins jsonb:='[]'::jsonb; flat text:=''; c int; nv int; fr jsonb; free jsonb:=null;
+  sc int:=0; fs_total int:=0; n int:=0; ret boolean; spins jsonb:='[]'::jsonb; flat text:=''; c int; nv int; fr jsonb; free jsonb:=null;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   if p_bet is null or p_bet<c_min or p_bet>c_max then raise exception 'Bet must be between % and % chips',c_min,c_max; end if;
@@ -117,7 +144,7 @@ begin
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
   c_bonus_p:=c_bonus_p*12.0/(select sum(tm*tr/3.0) from unnest(mults,rws) as t(tm,tr));
   c_bonus_p:=c_bonus_p*slots_theme_bon(p_theme);   -- each machine has its own bonus frequency
-  total:=p_bet; unit:=p_bet/9.0; adj:=slots_adj_bet(p_bet)*slots_theme_pay(p_theme);   -- each machine has its own payback
+  total:=p_bet; unit:=p_bet/case when p_theme='pinball' then 1.0 else 9.0 end; adj:=slots_adj_bet(p_bet)*slots_theme_pay(p_theme);   -- each machine has its own payback
 
   select chips into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
   if bal is null then raise exception 'Profile not found'; end if;
@@ -126,21 +153,23 @@ begin
   if last is not null and last>now()-interval '1 second' then raise exception 'Slow down'; end if;
 
   if roll<c_bonus_p then
-    kind:='bonus'; b:=slots_play_b(9,unit,adj,3,1,3);
+    kind:='bonus'; sc:=3;
   elsif random()<c_tease then
-    b:=slots_play_b(9,unit,adj,2,1,3);
+    sc:=2;
   else
-    b:=slots_play_b(9,unit,adj,0,1,3);
+    sc:=0;
   end if;
+  if p_theme='pinball' then b:=slots_play_p(unit,adj,sc,1); else b:=slots_play_b(9,unit,adj,sc,1,3); end if;
   lpay:=(b->>'pay')::bigint; pay:=lpay;
 
   if kind='bonus' then
     fs_total:=len;
     while n<fs_total loop
       n:=n+1;
-      mx:=mults[1+((n-1)%len)]; rw:=rws[1+((n-1)%len)];
+      mx:=mults[1+((n-1)%len)]; rw:=case when p_theme='pinball' then 1 else rws[1+((n-1)%len)] end;
       ret:=fs_total<c_fsmax and random()<c_ret;
-      f:=slots_play_b(9,unit,adj,case when ret then 3 else 0 end,mx,rw);
+      if p_theme='pinball' then f:=slots_play_p(unit,adj,case when ret then 3 else 0 end,mx);
+      else f:=slots_play_b(9,unit,adj,case when ret then 3 else 0 end,mx,rw); end if;
       if ret then fs_total:=fs_total+len; end if;
       run:=run+(f->>'pay')::bigint;
       spins:=spins||jsonb_build_array(jsonb_build_object('n',n,'x',mx,'rows',rw,'reels',f->'reels','wins',f->'wins','pay',(f->>'pay')::bigint,'run',run,'retrigger',ret,'total',fs_total));
@@ -154,14 +183,16 @@ begin
   if pay>0 then perform chip_credit(uid,pay); end if;
 
   fr:=b->'reels';
-  for c in 0..4 loop flat:=flat||case when c>0 then '|' else '' end||(fr->c->>0)||','||(fr->c->>1)||','||(fr->c->>2); end loop;
-  insert into slot_spins(user_id,bet,reels,kind,payout,denom,lines,cpl,theme) values(uid,total,flat,kind,pay::int,null,9,null,p_theme);
+  select string_agg((select string_agg(v,',' order by o) from jsonb_array_elements_text(col) with ordinality as e(v,o)),'|' order by k) into flat from jsonb_array_elements(fr) with ordinality as cc(col,k);
+  insert into slot_spins(user_id,bet,reels,kind,payout,denom,lines,cpl,theme) values(uid,total,flat,kind,pay::int,null,case when p_theme='pinball' then 1 else 9 end,null,p_theme);
   select chips into nv from profiles where id=uid;
-  return jsonb_build_object('reels',b->'reels','kind',kind,'bet',total,'lines',9,'theme',p_theme,'payout',pay,'line_pay',lpay,'wins',b->'wins','scatters',(b->>'scatters')::int,'free',free,'chips',nv);
+  return jsonb_build_object('reels',b->'reels','kind',kind,'bet',total,'lines',case when p_theme='pinball' then 1 else 9 end,'theme',p_theme,'payout',pay,'line_pay',lpay,'wins',b->'wins','scatters',(b->>'scatters')::int,'free',free,'chips',nv);
 end $$;
 
+revoke all on function slots_play_p(numeric,numeric,int,int) from public,anon,authenticated;
 revoke all on function slots_theme_pay(text) from public,anon;
 revoke all on function slots_theme_bon(text) from public,anon;
 revoke all on function slots_spin(int,text) from public,anon;
 grant execute on function slots_spin(int,text) to authenticated;
 notify pgrst,'reload schema';
+
