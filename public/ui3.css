@@ -24,9 +24,8 @@ html:not(#_){scroll-padding-top:calc(var(--top-h) + 12px)}
 html:not(#_) body{background:var(--bg)!important;color:var(--tx);font:15px/1.45 var(--fb);letter-spacing:-.003em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:"cv11","ss01"}
 html:not(#_) h2,
 html:not(#_) h3{font-family:var(--fb);font-style:normal;text-transform:none;letter-spacing:-.02em;font-weight:700;line-height:1.2}
-html:not(#_) h3{font-size:18px}
 html:not(#_) a{color:var(--ab)}
-html:not(#_) .mu{color:var(--mu);font-size:14px}
+html:not(#_) .mu{color:var(--mu)}
 html:not(#_) b,
 html:not(#_) strong{font-weight:650}
 html:not(#_) .score b,
@@ -120,7 +119,7 @@ html:not(#_) .card.daily.done{border-left:1px solid var(--bd)}
 html:not(#_) .card.daily b{font:700 16px/1.2 var(--fb);font-style:normal;text-transform:none;letter-spacing:0}
 html:not(#_) .sk{height:92px;border-radius:var(--r);background:linear-gradient(90deg,var(--sf),var(--sf2),var(--sf));background-size:200% 100%;margin-bottom:var(--gap)}
 html:not(#_) .row.sp{gap:12px}
-html:not(#_) button{font:600 14px/1.2 var(--fb);font-style:normal;letter-spacing:0;text-transform:none;border-radius:var(--r-sm);min-height:40px}
+html:not(#_) button:not([class*="cz-"]):not([class*="sl-"]):not([class*="bj"]):not([class*="cg-"]):not([class*="ex-"]){font:600 14px/1.2 var(--fb);font-style:normal;letter-spacing:0;text-transform:none;border-radius:var(--r-sm);min-height:40px}
 html:not(#_) .pri{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;padding:0 20px;border-radius:14px;background:var(--ab)!important;color:var(--abx,#fff)!important;font:700 15px/1 var(--fb)!important;font-style:normal;box-shadow:none!important;border:0}
 html:not(#_) .pri:hover{background:var(--ab2)!important}
 html:not(#_) .pri:active{transform:scale(.98)}
@@ -219,7 +218,7 @@ html:not(#_) #gate.modal{align-items:center;padding:16px;background:var(--bg)}
 html:not(#_) #gate.modal>.glass{border-radius:24px;border:1px solid var(--bd)!important;box-shadow:none;animation:none}
 html:not(#_) #gate.modal>.glass::before{display:none}
 html:not(#_) input,
-html:not(#_) textarea{width:100%;font:16px/1.4 var(--fb);color:var(--tx);background:var(--sf)!important;border:1px solid var(--bd2)!important;border-radius:var(--r-sm);padding:12px 14px;min-height:46px;transition:border-color .15s,box-shadow .15s}
+html:not(#_) textarea{font:16px/1.4 var(--fb);color:var(--tx);background:var(--sf)!important;border:1px solid var(--bd2)!important;border-radius:var(--r-sm);padding:12px 14px;min-height:46px;transition:border-color .15s,box-shadow .15s}
 html:not(#_) textarea{min-height:0}
 html:not(#_) input::placeholder,
 html:not(#_) textarea::placeholder{color:var(--mu);opacity:.8}
@@ -332,8 +331,8 @@ html:not(#_) .page:has(#lb){max-width:760px;margin:0 auto}
 html:not(#_) .page:has(.pp),
 html:not(#_) .page:has(.pf){max-width:880px;margin:0 auto}
 html:not(#_) .page:has(#adm){max-width:980px;margin:0 auto}
-html:not(#_) body:has(#nav [data-t="community"].on) #m::before,
-html:not(#_) body:has(#nav [data-t="board"].on) #m::before{max-width:720px;margin-left:auto;margin-right:auto}
+html:not(#_) body:has(#feed) #m::before{max-width:720px;margin-left:auto;margin-right:auto}
+html:not(#_) body:has(#lb) #m::before{max-width:760px;margin-left:auto;margin-right:auto}
 html:not(#_) .modal{align-items:center;padding:24px}
 html:not(#_) .modal>.glass,
 html:not(#_) #gate.modal>.glass{width:min(540px,100%);max-height:86vh;padding:28px 30px;border-radius:20px;border:1px solid var(--bd)!important}
@@ -354,3 +353,28 @@ html:not(#_) .hs.sb{margin-left:-24px!important;margin-right:-24px!important;pad
 html:not(#_) .page .grid{display:grid;grid-template-columns:1fr 1fr}
 
 }
+html:not(#_) .page .cz-hero h2,
+html:not(#_) .cz-hero h2{margin:0!important;font:800 26px/1.15 var(--fb)!important;letter-spacing:-.01em!important;color:#fff!important;display:block}
+html:not(#_) .cz-hero p{margin:4px 0 14px;color:#fff}
+html:not(#_) .cz-sh h3{margin:0;font-size:17px}
+html:not(#_) .cz-sh .mu,
+html:not(#_) .cz-quick .mu{font-size:12px}
+html:not(#_) .cz-m,
+html:not(#_) .cz-t{border-radius:18px;min-height:150px;font:600 14px/1.3 var(--fb);letter-spacing:0;text-transform:none}
+html:not(#_) .cz-m b,
+html:not(#_) .cz-t b{font-weight:800;color:#fff}
+html:not(#_) .cz-quick{padding:12px 14px}
+html:not(#_) .cz-quick .pri{width:auto;flex:none;min-height:42px}
+html:not(#_) .cz-cx,
+html:not(#_) .sl-cx{min-height:0!important;padding:3px 10px!important;font-size:12px!important}
+html:not(#_) .sl-th .chip{padding:6px 10px!important;font-size:12.5px!important}
+html:not(#_) .sl-bi .chip{min-height:34px;padding:6px 12px!important;font-weight:800}
+html:not(#_) .sl-th .chip.on,
+html:not(#_) .sl-auto .chip.on{background:var(--sla)!important;border-color:var(--sla)!important;color:#fff!important}
+html:not(#_) .sl-go{background:var(--sla)!important;border-color:var(--sla)!important}
+html:not(#_) .bj-a button{min-width:84px;min-height:44px}
+html:not(#_) .bj-bi input{width:110px;text-align:center}
+html:not(#_) .modal>.glass:has(.sl-wrap){width:min(640px,100%)}
+html:not(#_) .modal>.glass:has(.lvd){width:min(760px,100%);max-height:92vh}
+html:not(#_) .cz-fl{top:auto;bottom:16px;right:16px;font-size:30px;gap:4px;opacity:.6}
+html:not(#_) .cz-hero{padding-bottom:22px}
