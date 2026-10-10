@@ -198,7 +198,7 @@ const ungate=()=>{const g=document.getElementById('gate');if(g)g.remove()};
 const ERR='<p class="mu" id="gerr" style="color:#ff6b6b;min-height:1.3em;margin:8px 0"></p>';
 async function enter(p){ME={id:p.id,username:p.username,display_name:p.display_name,bio:p.bio||'',avatar_url:p.avatar_url||null,banner_url:p.banner_url||null,role:p.role||'user',created_at:p.created_at||null,flair:p.flair||null,border:p.border||null,team_theme:p.team_theme||null,hide_stats:!!p.hide_stats};applyTheme(ME.team_theme);if(isAdmin()&&!$('#nav [data-t=admin]')){$('#nav').classList.add('has-admin');$('#nav').insertAdjacentHTML('beforeend',`<button data-t="admin" aria-label="Admin"><span>${ic('shield',22)}</span>Admin</button>`)}startRealtime();loadFollowing();await loadSaved();ungate();hdr();loadDaily();route(true)}
 /* Cloudflare Turnstile (bot check on sign up / log in). Paste your Site Key between the quotes. Leave it empty to turn the check off. Needs Supabase > Authentication > Attack Protection set up with the Secret Key. */
-const TS_KEY='';
+const TS_KEY='0x4AAAAAAFTWAIMzZttuIlqy';
 let tsWid=null,tsTok='';
 const tsLoad=()=>new Promise(r=>{if(window.turnstile)return r();const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;s.onload=()=>r();s.onerror=()=>r();document.head.append(s)});
 async function tsMount(el){tsTok='';tsWid=null;if(!TS_KEY||!el)return;await tsLoad();if(!window.turnstile||!el.isConnected)return;tsWid=turnstile.render(el,{sitekey:TS_KEY,theme:'dark',callback:t=>{tsTok=t},'expired-callback':()=>{tsTok=''},'error-callback':()=>{tsTok=''}})}
