@@ -58,10 +58,12 @@ const nv = (m, ...names) => { for (const n of names) { const s = m[n.toLowerCase
 
 // Columns for the standings table, by league family. Only columns ESPN actually sent are shown.
 function colsFor(sp) {
+  if (sp === 'CFB') return [['CONF', ['vsconf', 'vsconference', 'conf', 'conference', 'conferencerecord']], ['OVR', ['overall', 'total']], ['PCT', ['winpercent']]];
   if (sp === 'NHL') return [['GP', ['gamesplayed']], ['W', ['wins']], ['L', ['losses']], ['OTL', ['otlosses']], ['PTS', ['points']]];
   if (sp === 'NFL' || sp === 'CFL') return [['W', ['wins']], ['L', ['losses']], ['T', ['ties']], ['PCT', ['winpercent']]];
   return [['W', ['wins']], ['L', ['losses']], ['PCT', ['winpercent']], ['GB', ['gamesbehind']], ['STRK', ['streak']]];
 }
+const confPct = (s) => { const m = String(s || '').match(/(\d+)-(\d+)/); if (!m) return null; const w = +m[1], l = +m[2]; return w + l ? w / (w + l) : 0; };
 const sortVal = (sp, m) => (sp === 'NHL' ? nv(m, 'points') : nv(m, 'winpercent'));
 
 function flattenGroups(node, out = [], path = '') {
@@ -120,22 +122,46 @@ function buildSchedule(j, id) {
 // ---- whole-league standings (the Teams tab): every division/conference as its own table ----
 const rowSort = (sp, rows) => rows.sort((a, b) => (a.seed != null && b.seed != null && a.seed !== b.seed ? a.sv === b.sv ? a.seed - b.seed : b.sv - a.sv : (b.sv || 0) - (a.sv || 0)));
 function tableOf(sp, g) {
-  const spec = colsFor(sp);
-  const rows = rowSort(sp, g.entries.map((e) => {
+  let spec = colsFor(sp);
+  const mk = (sp2, spec2) => g.entries.map((e) => {
     const m = statMap(e.stats), t = e.team || {};
+    const v = spec2.map(([, keys]) => dv(m, ...keys));
     return { id: String(t.id), n: t.shortDisplayName || t.displayName || t.name || '', ab: t.abbreviation || '', logo: https((t.logos && t.logos[0] && t.logos[0].href) || t.logo || ''),
-      sv: sortVal(sp, m), seed: nv(m, 'playoffseed', 'rank'), v: spec.map(([, keys]) => dv(m, ...keys)) };
-  }));
+      sv: sortVal(sp2, m), cp: sp2 === 'CFB' ? confPct(v[0]) : null, seed: nv(m, 'playoffseed', 'rank'), v };
+  });
+  let rows = mk(sp, spec);
+  if (sp === 'CFB' && !rows.some((r) => r.v[0] !== '' || r.v[1] !== '')) { spec = [['W', ['wins']], ['L', ['losses']], ['PCT', ['winpercent']]]; rows = mk(sp, spec); } // ESPN sent no conference/overall text: plain W-L
+  rows = sp === 'CFB' ? rows.sort((a, b) => ((b.cp == null ? -1 : b.cp) - (a.cp == null ? -1 : a.cp)) || ((b.sv || 0) - (a.sv || 0))) : rowSort(sp, rows);
   const keep = spec.map((c, i) => rows.some((r) => r.v[i] !== ''));
   return { name: g.name || '', parent: g.parent || '', labels: spec.map((c) => c[0]).filter((_, i) => keep[i]),
     rows: rows.map((r, i) => ({ rank: i + 1, id: r.id, n: r.n, ab: r.ab, logo: r.logo, v: r.v.filter((_, k) => keep[k]) })) };
 }
 async function buildStandings(sp, ctx) {
   const path = LEAGUES[sp];
-  const j = await get(STAND + path + '/standings?level=3', ctx).catch(() => get(STAND + path + '/standings', ctx));
-  const groups = flattenGroups(j).map((g) => tableOf(sp, g)).filter((g) => g.rows.length);
+  const q = sp === 'CFB' ? 'group=80&level=3' : 'level=3'; // 80 = FBS
+  const j = await get(STAND + path + '/standings?' + q, ctx).catch(() => get(STAND + path + '/standings' + (sp === 'CFB' ? '?group=80' : ''), ctx));
+  const rootKey = j.abbreviation || j.name || '';
+  const groups = flattenGroups(j).map((g) => { const t = tableOf(sp, g);
+    if (sp === 'CFB') { const top = !g.parent || g.parent === rootKey; t.conf = top ? (g.name || '') : g.parent; t.div = top ? '' : (g.name || ''); } // conference + (optional) division
+    return t; }).filter((g) => g.rows.length);
   if (!groups.length) throw new Error('standings unavailable'); // do not cache an empty table
   return { sport: sp, groups, updated: new Date().toISOString() };
+}
+
+// ---- polls (AP Top 25, Coaches, CFP...) for college sports ----
+async function buildRankings(sp, ctx) {
+  const j = await get(SITE + LEAGUES[sp] + '/rankings', ctx);
+  const polls = (j.rankings || []).map((p) => ({
+    name: String(p.name || p.shortName || p.headline || 'Top 25'), short: String(p.shortName || ''),
+    ranks: (p.ranks || []).map((r) => { const t = r.team || {}, cur = Number(r.current);
+      const prev = r.previous != null && r.previous !== '' && Number(r.previous) > 0 ? Number(r.previous) : null;
+      return { rank: cur, prev, id: String(t.id || ''), n: t.shortDisplayName || t.location || t.displayName || t.name || '', ab: t.abbreviation || '',
+        rec: String(r.recordSummary || ''), pts: r.points != null && r.points !== '' ? Number(r.points) : null, fp: r.firstPlaceVotes ? Number(r.firstPlaceVotes) : 0 };
+    }).filter((r) => r.rank > 0 && r.n).sort((a, b) => a.rank - b.rank).slice(0, 25)
+  })).filter((p) => p.ranks.length);
+  if (!polls.length) throw new Error('rankings unavailable'); // do not cache an empty poll
+  if (ctx.debug) ctx.raw.rankings = clip(j, 3500);
+  return { sport: sp, polls, updated: new Date().toISOString() };
 }
 
 async function buildProfile(sp, id, ctx) {
@@ -173,6 +199,13 @@ exports.handler = async (event) => {
   let id = String(q.id || '').trim();
   const debug = q.debug === '1';
   if (!LEAGUES[sp]) return json(400, { error: 'bad sport' });
+  if (q.type === 'rankings') {
+    const c3 = { debug, trace: debug ? [] : null, warn: [], raw: {} };
+    try {
+      const data = debug ? await buildRankings(sp, c3) : await cached('RANKINGS:' + sp, 1800, () => buildRankings(sp, c3), { provider: 'espn' });
+      return json(200, debug ? { ...data, _trace: c3.trace, _raw: c3.raw } : data);
+    } catch (e) { return json(502, { error: 'upstream unavailable', detail: String(e.message || e) }); }
+  }
   if (q.type === 'standings') {
     const c2 = { debug, trace: debug ? [] : null, warn: [], raw: {} };
     try {
@@ -194,4 +227,4 @@ exports.handler = async (event) => {
   }
 };
 
-exports._test = { buildStandings, tableOf };
+exports._test = { buildStandings, tableOf, buildRankings };
