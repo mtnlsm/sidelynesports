@@ -23,7 +23,7 @@ const THEMES={
  racing:{name:'Turbo Racer',a:'#ef4444',b:'#1f2937',root:370,s:[['🛞','Tire'],['⛽','Fuel'],['🏁','Flag'],['🏎️','Race car'],['🏆','Trophy'],['🏍️','Superbike']],sc:{e:'🚦',n:'Green Light',p:'Green Lights'},bonus:{name:'CHECKERED FLAG',unit:'Lap',m:[1,1,2,2,2,4],r:[3,3,3,3,3,3],d:'6 laps and the pace keeps rising: ×1, ×1, three at ×2, and the final lap at ×4.'}},
  olympus:{name:'Gods of Olympus',a:'#3b82f6',b:'#1e3a8a',root:196,s:[['🍇','Grapes'],['🏺','Amphora'],['🏛️','Temple'],['🦅','Eagle'],['🔱','Trident'],['⚡','Zeus']],sc:{e:'🌩️',n:'Storm Cloud',p:'Storm Clouds'},bonus:{name:'THUNDER OF ZEUS',unit:'Bolt',m:[2,2,20],r:[3,3,3],d:'3 bolts from the sky. Two warm-up strikes at ×2, then Zeus hurls the final thunderbolt and it pays ×20. Rare to trigger, huge when it lands.'}},
  heist:{name:'Diamond Heist',a:'#0d9488',b:'#042f2e',root:185,s:[['🔦','Flashlight'],['🔑','Key'],['🕶️','Shades'],['🚗','Getaway car'],['💎','Diamond'],['🏦','Vault']],sc:{e:'🚨',n:'Alarm',p:'Alarms'},bonus:{name:'VAULT CRACK',unit:'Safe',m:[2,2,7],r:[3,3,6],open:'THE VAULT DOOR BLASTS OPEN',d:'3 safes. Two quick cracks at ×2, then the vault door blasts open to 6 rows deep and the last safe pays ×7 on both sets of paylines.'}},
- pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'🎆',n:'Jackpot Light',p:'Jackpot Lights'},bonus:{name:'MULTIBALL',unit:'Ball',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'5 balls in play. Three warm-up balls at ×1, then the multiball locks in and the last two pay ×3 and ×6.'}}};
+ pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'💎',n:'Pinball Diamond',p:'Pinball Diamonds'},bonus:{name:'PINBALL BONUS',unit:'Shot',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'A diamond on the right reel launches the pinball bonus. Bets of 100+ chips get 2 shots and 1,000+ chips get 5 shots.'}}};
 /* SYMBOL ART: every symbol is a glossy tile in the machine's colors with a glyph on it (higher tiers get a gold rim). The bonus scatter is a gold starburst medallion so it is easy to spot. All inline SVG, no image files. */
 const tile=(e,i,z)=>{const rim=i>=4?'#ffd86b':'rgba(255,255,255,.35)',id='slt'+theme+i;return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${TH().a}"/><stop offset="1" style="stop-color:${TH().b}"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" fill="url(#${id})" stroke="${rim}" stroke-width="${i>=4?2:1.2}"/><path d="M6 12Q6 5 14 5H26Q34 5 34 12Q20 17 6 12Z" fill="rgba(255,255,255,.22)"/>${e==='7️⃣'?`<text x="20" y="29" text-anchor="middle" font-size="26" font-weight="900" font-family="Georgia,'Times New Roman',serif" fill="#ef233c" stroke="#fff" stroke-width="1.4" paint-order="stroke">7</text>`:`<text x="20" y="27.500" text-anchor="middle" font-size="21" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text>`}</svg>`};
 const medal=(e,z)=>{const pts=[];for(let k=0;k<24;k++){const r=k%2?13.500:16,a=k*Math.PI/12;pts.push((16+r*Math.sin(a)).toFixed(1)+','+(16-r*Math.cos(a)).toFixed(1))}return `<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><radialGradient id="slmd" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#f5c542"/><stop offset="1" stop-color="#b8860b"/></radialGradient></defs><polygon points="${pts.join(' ')}" fill="url(#slmd)" stroke="#8a6508" stroke-width=".6"/><circle cx="16" cy="16" r="10.500" fill="#2a1b05" stroke="#ffe680" stroke-width="1"/><text x="16" y="21.500" text-anchor="middle" font-size="14" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text></svg>`};
@@ -40,7 +40,7 @@ const PLINES=[[0,0,0]],PNAME=['Payline'],PK=1.61;
 let useP=false;
 const nrNow=()=>theme==='pinball'?3:5,baseRows=()=>theme==='pinball'?1:3;
 const lineRow=(l,c)=>useP?PLINES[l%PLINES.length][c]:LINES[l%9][c]+(l>=9?3:0),lname=l=>useP?PNAME[l%PNAME.length]:LNAME[l%9]+(l>=9?' (lower reels)':'');
-const SZ=()=>{try{const d=matchMedia('(min-width:900px)').matches;return theme==='pinball'?(d?68:56):(d?44:36)}catch(e){return 36}};
+const SZ=()=>{try{return matchMedia('(min-width:900px)').matches?44:36}catch(e){return 36}};
 const sym=(k,z=SZ())=>k==='S'?medal(TH().sc.e,Math.round(z*1.32)):tile(TH().s[SYM.indexOf(k)][0],SYM.indexOf(k),Math.round(z*1.1));
 const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
 const rnd=()=>SYM[Math.floor(Math.random()*SYM.length)];
@@ -308,26 +308,20 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-bi .chip{min-height:34px;padding:6px 12px;font-weight:800;flex:none}
 .sl-bq{display:flex;gap:6px;margin-top:6px;overflow-x:auto;scrollbar-width:none}.sl-bq::-webkit-scrollbar{display:none}.sl-bq .chip{flex:none}
 .sl-lev{display:none}
-.sl-wrap[data-th="pinball"]{--slh:80px}
-.sl-wrap[data-th="pinball"] .sl-rw{display:flex;justify-content:center;align-items:center;gap:12px;padding-bottom:10px}
+.sl-wrap[data-th="pinball"] .sl-rw{display:flex;justify-content:center;align-items:stretch;gap:8px}
 .sl-wrap[data-th="pinball"] .sl-rw .sl-reels{flex:0 1 auto;margin:0}
-/* plunger: a spring loaded shooter rod in its lane. Pull the red knob down, the spring squeezes, let go and the steel ball shoots up the lane. */
-.sl-wrap[data-th="pinball"] .sl-lev{display:block;position:relative;flex:none;width:42px;height:190px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
-.sl-lev i,.sl-lev-pl{position:absolute;display:block}
-.sl-lev-lane{left:11px;right:11px;top:0;bottom:46px;border-radius:99px 99px 6px 6px;background:linear-gradient(90deg,#05050c,#23233a 50%,#05050c);box-shadow:inset 0 0 5px #000,0 0 0 2px #94a3b8,0 0 0 3px #1e1b4b}
-.sl-lev-house{left:6px;right:6px;bottom:44px;height:14px;border-radius:5px;background:linear-gradient(180deg,#f8fafc,#94a3b8 55%,#475569);box-shadow:0 2px 3px rgba(0,0,0,.55);z-index:4}
-.sl-lev-spring{left:11px;right:11px;bottom:58px;height:62px;transform-origin:50% 100%;z-index:2;border-radius:3px;background:repeating-linear-gradient(176deg,#f1f5f9 0 2px,#64748b 2px 4px,#0f172a 4px 5px);box-shadow:inset 3px 0 3px rgba(255,255,255,.25),inset -3px 0 3px rgba(0,0,0,.45)}
-.sl-lev-pl{left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:3}
-.sl-lev-rod{left:50%;width:6px;margin-left:-3px;top:42px;bottom:36px;border-radius:3px;background:linear-gradient(90deg,#64748b,#f8fafc 45%,#475569)}
-.sl-lev-head{left:50%;width:18px;height:8px;margin-left:-9px;top:34px;border-radius:4px;background:linear-gradient(180deg,#f8fafc,#64748b);box-shadow:0 1px 2px rgba(0,0,0,.6);z-index:1}
-.sl-lev-collar{left:50%;width:16px;height:8px;margin-left:-8px;bottom:114px;border-radius:3px;background:linear-gradient(180deg,#e2e8f0,#475569);box-shadow:0 1px 2px rgba(0,0,0,.6)}
-.sl-lev-ball{left:50%;top:6px;width:28px;height:28px;margin-left:-14px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0,#e2e8f0 14%,#94a3b8 42%,#334155 80%,#0f172a 100%);box-shadow:0 3px 5px rgba(0,0,0,.55),inset 0 -2px 4px rgba(0,0,0,.4);z-index:2}
-.sl-lev-knob{left:50%;bottom:12px;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0,#fca5a5 12%,#ef4444 40%,#7f1d1d 100%);box-shadow:0 3px 6px rgba(0,0,0,.55),inset 0 -3px 5px rgba(0,0,0,.4),0 0 0 2px #cbd5e1}
-.sl-lev:active .sl-lev-knob{filter:brightness(1.18)}
+.sl-wrap .sl-rw.pb>.sl-reels,.sl-wrap .sl-rw.pb>.sl-lev{display:none}
+.sl-pb{width:100%;max-width:300px;margin:0 auto}.sl-pb svg{display:block}
+.sl-wrap[data-th="pinball"] .sl-lev{display:block;position:relative;flex:none;width:34px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.sl-lev-groove{position:absolute;left:12px;right:12px;top:0;bottom:6px;border-radius:99px;background:linear-gradient(90deg,#0b0b14,#2a2a3c 50%,#0b0b14);box-shadow:inset 0 0 4px #000,0 0 0 1px rgba(255,255,255,.18)}
+.sl-lev-arm{position:absolute;left:50%;width:8px;margin-left:-4px;top:18px;bottom:14px;border-radius:4px;background:linear-gradient(90deg,#8b93a1,#f1f5f9 45%,#6b7280);box-shadow:0 0 2px rgba(0,0,0,.6)}
+.sl-lev-ball{position:absolute;left:50%;top:18px;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#fca5a5 14%,#ef4444 40%,#7f1d1d 100%);box-shadow:0 3px 6px rgba(0,0,0,.5),inset 0 -3px 5px rgba(0,0,0,.35);z-index:2}
+.sl-lev-base{position:absolute;left:3px;right:3px;bottom:0;height:16px;border-radius:8px;background:linear-gradient(180deg,#e5e7eb,#6b7280);box-shadow:0 2px 4px rgba(0,0,0,.5)}
+.sl-lev:active .sl-lev-ball{filter:brightness(1.15)}
 .sl-wrap[data-th="pinball"] .sl-reels{background:radial-gradient(circle at 15% 20%,rgba(244,63,94,.35),transparent 34%),radial-gradient(circle at 85% 80%,rgba(99,102,241,.4),transparent 38%),repeating-linear-gradient(45deg,#1e1b4b 0 10px,#241f5c 10px 20px);border:3px solid #cbd5e1;border-radius:20px;box-shadow:0 0 0 2px #1e1b4b,0 0 18px rgba(244,63,94,.35),inset 0 2px 12px rgba(0,0,0,.55)}
-.sl-wrap[data-th="pinball"] .sl-reel{background:rgba(10,8,30,.55);border-color:rgba(203,213,225,.45);height:var(--slh,80px)}
+.sl-wrap[data-th="pinball"] .sl-reel{background:rgba(10,8,30,.55);border-color:rgba(203,213,225,.45);height:var(--slh,56px)}
 .sl-wrap[data-th="pinball"].fs .sl-reels{box-shadow:0 0 0 2px var(--sla),0 0 22px color-mix(in srgb,var(--sla) 55%,transparent),inset 0 2px 10px rgba(0,0,0,.4)}
-@media(max-width:899px){.sl-wrap[data-th="pinball"]{--slh:68px}}
+@media(max-width:899px){.sl-wrap[data-th="pinball"]{--slh:50px}}
 .sl-spc{color:var(--mu);font-weight:700;font-size:12px}`;
  document.head.appendChild(st)}
 
@@ -336,8 +330,8 @@ function openSlots(startTheme){
  if(!ME)return;slCss();let rows=3;
  if(startTheme&&THEMES[startTheme]&&!busy&&!autoOn){theme=startTheme;try{localStorage.setItem('fx-slt',theme)}catch(e){}}
  rows=baseRows();const start=Array.from({length:nrNow()},()=>Array.from({length:rows},rnd));
- const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">chips</span> <button class="chip sl-cx" data-cx aria-label="Exchange SP and chips">Exchange</button></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-lev" id="sllev" role="button" aria-label="Pull the plunger to spin"><i class="sl-lev-lane"></i><i class="sl-lev-spring"></i><i class="sl-lev-house"></i><div class="sl-lev-pl"><i class="sl-lev-ball"></i><i class="sl-lev-head"></i><i class="sl-lev-rod"></i><i class="sl-lev-collar"></i><i class="sl-lev-knob"></i></div></div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">\ud83e\ude99</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in chips"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of chips? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. Chips and SP have no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
- const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ×3 anywhere</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div><div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. ${P?'OG Pinball is 3 reels × 1 row with a single payline: line up all 3 symbols to win, and your whole bet rides on that line.':'All 9 paylines are always active and each one stakes 1/9 of your bet.'} Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div><div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
+ const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">chips</span> <button class="chip sl-cx" data-cx aria-label="Exchange SP and chips">Exchange</button></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-lev" id="sllev" role="button" aria-label="Pull the lever to spin"><i class="sl-lev-groove"></i><i class="sl-lev-arm"></i><i class="sl-lev-ball"></i><i class="sl-lev-base"></i></div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">\ud83e\ude99</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in chips"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of chips? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. Chips and SP have no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
+ const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ${P?'on the right reel':'×3 anywhere'}</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div>${P?`<div class="sl-note">Land a ${SCN()} on the right reel to launch the bonus. It costs nothing. You get 1 shot on bets up to 99 chips, 2 shots from 100 chips and 5 shots from 1,000 chips. Each ball lands in a pocket worth ×0.5, ×1, ×2, ×3 or ×1 your bet, or in the bonus chamber. The chamber fills from left to right and pays ×5, ×10, ×20, ×100 and ×200, so the biggest prize needs all 5 balls in the chamber. OG Pinball is 3 reels × 1 row with a single payline: line up all 3 symbols to win, and your whole bet rides on that line. Bigger bets pay back a little better. Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`:`<div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`}<div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=fmt(v)};
  /* the reel count depends on the machine: OG Pinball has 3 reels, every other machine has 5 */
  const fitReels=n=>{const R=$m('#slr');if(!R)return;R.querySelectorAll('.sl-pl').forEach(e=>e.remove());let k=R.querySelectorAll('.sl-reel').length;while(k>n){R.querySelectorAll('.sl-reel')[--k].remove()}while(k<n){const d=document.createElement('div');d.className='sl-reel';d.innerHTML='<div class="sl-strip">'+col3(Array.from({length:rows},rnd))+'</div>';if(rows!==baseRows())d.style.height=`calc(var(--slh,56px)*${rows})`;R.appendChild(d);k++}};
@@ -352,7 +346,7 @@ function openSlots(startTheme){
  const clampBet=()=>{bet=Math.max(MINBET,Math.min(MAXBET,Math.floor(bet)||MINBET));if(S.chips>=MINBET&&bet>S.chips)bet=S.chips};
  const saveBet=()=>{try{localStorage.setItem('fx-slbet',String(bet))}catch(e){}};
  const lk=()=>busy||autoOn;
- const defMsg=()=>'<span>'+TH().name+' · 3 '+SCP()+' = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
+ const defMsg=()=>theme==='pinball'?'<span>'+TH().name+' · '+SCN()+' on the right reel = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>':'<span>'+TH().name+' · 3 '+SCP()+' = '+TH().bonus.name+'!</span><small class="sl-sub">'+TH().bonus.d+'</small>';
  const goBtn=()=>{const g=$m('#slgo');if(autoOn){g.disabled=false;g.textContent='Stop auto · '+(autoLeft===Infinity?'∞':autoLeft+' left')}else if(wsv>0){g.disabled=busy;g.textContent=busy?'Spinning…':'Free spin · wager saver'+(wsv>1?' ×'+wsv:'')}else{const ok=bet>=MINBET&&bet<=S.chips;g.disabled=busy||!ok;g.textContent=busy?'Spinning…':bet<MINBET?'Enter a bet':S.chips<bet?'Not enough chips':'Spin · '+fmt(bet)+' chips'}
   $m('#sltot').textContent='Min '+fmt(MINBET)+' · Max '+fmt(Math.min(MAXBET,Math.max(S.chips,MINBET)))};
  const uiExtra=()=>{$m('#slname').textContent=TH().name;
@@ -408,12 +402,8 @@ function openSlots(startTheme){
   rs.forEach((r,c)=>[...r.firstElementChild.children].forEach((el,row)=>el.classList.add(keep.has(c+','+row)?'hit':'dim')));drawLines(wins,reels)};
  /* turbo shortens the animation only; the server still spaces spins about a second apart */
  const T=n=>turbo?Math.round(n*.45):n;
- /* pinball plunger: the knob is pulled down (the spring squeezes and the ball goes with it), then it lets go: the rod snaps back with a little bounce, the steel ball shoots up the lane and a fresh ball drops in. The reels launch when it lets go. */
- const pullLever=()=>{const L=$m('#sllev');if(theme!=='pinball'||!L||calm())return null;const PL=L.querySelector('.sl-lev-pl'),SP=L.querySelector('.sl-lev-spring'),B=L.querySelector('.sl-lev-ball'),d=18,o={duration:T(820),easing:'linear'};
-  try{sfx.pull();
-   SP.animate([{transform:'scaleY(1)',offset:0},{transform:'scaleY('+(1-d/62).toFixed(3)+')',offset:.55},{transform:'scaleY(1.05)',offset:.64},{transform:'scaleY(.98)',offset:.72},{transform:'scaleY(1)',offset:.8},{transform:'scaleY(1)',offset:1}],o);
-   B.animate([{transform:'translateY(0)',opacity:1,offset:0},{transform:'translateY(0)',opacity:1,offset:.55},{transform:'translateY(-46px)',opacity:0,offset:.7},{transform:'translateY(-46px)',opacity:0,offset:.78},{transform:'translateY(14px)',opacity:0,offset:.8},{transform:'translateY(0)',opacity:1,offset:1}],o);
-   return PL.animate([{transform:'translateY(0)',offset:0},{transform:'translateY('+d+'px)',offset:.55},{transform:'translateY(-4px)',offset:.64},{transform:'translateY(2px)',offset:.72},{transform:'translateY(0)',offset:.8},{transform:'translateY(0)',offset:1}],o).finished.catch(()=>{})}catch(e){return null}};
+ /* pinball lever: the red ball is pulled down the track (the arm shortens), springs back with a little bounce, and the reels launch when it lets go */
+ const pullLever=()=>{const L=$m('#sllev');if(theme!=='pinball'||!L||calm())return null;const A=L.querySelector('.sl-lev-arm'),B=L.querySelector('.sl-lev-ball'),mx=Math.max(40,L.clientHeight-46),kf=[{top:'18px',offset:0},{top:mx+'px',offset:.6},{top:'8px',offset:.82},{top:'18px',offset:1}],o={duration:T(780),easing:'ease-in-out'};try{sfx.pull();A.animate(kf,o);return B.animate(kf,o).finished.catch(()=>{})}catch(e){return null}};
  async function spin(free){if(busy||(!free&&(S.chips<bet||bet<MINBET)))return null;if(free&&theme==='pinball'){toast('Switch to another machine to use your free spin');return null}busy=true;const gap=1100-(Date.now()-lastAt);if(gap>0)await wait(gap);lastAt=Date.now();useP=theme==='pinball'&&!free;const NRS=nrNow();fitReels(NRS);const stake=free?SAVER_STAKE:bet,off=free?0:stake,msg=$m('#slm'),reels=$m('#slr');reels.className='sl-reels';clearHi();msg.textContent='';draw();bal(S.chips-off);const lv=pullLever();
   let r;try{const q=await (free?FX_DB.rpc('slots_saver_spin'):FX_DB.rpc('slots_spin',{p_bet:bet,p_theme:theme}));if(q.error)throw q.error;r=q.data;if(free)wsv=r.saver_spins!=null?r.saver_spins:Math.max(0,wsv-1);if(!Array.isArray(r.reels)||r.reels.length!==NRS)throw new Error('Slots changed: run the new supabase/slots.sql')}catch(err){busy=false;const t=String(err.message||err);msg.textContent=/function|schema/i.test(t)?(free?'Wager saver not set up yet (run supabase/wager_saver.sql)':'Slots not set up yet (run supabase/slots.sql)'):t;toast(msg.textContent);bal(S.chips);draw();return{ok:false}}
   if(lv)await lv;const rs=[...reels.children];sfx.spinOn();await Promise.all(rs.map((el,i)=>runReel(el,r.reels[i],T(900)+i*T(300)).then(()=>sfx.stop(i))));sfx.spinOff();
@@ -421,10 +411,10 @@ function openSlots(startTheme){
   const wins=r.wins||[];
   if(wins.length)hilite(wins,reels);
   if(r.kind==='bonus'&&r.free){
-   reels.classList.add('bonus');sfx.bonus();msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+r.free.start+' FREE SPINS</small>';try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}
+   reels.classList.add('bonus');sfx.bonus();msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+r.free.start+(r.free.pinball?(r.free.start>1?' PINBALL SHOTS':' PINBALL SHOT'):' FREE SPINS')+'</small>';try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}
    await wait(calm()?400:T(1700));reels.classList.remove('bonus');
    if(!m.isConnected){applyChips(r.chips,null);busy=false;return{ok:false}}
-   const ok=await freeSpins(r,off);
+   const ok=r.free.pinball?await pinballBonus(r,off):await freeSpins(r,off);
    if(!ok){applyChips(r.chips,null);busy=false;return{ok:false}}
    $m('.sl-wrap').classList.remove('fs');$m('#slfs').hidden=true;clearHi();await setRows(baseRows());if(!m.isConnected){applyChips(r.chips,null);busy=false;return{ok:false}}reels.classList.add('win');
    msg.innerHTML='<span id="slct">+0 chips</span><small class="sl-sub">BONUS TOTAL'+(r.line_pay?' · incl. '+fmt(r.line_pay)+' chips from lines':'')+' · '+xTxt(r.payout,stake)+'</small>';
@@ -449,6 +439,54 @@ function openSlots(startTheme){
   autoOn=false;autoLeft=0;
   if(why&&m.isConnected){toast('Auto spin stopped: '+why);const mg=$m('#slm');if(mg)mg.insertAdjacentHTML('beforeend','<small class="sl-sub" style="color:var(--sla);font-weight:800">Auto spin stopped · '+why+'</small>')}
   if(m.isConnected)draw()}
+
+
+ /* PINBALL BONUS (modeled on IGT Pinball): the server already decided where every ball lands (supabase/Slots-3.sql, slots_pb_play). We shoot each ball up the lane and let it fall into its pocket or the bonus chamber. */
+ const PBU=[1,2,0.5,3,1],PBC=[5,10,20,100,200],PBX=[0.5,1,2,3,1];
+ async function pinballBonus(r,stake){r0bet=r.bet||1;
+  const wrap=$m('.sl-wrap'),rw=$m('.sl-rw'),msg=$m('#slm'),bar=$m('#slfs'),sh=r.free.shots,N=sh.length,NS='http://www.w3.org/2000/svg';
+  const PX=i=>36+i*52,fx=v=>'×'+(Math.round(v*10)/10);
+  let g='';
+  g+='<rect x="2" y="2" width="296" height="346" rx="22" fill="#1e1b4b" stroke="#cbd5e1" stroke-width="3"/>';
+  g+='<path d="M278 338V70Q278 22 230 20H70Q22 22 22 70V210" fill="none" stroke="rgba(203,213,225,.35)" stroke-width="3"/>';
+  [[70,110],[130,110],[190,110],[100,150],[160,150],[220,150],[70,190],[130,190],[190,190],[250,190]].forEach(p=>{g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="#e11d48" stroke="#fff" stroke-width="2"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="#fff" opacity=".7"/>'});
+  PBU.forEach((v,i)=>{g+='<g id="slpu'+i+'"><rect x="'+(PX(i)-23)+'" y="226" width="46" height="34" rx="8" fill="#312e81" stroke="#94a3b8" stroke-width="2"/><text x="'+PX(i)+'" y="249" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">'+fx(v)+'</text></g>'});
+  g+='<text x="150" y="278" text-anchor="middle" font-size="10" font-weight="800" letter-spacing="1.5" fill="#fca5a5">BONUS CHAMBER</text>';
+  PBC.forEach((v,i)=>{g+='<g id="slpc'+i+'"><rect x="'+(PX(i)-23)+'" y="284" width="46" height="40" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="2"/><text x="'+PX(i)+'" y="309" text-anchor="middle" font-size="13" font-weight="800" fill="#fbbf24">'+fx(v)+'</text></g>'});
+  g+='<circle id="slpball" cx="278" cy="326" r="9" fill="url(#slpg)"/>';
+  rw.insertAdjacentHTML('beforeend','<div class="sl-pb" id="slpb"><svg viewBox="0 0 300 350" width="100%" aria-label="Pinball bonus board"><defs><radialGradient id="slpg" cx=".34" cy=".28" r=".9"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#94a3b8"/><stop offset="1" stop-color="#0f172a"/></radialGradient></defs>'+g+'</svg></div>');
+  rw.classList.add('pb');wrap.classList.add('fs');bar.hidden=false;
+  const svg=rw.querySelector('#slpb svg'),ball=svg.querySelector('#slpball'),$s=id=>svg.querySelector(id);
+  let run=0;
+  const head=n=>{bar.innerHTML='<span>'+TH().bonus.unit+' <b>'+n+'</b> / '+N+'</span><span>Bonus win <b>+'+fmt(run)+'</b> chips</span>'};
+  const put=(x,y)=>{ball.setAttribute('cx',x.toFixed(1));ball.setAttribute('cy',y.toFixed(1))};
+  const along=(pts,ms,acc)=>new Promise(res=>{if(calm()||!ms){put(...pts[pts.length-1]);return res()}
+   const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const tot=L[L.length-1],t0=performance.now();
+   const step=t=>{if(!m.isConnected)return res();let p=Math.min(1,(t-t0)/ms);p=acc?p*p:1-(1-p)*(1-p);const d=p*tot;let i=1;while(i<L.length-1&&L[i]<d)i++;const f=(d-L[i-1])/((L[i]-L[i-1])||1);put(pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f);p<1?requestAnimationFrame(step):res()};requestAnimationFrame(step)});
+  const lit=(el,c)=>{const rc=el.querySelector('rect');rc.setAttribute('fill',c);rc.setAttribute('stroke','#fff')};
+  head(1);msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+N+(N>1?' shots':' shot')+' · tap nothing, just watch</small>';
+  await wait(calm()?200:T(600));
+  for(const q of sh){
+   if(!m.isConnected)return false;
+   head(q.n);put(278,326);ball.style.opacity=1;
+   sfx.pull();
+   await along([[278,326],[278,60],[262,28],[200,18],[110,22],[56,44]],T(750),false);
+   const tx=PX(q.idx),ty=q.kind==='c'?304:243,zig=[];let x=56+Math.random()*180;zig.push([x,70]);
+   for(const y of [112,150,190]){x=Math.max(40,Math.min(260,x+(Math.random()*100-50)));zig.push([x,y])}
+   zig.push([tx,q.kind==='c'?264:218],[tx,ty]);
+   await along([[56,44],...zig],T(1500),true);
+   if(!m.isConnected)return false;
+   run=q.run;head(q.n);
+   const el=q.kind==='c'?$s('#slpc'+q.idx):$s('#slpu'+q.idx);lit(el,q.kind==='c'?'#b45309':'#e11d48');
+   sfx.coin();msg.innerHTML=(q.kind==='c'?'BONUS CHAMBER! ':'')+'+'+fmt(q.pay)+' chips<small class="sl-sub">'+fx(q.mult)+' your bet'+(q.kind==='c'?' · chamber slot '+(q.idx+1)+' of 5':'')+'</small>';
+   bal(S.chips-stake+(r.line_pay||0)+run);
+   await wait(calm()?200:T(900));
+   if(!m.isConnected)return false;
+   ball.style.opacity=0;
+  }
+  await wait(calm()?150:T(500));
+  const bd=$m('#slpb');if(bd)bd.remove();rw.classList.remove('pb');
+  return m.isConnected}
 
  /* the bonus: the server already played every free spin, we replay them one after another */
  const total0=()=>r0bet;let r0bet=1;
