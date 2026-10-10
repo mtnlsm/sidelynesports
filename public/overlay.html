@@ -45,29 +45,25 @@ body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:co
 .sit{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--mu)}
 .dia rect{fill:none;stroke:var(--mu);stroke-width:1.4}.dia rect.on{fill:var(--ac);stroke:var(--ac)}
 .sit .rz{color:#ff3b30}
-.strip{display:flex;align-items:center;gap:16px;max-width:100%;padding:10px 18px 10px 12px;background:var(--bg);border:1px solid var(--bd);border-left:5px solid var(--ac);border-radius:16px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.strip{display:inline-flex;align-items:center;gap:16px;max-width:100%;padding:8px 26px 8px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:999px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.strip>*{flex:none}
+.strip .pt{display:flex;align-items:center;gap:12px;min-width:0}
+.strip .pt .k b{color:var(--ac);overflow:hidden;text-overflow:ellipsis}
+body.ov.light .strip .pt .k b{filter:brightness(.8)}
+.strip .pt .k small{text-transform:none;letter-spacing:.04em;font-size:14px;font-weight:600}
+.strip .sep{width:1px;height:30px;background:var(--bd)}
+.strip .num{font:700 22px 'Barlow Condensed',sans-serif;letter-spacing:.03em;color:var(--mu);white-space:nowrap}
+.strip .num b{color:var(--tx);font-weight:800}
+.res{display:inline-flex;align-items:center;gap:8px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.res::before{content:'';width:9px;height:9px;border-radius:50%;background:currentColor}
+.res.win{color:#26c06a}.res.loss{color:#e5534b}.res.void{color:var(--mu)}
 .strip.enter{animation:rise .55s cubic-bezier(.2,.8,.2,1)}
 body.top .strip.enter{animation-name:drop}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes drop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
-.strip .who{display:flex;align-items:center;gap:10px}
-.strip .av{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--ac)}
-.strip .avf{width:42px;height:42px;border-radius:50%;flex:none;border:2px solid var(--ac);display:flex;align-items:center;justify-content:center;font:800 19px 'Barlow Condensed',sans-serif;color:#fff}
 .k{display:flex;flex-direction:column;line-height:1.05;min-width:0}
 .k small{font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:.15em;text-transform:uppercase;color:var(--mu)}
 .k b{font:800 24px/1.1 'Barlow Condensed',sans-serif;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
-.strip .sep{width:1px;align-self:stretch;background:var(--bd)}
-.strip>*{flex:none}
-.strip .pt{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:0}
-.strip .pt .k{min-width:0}
-.strip .pt .k b{overflow:hidden;text-overflow:ellipsis}
-.strip .pt img{width:36px;height:36px;object-fit:contain}
-.strip .pt .k b{color:var(--ac)}
-body.ov.light .strip .pt .k b{filter:brightness(.8)}
-.chip{padding:6px 12px;border-radius:11px;background:var(--chip);border:1px solid var(--bd)}
-.chip b{font-size:22px}
-.res{font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:7px 13px;border-radius:11px;color:#fff;white-space:nowrap}
-.res.win{background:#17934f}.res.loss{background:#d93a30}.res.void{background:#6b7770}
 .msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,.65);padding:10px 16px;border-radius:10px;font-size:15px}
 
 /* =============== SETUP PAGE (link builder) =============== */
@@ -201,12 +197,10 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       const u = K.user || {}, sd = sideOf(), side = D && sd ? (sd === 'a' ? D.away : D.home) : null;
       const sig = JSON.stringify([u, k, sd, logos, side && side.lg]);
       if (sig === stripSig) return; stripSig = sig;
-      const av = u.avatar && /^https:\/\//.test(u.avatar) ? `<img class="av" src="${E(u.avatar)}" alt="" referrerpolicy="no-referrer">` : `<div class="avf" style="background:hsl(${hue(u.username)},55%,42%)">${E((u.name || u.username || '?')[0].toUpperCase())}</div>`;
       const pay = k.stake > 0 && k.mult ? Math.round(k.stake * Number(k.mult)) : 0;
-      const res = k.result === 'win' ? `<div class="res win">Correct${k.awarded ? ' +' + Number(k.awarded).toLocaleString() + ' SP' : ''}</div>` : k.result === 'loss' ? '<div class="res loss">Missed</div>' : k.result === 'void' ? '<div class="res void">Void</div>' : '';
-      stripEl.innerHTML = `<div class="strip${stripHad ? '' : ' enter'}"><div class="who">${av}<div class="k"><small>Pick by</small><b>@${E(u.username || u.name || 'fan')}</b></div></div><div class="sep"></div>
-        <div class="pt">${logos && side ? jersey(side, 44, D && D.sp) : ''}<div class="k"><small>Picking</small><b>${E(k.team)}</b></div></div>
-        ${k.stake > 0 ? `<div class="chip k"><small>Stake</small><b>${Number(k.stake).toLocaleString()} SP</b></div>` : ''}${pay && !res ? `<div class="chip k"><small>Pays</small><b>${pay.toLocaleString()} SP</b></div>` : ''}${res}${wantScore ? '' : '<div class="sep"></div><div class="k"><span class="bnd">Sidelyne<br>Sports</span></div>'}</div>`;
+      const res = k.result === 'win' ? `<span class="res win">Correct${k.awarded ? ' +' + Number(k.awarded).toLocaleString() + ' SP' : ''}</span>` : k.result === 'loss' ? '<span class="res loss">Missed</span>' : k.result === 'void' ? '<span class="res void">Void</span>' : '';
+      const num = k.stake > 0 ? `<div class="num"><b>${Number(k.stake).toLocaleString()}</b> SP${pay && !res ? ` &rarr; <b>${pay.toLocaleString()}</b> SP` : ''}</div>` : '';
+      stripEl.innerHTML = `<div class="strip${stripHad ? '' : ' enter'}"><div class="pt">${logos && side ? jersey(side, 44, D && D.sp) : ''}<div class="k"><small>@${E(u.username || u.name || 'fan')}&rsquo;s pick</small><b>${E(k.team)}</b></div></div>${num || res ? '<div class="sep"></div>' : ''}${num}${res}${wantScore ? '' : '<div class="sep"></div><div class="k"><span class="bnd">Sidelyne<br>Sports</span></div>'}</div>`;
       stripHad = true;
     }
 
