@@ -19,9 +19,8 @@ body.ov.light{--bg:rgba(255,255,255,.95);--tx:#0f1713;--mu:rgba(15,23,19,.6);--b
 body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:column}
 #stage.on{opacity:1}
 #strip{display:flex;justify-content:center}
-#brand{display:flex;justify-content:center}
-#brand span{display:inline-flex;align-items:center;gap:8px;padding:5px 14px 4px;border-radius:999px;background:var(--bg);border:1px solid var(--bd);box-shadow:var(--sh);color:var(--tx);font:800 14px 'Barlow Condensed',sans-serif;letter-spacing:.22em;text-transform:uppercase;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-#brand i{width:8px;height:8px;border-radius:50%;background:var(--ac)}
+.bnd{font:800 10px/1 'Barlow Condensed',sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--ac);white-space:nowrap}
+.ct{gap:3px!important}
 .bar{display:grid;grid-template-columns:1fr 236px 1fr;align-items:stretch;height:92px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
 .tm{position:relative;display:flex;align-items:center;gap:14px;padding:0 22px}
 .tm.h{flex-direction:row-reverse;text-align:right}
@@ -115,7 +114,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
 .pv iframe{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;background:transparent}
 </style></head>
 <body>
-<div id="stage"><div id="bar"></div><div id="strip"></div><div id="brand"><span><i></i>Sidelyne Sports</span></div></div>
+<div id="stage"><div id="bar"></div><div id="strip"></div></div>
 <div id="app"></div>
 <script>
 (function () {
@@ -166,7 +165,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       const pill = d.st === 'live' ? '<span class="pill"><i></i>Live</span>' : d.st === 'final' ? '<span class="pill fin">Final</span>' : '<span class="pill up">Upcoming</span>';
       const clk = d.st === 'final' ? '' : d.clk;
       barEl.innerHTML = `<div class="bar"><div class="tm a${sd === 'a' ? ' pk' : ''}">${sd === 'a' ? '<span class="tag">PICK</span>' : ''}${logo(d.away)}<div class="nm"><b>${E(d.away.ab || d.away.n)}</b><small>${E(d.away.n)}</small></div><div class="sc${bumpA}">${E(sa === '' ? '–' : sa)}</div></div>
-        <div class="ct">${pill}${clk ? `<div class="clk">${E(clk)}</div>` : ''}${sit(d)}</div>
+        <div class="ct"><span class="bnd">Sidelyne Sports</span>${pill}${clk ? `<div class="clk">${E(clk)}</div>` : ''}${sit(d)}</div>
         <div class="tm h${sd === 'b' ? ' pk' : ''}">${sd === 'b' ? '<span class="tag">PICK</span>' : ''}${logo(d.home)}<div class="nm"><b>${E(d.home.ab || d.home.n)}</b><small>${E(d.home.n)}</small></div><div class="sc${bumpB}">${E(sb === '' ? '–' : sb)}</div></div></div>`;
     }
 
@@ -182,7 +181,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       const res = k.result === 'win' ? `<div class="res win">Correct${k.awarded ? ' +' + Number(k.awarded).toLocaleString() + ' SP' : ''}</div>` : k.result === 'loss' ? '<div class="res loss">Missed</div>' : k.result === 'void' ? '<div class="res void">Void</div>' : '';
       stripEl.innerHTML = `<div class="strip${stripHad ? '' : ' enter'}"><div class="who">${av}<div class="k"><small>Pick by</small><b>@${E(u.username || u.name || 'fan')}</b></div></div><div class="sep"></div>
         <div class="pt">${logos && side && side.lg ? `<img src="${E(side.lg)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<div class="k"><small>Picking</small><b>${E(k.team)}</b></div></div>
-        ${k.stake > 0 ? `<div class="chip k"><small>Stake</small><b>${Number(k.stake).toLocaleString()} SP</b></div>` : ''}${pay && !res ? `<div class="chip k"><small>Pays</small><b>${pay.toLocaleString()} SP</b></div>` : ''}${res}</div>`;
+        ${k.stake > 0 ? `<div class="chip k"><small>Stake</small><b>${Number(k.stake).toLocaleString()} SP</b></div>` : ''}${pay && !res ? `<div class="chip k"><small>Pays</small><b>${pay.toLocaleString()} SP</b></div>` : ''}${res}${wantScore ? '' : '<div class="sep"></div><div class="k"><span class="bnd">Sidelyne<br>Sports</span></div>'}</div>`;
       stripHad = true;
     }
 
