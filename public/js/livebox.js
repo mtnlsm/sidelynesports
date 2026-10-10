@@ -161,13 +161,34 @@
     ].join('');
     return `<div class="lv-h">Tale of the tape</div><div class="uf-stats">${rows}</div>${A || B ? `<div class="uf2-fmw"><div>${form(A)}</div><span>Last 5</span><div>${form(B)}</div></div>` : ''}${recent(g)}`;
   }
+
+  // ---------- Damage skeletons: strikes TAKEN by each fighter (the opponent's landed head/body/leg strikes). Yellow = taking damage, red = badly hurt. ----------
+  const TH = { head: [3, 8], body: [5, 12], leg: [5, 12] }; // [yellow, red] landed strikes
+  const lvl = (z, n, hurt) => (hurt && z === 'head' ? 'bad' : n >= TH[z][1] ? 'bad' : n >= TH[z][0] ? 'warn' : n > 0 ? 'lite' : '');
+  function skel(t, hurt) {
+    const h = lvl('head', t.head, hurt), b = lvl('body', t.body, 0), l = lvl('leg', t.leg, 0);
+    return `<svg class="sk-fig" viewBox="0 0 100 224" aria-hidden="true">
+      <g class="sk-z ${h}"><ellipse cx="50" cy="22" rx="14" ry="16"/><path d="M39 33q11 14 22 0v7H39z"/><circle class="eye" cx="44" cy="22" r="3.4"/><circle class="eye" cx="56" cy="22" r="3.4"/><path class="eye" d="M50 27l-2 5h4z"/></g>
+      <g class="sk-z n"><rect x="46" y="40" width="8" height="10" rx="3"/><path d="M30 54q20-8 40 0M28 56l-16 38-4 34M72 56l16 38 4 34"/><circle cx="28" cy="56" r="4"/><circle cx="72" cy="56" r="4"/><circle cx="12" cy="94" r="3.4"/><circle cx="88" cy="94" r="3.4"/><circle cx="8" cy="128" r="3.4"/><circle cx="92" cy="128" r="3.4"/></g>
+      <g class="sk-z ${b}"><path d="M50 52v82"/><path d="M50 60q-20 0-22 8M50 60q20 0 22 8M50 72q-22 0-24 9M50 72q22 0 24 9M50 84q-20 0-21 9M50 84q20 0 21 9M50 96q-17 0-18 8M50 96q17 0 18 8"/><path d="M36 126q-10 4-8 22 6 6 16 2l6-8 6 8q10 4 16-2 2-18-8-22q-14 6-28 0z"/></g>
+      <g class="sk-z ${l}"><path d="M42 150l-3 34-1 32M58 150l3 34 1 32"/><circle cx="39" cy="184" r="4.5"/><circle cx="61" cy="184" r="4.5"/><path d="M33 220h12M55 220h12"/></g></svg>`;
+  }
+  function damage(g, d) {
+    const row = (k) => d.stats.find((r) => r.k === k) || { a: { n: 0 }, b: { n: 0 } };
+    const kd = row('kd'), hd = row('head'), bd = row('body'), lg = row('leg');
+    const fin = g.st === 'final', koA = fin && d.win === 1 && /ko|tko|sub/i.test(d.res || ''), koB = fin && d.win === 0 && /ko|tko|sub/i.test(d.res || '');
+    // fighter A takes what B lands (and the other way round)
+    const tA = { head: hd.b.n || 0, body: bd.b.n || 0, leg: lg.b.n || 0 }, tB = { head: hd.a.n || 0, body: bd.a.n || 0, leg: lg.a.n || 0 };
+    const col = (name, t, hurt, side) => `<div class="sk-c ${side}">${skel(t, hurt)}<b>${E(name)}</b><div class="sk-n"><span class="${lvl('head', t.head, hurt)}">Head <i>${t.head}</i></span><span class="${lvl('body', t.body, 0)}">Body <i>${t.body}</i></span><span class="${lvl('leg', t.leg, 0)}">Legs <i>${t.leg}</i></span></div></div>`;
+    return `<div class="lv-h">Damage taken</div><div class="sk-w">${col(g.a, tA, (kd.b.n || 0) > 0 || koA, 'a')}${col(g.b, tB, (kd.a.n || 0) > 0 || koB, 'b')}</div><div class="sk-lg"><span><i class="warn"></i>Taking damage</span><span><i class="bad"></i>Badly hurt</span></div>`;
+  }
   function statsBody(g, c) {
     if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Fight stats aren\u2019t available right now.' : 'Loading fight stats\u2026'}</p>`;
     const d = c.d, fin = g.st === 'final';
     const grp = (k) => d.stats.filter((r) => r.g === k);
     const sec = (t, k) => (grp(k).length ? `<div class="lv-h">${t}</div>${grp(k).map(mmaRow).join('')}` : '');
     const body = d.stats.length
-      ? `<div class="lv-h">Fight stats</div><div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
+      ? `${damage(g, d)}<div class="lv-h">Fight stats</div><div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
       : `<p class="mu uf-none">${fin ? 'Detailed stats aren\u2019t available for this fight.' : 'Stats show up here once the first round gets going.'}</p>`;
     return `${body}${fin ? '' : '<p class="mu uf-note">Updates automatically \u00b7 stats can lag the action by a few seconds.</p>'}${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
   }
