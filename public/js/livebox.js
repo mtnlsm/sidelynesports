@@ -118,7 +118,7 @@
     const o = g.od; if (g.st !== 'up' || !o || !o.a || !o.b) return '';
     const x = impl(o.a), y = impl(o.b), t = x + y; if (!t) return '';
     const pa = Math.round((x / t) * 100), pb = 100 - pa;
-    return `<div class="uf2-od"><div class="uf2-od-h"><b>${pa}%</b><span>Win probability</span><b>${pb}%</b></div><div class="uf2-od-b"><i class="a" style="width:${pa}%"></i><i class="b"></i></div><div class="uf2-od-s"><span>${E(o.a)}</span><span>${o.p ? 'Odds \u00b7 ' + E(o.p) : 'Moneyline'}</span><span>${E(o.b)}</span></div></div>`;
+    return `<div class="uf2-od"><div class="uf2-od-h"><b>${pa}%</b><span>Win probability</span><b>${pb}%</b></div><div class="uf2-od-b"><i class="a" style="width:${pa}%"></i><i class="b"></i></div><div class="uf2-od-s"><span>${E(o.a)}</span><span>Moneyline</span><span>${E(o.b)}</span></div></div>`;
   }
   function hero(g, d) {
     d = d || {};
