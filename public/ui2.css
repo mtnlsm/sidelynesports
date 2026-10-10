@@ -141,3 +141,20 @@ button.ss-row:active{background:color-mix(in srgb,var(--tx) 6%,transparent);tran
 /* footer: notices button */
 .rg-btn{display:inline-block;padding:10px 18px;border-radius:999px;background:var(--ab);color:var(--abx,#fff)!important;font-weight:700;font-size:14px;text-decoration:none!important}
 .rg-sub{display:block;margin-top:10px;font-size:12px}
+
+/* predict filters: segmented mode + status, underline sport tabs, quiet league pills */
+.sg{display:flex;gap:2px;padding:3px;margin:0 0 12px;border-radius:12px;background:var(--sf2);border:1px solid var(--bd)}
+.sg button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 12px;border:0;border-radius:9px;background:none;color:var(--mu);font:600 14px/1 var(--fb);letter-spacing:0;text-transform:none;white-space:nowrap;cursor:pointer}
+.sg button.on{background:var(--ab);color:var(--abx,#fff)}
+.sg.sm{display:inline-flex;margin:4px 0 12px}
+.sg.sm button{flex:none;min-height:30px;padding:0 12px;font-size:13px}
+.pf-n{display:inline-block;min-width:18px;padding:2px 6px;border-radius:99px;background:rgba(255,255,255,.18);font-size:11px;font-weight:700;line-height:1;text-align:center}
+.sg button:not(.on) .pf-n{background:var(--bd);color:var(--tx)}
+.hs.tb{gap:4px!important;margin:0 -14px 10px!important;padding:0 14px!important;border-bottom:1px solid var(--bd);flex-wrap:nowrap!important;overflow-x:auto!important}
+.tb .tab{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;margin-bottom:-1px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mu);font:600 14px/1 var(--fb);letter-spacing:0;text-transform:none;cursor:pointer}
+.tb .tab.on{color:var(--tx);border-bottom-color:var(--ab)}
+.tb .tab svg{opacity:.85}
+.hs.sb{gap:14px!important;margin:0 -14px 8px!important;padding:2px 14px!important}
+.sb .sbtn{flex:none;padding:4px 0;border:0;border-radius:0;background:none;color:var(--mu);font:600 13px/1.2 var(--fb);letter-spacing:0;text-transform:none;cursor:pointer}
+.sb .sbtn.on{color:var(--ab);text-decoration:underline;text-underline-offset:5px;text-decoration-thickness:2px}
+@media(min-width:900px){.sg{max-width:380px}.sg.sm{max-width:none}.hs.tb,.hs.sb{margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}}
