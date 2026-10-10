@@ -6,6 +6,8 @@
   const SV = (p, fill) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="${fill || 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const ICO_RP = SV('<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/>');
+  const ICO_FL = SV('<path d="M4 22V4M4 4h13l-2 4 2 4H4"/>');
+  const ICO_OV = SV('<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>');
   const ICO_LK = (on) => SV('<path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/>', on ? 'currentColor' : 'none');
   const fmt = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n));
   const db = () => (typeof window.FX_DB !== 'undefined' ? window.FX_DB : null);
@@ -23,6 +25,12 @@
 .vw{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--mu)}
 .vw svg{flex:none}
 .card .vw{margin-top:4px}
+.vw-live i{width:7px;height:7px;border-radius:50%;background:#ff3b30;flex:none;animation:lvpulse 1.8s infinite}
+.lvw-tot{margin:8px 0 2px}
+.lvo-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 0;padding:10px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--sf2);color:var(--tx);font-size:14px;font-weight:700;text-decoration:none}
+.lvo-btn:hover{border-color:var(--ab)}
+.lvp-act .lvp-rep{margin-left:auto}
+.lvr-t{width:100%;margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font:inherit;font-size:16px;resize:none}
 .lvf{margin:10px 0 14px;border:1px solid var(--bd);border-radius:14px;background:var(--sf2);overflow:hidden;position:relative}
 .lvf-h{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--bd);font-size:14px}
 .lvf-h .t{display:inline-flex;align-items:center;gap:8px}
@@ -69,28 +77,72 @@
   document.head.appendChild(st);
 
   // ---------- view counts ----------
-  const V = {};
-  const badge = (g) => (V[g.id] > 0 ? `<div class="vw" data-vw="${E(g.id)}" title="Views">${EYE}<span>${fmt(V[g.id])}</span></div>` : '');
+  // LIVE games show how many people are watching right now (realtime presence: counts people who have that game open).
+  // When the game ends, every viewer who watched during it has been added up into one TOTAL that stays on the game.
+  const V = {};   // game id -> total views (counted once per viewer while the game was live)
+  const L = {};   // game id -> watching right now
+  const gameOf = (id) => { try { return (typeof G !== 'undefined' ? G : []).find((x) => String(x.id) === String(id)); } catch (e) { return null; } };
+  const vtxt = (id, k) => (k === 'live' ? fmt(L[id] || 0) + ' watching' : fmt(V[id] || 0) + ' views');
+  const badge = (g) => {
+    const id = String(g.id);
+    if (live(g)) return (L[id] || 0) > 0 ? `<div class="vw vw-live" data-vw="${E(id)}" data-k="live" title="Watching now"><i></i><span>${vtxt(id, 'live')}</span></div>` : '';
+    if (g.st === 'final') return V[id] > 0 ? `<div class="vw" data-vw="${E(id)}" data-k="total" title="Total views">${EYE}<span>${vtxt(id, 'total')}</span></div>` : '';
+    return '';
+  };
   function paintBadges() {
-    document.querySelectorAll('[data-vw]').forEach((el) => { const n = V[el.dataset.vw]; if (n > 0) { const s = el.querySelector('span'); if (s) s.textContent = fmt(n); } });
-    document.querySelectorAll('.card.lv[data-g]').forEach((c) => {
+    document.querySelectorAll('[data-vw]').forEach((el) => {
+      const id = el.dataset.vw, k = el.dataset.k, s = el.querySelector('span');
+      if (s) s.textContent = k === 'live' ? vtxt(id, 'live') : (V[id] > 0 ? vtxt(id, 'total') : '\u2013');
+    });
+    document.querySelectorAll('.card[data-g]').forEach((c) => {
       const id = c.dataset.g;
-      if (V[id] > 0 && !c.querySelector('[data-vw]')) { const last = c.lastElementChild; if (last) last.insertAdjacentHTML('beforebegin', badge({ id })); }
+      if (c.querySelector('[data-vw]')) return;
+      const g = gameOf(id), h = g && badge(g);
+      if (h) { const last = c.lastElementChild; if (last) last.insertAdjacentHTML('beforebegin', h); }
     });
   }
-  async function pullCounts() {
-    const d = db(); if (!d || document.hidden) return;
+  // totals only matter once a game is over
+  async function pullCounts(force) {
+    const d = db(); if (!d || (document.hidden && !force)) return;
     let ids = [];
-    try { ids = (typeof G !== 'undefined' ? G : []).filter(live).map((g) => String(g.id)); } catch (e) {}
+    try { ids = (typeof G !== 'undefined' ? G : []).filter((g) => g.st === 'final').map((g) => String(g.id)).filter((i) => /^[A-Z0-9]+:[0-9]{3,}$/.test(i)).slice(0, 150); } catch (e) {}
     if (!ids.length) return;
     try { const r = await d.rpc('game_view_counts', { ids }); if (!r.error && Array.isArray(r.data)) { r.data.forEach((x) => { V[x.game_id] = Number(x.views); }); paintBadges(); } } catch (e) {}
   }
-  setTimeout(pullCounts, 2500); setInterval(pullCounts, 20000);
+  setTimeout(pullCounts, 2500); setInterval(pullCounts, 30000);
+
+  // one shared presence channel: each open game sheet announces which game it is watching
+  const RID = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  let vch = null, vready = 0, watching = null;
+  function presence() {
+    const d = db(); if (!d || vch) return;
+    try {
+      vch = d.channel('lvv:all', { config: { presence: { key: RID } } });
+      vch.on('presence', { event: 'sync' }, () => {
+        const c = {};
+        Object.values(vch.presenceState()).forEach((arr) => arr.forEach((p) => { if (p && p.g) c[p.g] = (c[p.g] || 0) + 1; }));
+        Object.keys(L).forEach((k) => { if (!c[k]) L[k] = 0; });
+        Object.assign(L, c); paintBadges();
+      }).subscribe((status) => { vready = status === 'SUBSCRIBED' ? 1 : 0; if (vready && watching) { try { vch.track({ g: watching }); } catch (e) {} } });
+    } catch (e) { console.error('presence', e); }
+  }
+  setTimeout(presence, 1500);
+  function watch(g, m) {
+    const id = String(g.id); watching = id; presence();
+    if (vready) { try { vch.track({ g: id }); } catch (e) {} }
+    L[id] = Math.max(L[id] || 0, 1); paintBadges();      // you count yourself right away
+    const t = setInterval(() => {
+      if (m.isConnected) return;
+      clearInterval(t);
+      if (watching === id) { watching = null; if (vch && vready) { try { vch.untrack(); } catch (e) {} } }
+    }, 1500);
+  }
+  // each viewer is added to the game's running total once per session, while it is live
   async function track(g) {
     const d = db(); if (!d) return;
     const k = 'lvw:' + g.id;
     try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (e) {}
-    try { const r = await d.rpc('track_game_view', { gid: String(g.id) }); if (!r.error && r.data != null) { V[g.id] = Number(r.data); paintBadges(); } } catch (e) {}
+    try { await d.rpc('track_game_view', { gid: String(g.id) }); } catch (e) {}
   }
 
   // ---------- feed ----------
@@ -100,7 +152,7 @@
     const s = { rows: [], cnt: {}, mine: new Set(), open: new Set(), seen: new Set(), rendered: new Set(), pending: new Map(), prof: {}, first: 1, drawn: 0, pend: 0, rd: {}, uid: null, force: 0, sig: '', live: 0 };
     const n = document.createElement('div');
     n.className = 'lvf';
-    n.innerHTML = `<div class="lvf-h"><span class="t"><b>Live feed</b><i class="lvf-dot" title="Real-time"></i></span><span class="vw" data-vw="${E(g.id)}" title="Views">${EYE}<span>${V[g.id] > 0 ? fmt(V[g.id]) : '–'}</span></span></div><div class="lvf-c"></div><button type="button" class="lvf-pill" hidden data-pill></button><div class="lvf-l"><div class="lvf-e">Loading feed\u2026</div></div>`;
+    n.innerHTML = `<div class="lvf-h"><span class="t"><b>Live feed</b><i class="lvf-dot" title="Real-time"></i></span><span class="vw vw-live" data-vw="${E(g.id)}" data-k="live" title="Watching now"><i></i><span>${vtxt(g.id, 'live')}</span></span></div><div class="lvf-c"></div><button type="button" class="lvf-pill" hidden data-pill></button><div class="lvf-l"><div class="lvf-e">Loading feed\u2026</div></div>`;
     return { n, s, ch: null };
   }
 
@@ -117,11 +169,12 @@
     mo.observe(m, { childList: true, subtree: true });
 
     const user = (r) => { const c = me(); return s.prof[r.user_id] || (c && c.id === r.user_id ? c : { username: 'fan' }); };
+    const repBtn = (r) => { const c = me(); return c && r.user_id !== c.id && !String(r.id).startsWith('tmp') ? `<button type="button" class="lvp-rep" data-rep="${r.id}" aria-label="Report" title="Report">${ICO_FL}</button>` : ''; };
     const isNew = (id) => (s.drawn && !s.rendered.has(id) ? ' lvp-new' : '');
 
     const comment = (r) => {
       const u = user(r), c = me(), mine = c && r.user_id === c.id, canDel = mine || (c && c.role === 'admin'), liked = s.mine.has(r.id), lc = s.cnt[r.id] || 0;
-      return `<div class="lvk${isNew(r.id)}"><div class="lvp-a">${ulink(u, av(u, 28))}</div><div class="lvp-b"><div class="lvp-t">${ulink(u, `<b>${nameOf(u)}</b>`)}${flair(u)}<span class="mu">@${E(u.username || 'fan')} \u00b7 ${ago(r.created_at)}</span>${canDel ? `<button type="button" class="lvp-del" data-del="${r.id}" aria-label="Delete">\u00d7</button>` : ''}</div><div class="lvp-x">${E(r.body)}</div><div class="lvp-act"><button type="button" class="${liked ? 'on' : ''}" data-lk="${r.id}" aria-label="Like">${ICO_LK(liked)}<span>${lc || ''}</span></button></div></div></div>`;
+      return `<div class="lvk${isNew(r.id)}"><div class="lvp-a">${ulink(u, av(u, 28))}</div><div class="lvp-b"><div class="lvp-t">${ulink(u, `<b>${nameOf(u)}</b>`)}${flair(u)}<span class="mu">@${E(u.username || 'fan')} \u00b7 ${ago(r.created_at)}</span>${canDel ? `<button type="button" class="lvp-del" data-del="${r.id}" aria-label="Delete">\u00d7</button>` : ''}</div><div class="lvp-x">${E(r.body)}</div><div class="lvp-act"><button type="button" class="${liked ? 'on' : ''}" data-lk="${r.id}" aria-label="Like">${ICO_LK(liked)}<span>${lc || ''}</span></button>${repBtn(r)}</div></div></div>`;
     };
 
     const post = (r) => {
@@ -130,7 +183,7 @@
       const liked = s.mine.has(r.id), lc = s.cnt[r.id] || 0, expanded = s.open.has(r.id), hide = !expanded && kids.length > 3 ? kids.length - 3 : 0;
       const shown = hide ? kids.slice(-3) : kids;
       const cm = kids.length || c ? `<div class="lvp-cm">${hide ? `<button type="button" class="lvp-more" data-ex="${r.id}">View all ${kids.length} comments</button>` : ''}${shown.map(comment).join('')}${c ? `<div class="lvp-rc">${av(c, 26)}<input type="text" maxlength="280" placeholder="Write a comment\u2026" data-ri="${r.id}" value="${E(s.rd[r.id] || '')}" enterkeyhint="send"><button type="button" data-rs="${r.id}">Post</button></div>` : ''}</div>` : '';
-      return `<article class="lvp${isNew(r.id)}"><div class="lvp-a">${ulink(u, av(u, 38))}</div><div class="lvp-b"><div class="lvp-t">${ulink(u, `<b>${nameOf(u)}</b>`)}${flair(u)}<span class="mu">@${E(u.username || 'fan')} \u00b7 ${ago(r.created_at)}</span>${canDel ? `<button type="button" class="lvp-del" data-del="${r.id}" aria-label="Delete">\u00d7</button>` : ''}</div><div class="lvp-x">${E(r.body)}</div><div class="lvp-act"><button type="button" data-rp="${r.id}" aria-label="Comment">${ICO_RP}<span>${kids.length || ''}</span></button><button type="button" class="${liked ? 'on' : ''}" data-lk="${r.id}" aria-label="Like">${ICO_LK(liked)}<span>${lc || ''}</span></button></div>${cm}</div></article>`;
+      return `<article class="lvp${isNew(r.id)}"><div class="lvp-a">${ulink(u, av(u, 38))}</div><div class="lvp-b"><div class="lvp-t">${ulink(u, `<b>${nameOf(u)}</b>`)}${flair(u)}<span class="mu">@${E(u.username || 'fan')} \u00b7 ${ago(r.created_at)}</span>${canDel ? `<button type="button" class="lvp-del" data-del="${r.id}" aria-label="Delete">\u00d7</button>` : ''}</div><div class="lvp-x">${E(r.body)}</div><div class="lvp-act"><button type="button" data-cm="${r.id}" aria-label="Comment">${ICO_RP}<span>${kids.length || ''}</span></button><button type="button" class="${liked ? 'on' : ''}" data-lk="${r.id}" aria-label="Like">${ICO_LK(liked)}<span>${lc || ''}</span></button>${repBtn(r)}</div>${cm}</div></article>`;
     };
 
     const render = (force) => {
@@ -221,12 +274,27 @@
       if (r.error) { set(had); render(1); say('Couldn\u2019t update like'); } else ping();
     }
 
+    function report(pid) {
+      const c = me(), d = db(), row = s.rows.find((x) => x.id === pid);
+      if (!c) return say('Sign in to report');
+      if (!d || !row || typeof modal !== 'function') return;
+      const m2 = modal(`<h3>Report this ${row.parent_id ? 'comment' : 'post'}</h3><p class="mu" style="margin:6px 0 0">${E(row.body.slice(0, 120))}</p><textarea class="lvr-t" rows="3" maxlength="200" placeholder="What's wrong with it?"></textarea><button class="pri" style="margin-top:10px" data-go>Send report</button>`);
+      m2.querySelector('[data-go]').onclick = async () => {
+        const why = m2.querySelector('textarea').value.trim();
+        const reason = ('[Live feed ' + g.id + '] "' + row.body.slice(0, 120) + '"' + (why ? ' - ' + why : '')).slice(0, 400);
+        const r = await d.from('reports').insert({ reporter: c.id, target_type: 'user', target_id: row.user_id, reason });
+        if (r.error) return say('Could not report: ' + r.error.message);
+        m2.remove(); say('Report sent. Thanks!');
+      };
+    }
+
     n.onclick = async (e) => {
       const t = e.target, q = (x) => t.closest(x); let b;
       if ((b = q('[data-pill]'))) { s.rows.forEach((x) => { if (!x.parent_id) s.seen.add(x.id); }); s.pend = 0; render(1); list.scrollTop = 0; }
+      else if ((b = q('[data-rep]'))) report(b.dataset.rep);
       else if ((b = q('[data-lk]'))) like(b.dataset.lk);
       else if ((b = q('[data-ex]'))) { s.open.add(b.dataset.ex); render(1); }
-      else if ((b = q('[data-rp]'))) { const id = b.dataset.rp; s.open.add(id); render(1); const i = list.querySelector(`[data-ri="${id}"]`); if (i) i.focus(); else if (!me()) say('Sign in to comment'); }
+      else if ((b = q('[data-cm]'))) { const id = b.dataset.cm; s.open.add(id); render(1); const i = list.querySelector(`[data-ri="${id}"]`); if (i) i.focus(); else if (!me()) say('Sign in to comment'); }
       else if ((b = q('[data-rs]'))) { const id = b.dataset.rs, i = list.querySelector(`[data-ri="${id}"]`), v = i && i.value.trim(); if (v) { s.rd[id] = ''; i.value = ''; if (!(await send(v, id))) { s.rd[id] = v; render(1); } } }
       else if ((b = q('[data-del]'))) { const d = db(); if (!d) return; const id = b.dataset.del; s.rows = s.rows.filter((x) => x.id !== id && x.parent_id !== id); render(1); const r = await d.from('live_posts').delete().eq('id', id); if (r.error) say('Couldn\u2019t delete that'); else ping(); load(); }
     };
@@ -252,7 +320,16 @@
 
   // ---------- hooks into livebox.js / app.js ----------
   const oHtml = window.lvHtml, oStart = window.startLive, oSit = window.sitLine;
-  window.lvHtml = (g) => (oHtml ? oHtml(g) : '') + (live(g) ? `<div class="lvc-slot" data-lvc="${E(g.id)}"></div>` : '');
-  window.startLive = (g, m) => { if (oStart) oStart(g, m); if (live(g)) { track(g); initFeed(g, m); } };
-  window.sitLine = (g) => (oSit ? oSit(g) : '') + (live(g) ? badge(g) : '');
+  const canOverlay = (g) => g && (g.st === 'live' || g.st === 'up') && g.sp !== 'UFC' && g.sp !== 'PFL' && /^[A-Z0-9]+:\d{3,}$/.test(String(g.id));
+  const ovBtn = (g) => (canOverlay(g) ? `<a class="lvo-btn" href="/overlay.html?setup=${encodeURIComponent(g.id)}" target="_blank" rel="noopener">${ICO_OV}<span>Get stream overlay</span></a>` : '');
+  window.lvHtml = (g) => (oHtml ? oHtml(g) : '')
+    + (live(g) ? `<div class="lvc-slot" data-lvc="${E(g.id)}"></div>` : '')
+    + (g && g.st === 'final' ? `<div class="lvw-tot">${V[g.id] > 0 ? badge(g) : `<div class="vw" data-vw="${E(g.id)}" data-k="total" title="Total views">${EYE}<span>\u2013</span></div>`}</div>` : '')
+    + ovBtn(g);
+  window.startLive = (g, m) => {
+    if (oStart) oStart(g, m);
+    if (live(g)) { track(g); watch(g, m); initFeed(g, m); }
+    else if (g && g.st === 'final') pullCounts(true);
+  };
+  window.sitLine = (g) => (oSit ? oSit(g) : '') + badge(g);
 })();
