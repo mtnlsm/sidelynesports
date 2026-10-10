@@ -58,11 +58,12 @@ exports.handler = async (ev) => {
     const r = await fetch(`${URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { ...hdr(ANON), 'content-type': 'application/json' },
-      body: JSON.stringify({ email: usr.email, password: pw }),
+      body: JSON.stringify({ email: usr.email, password: pw, gotrue_meta_security: { captcha_token: String(b.captchaToken || '') || undefined } }),
     });
     const j = (await readJson(r)) || {};
     if (!r.ok) {
       const msg = String(j.error_code || j.msg || j.error_description || j.error || '');
+      if (/captcha/i.test(msg)) return out(400, { error: 'The human check failed. Wait a moment and tap again, or refresh the page.' });
       if (/confirm/i.test(msg)) return out(401, { error: 'Please confirm your email first, then log in.' });
       if (r.status === 400 || r.status === 401 || /invalid_credentials|invalid login/i.test(msg)) return bad();
       console.error('login: token request failed', r.status, j);
