@@ -5,6 +5,7 @@ import gameDetail from './functions/game-detail.js';
 import mma from './functions/mma.js';
 import fighter from './functions/fighter.js';
 import team from './functions/team.js';
+import stats from './functions/stats.js';
 import props from './functions/props.js';
 import login from './functions/login.js';
 import config from './functions/config.js';
@@ -16,7 +17,7 @@ import propsCron from './functions/props-cron.js';
 import propsSettleCron from './functions/props-settle-cron.js';
 import settleGamesCron from './functions/settle-games-cron.js';
 
-const FN = { 'sports-data': sportsData, 'game-detail': gameDetail, mma, fighter, team, props, login, config, settle, 'settle-games': settleGames, 'bots-tick': botsTick };
+const FN = { 'sports-data': sportsData, 'game-detail': gameDetail, mma, fighter, team, stats, props, login, config, settle, 'settle-games': settleGames, 'bots-tick': botsTick };
 const CRON = { '*/5 * * * *': settleGamesCron, '*/15 * * * *': propsCron, '*/10 * * * *': propsSettleCron };
 
 // Cloudflare passes secrets/variables in `env`; the functions read process.env, so copy them across (a no-op when nodejs_compat already did it).
