@@ -378,3 +378,27 @@ html:not(#_) .modal>.glass:has(.sl-wrap){width:min(640px,100%)}
 html:not(#_) .modal>.glass:has(.lvd){width:min(760px,100%);max-height:92vh}
 html:not(#_) .cz-fl{top:auto;bottom:16px;right:16px;font-size:30px;gap:4px;opacity:.6}
 html:not(#_) .cz-hero{padding-bottom:22px}
+
+/* ===== logo versions (Settings > Appearance > App logo): classic follows the theme color, dark + inverted are fixed ===== */
+html[data-logo="dark"] .logo .lg-bg{fill:#0c100e;stroke:#2a3b31;stroke-width:2}
+html[data-logo="dark"] .logo .lg-s{stroke:#2fc77a}
+html[data-logo="inverted"] .logo .lg-bg{fill:#fff;stroke:#d5dbd7;stroke-width:2}
+html[data-logo="inverted"] .logo .lg-s{stroke:#0b7a43}
+.ss-logos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ss-logos button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px 10px;border-radius:12px;background:var(--sf2);border:1.5px solid transparent;font:600 13px/1 var(--fb);font-style:normal;text-transform:none;letter-spacing:0;color:var(--tx)}
+.ss-logos button.on{border-color:var(--ab);color:var(--ab)}
+.ss-dl{align-self:flex-start;padding:4px 0;font:600 13px/1.2 var(--fb);color:var(--ab);text-decoration:none}
+
+/* ===== spacing fixes ===== */
+/* profile: level card sat flush against the followers row, and its progress track was the same color as the card (looked like a random gap) */
+html:not(#_) .pp-lv{margin-top:12px}
+html:not(#_) .pp-lv .bar,html:not(#_) .ps-lv .bar,html:not(#_) .pf-lv .bar{background:color-mix(in srgb,var(--tx) 14%,transparent)}
+/* section headings were pushed 4px right of the cards and text under them */
+html:not(#_) .page h2{margin-left:0!important;margin-right:0!important}
+/* discover: search field was a bordered box inside a bordered card (narrow, double outline) */
+html:not(#_) .card:has(>#gq){padding:0!important;background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+html:not(#_) #gq{margin:0}
+/* settings: rows inherited a pill radius (curved line between Username and Password) and the first heading touched the title */
+html:not(#_) button.ss-row:not(#_){border-radius:0}
+html:not(#_) .ss-logos button:not(#_){border-radius:12px;font:600 13px/1 var(--fb)}
+html:not(#_) #stg>.ss-h:first-child{margin-top:14px}
