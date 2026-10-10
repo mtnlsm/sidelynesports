@@ -23,7 +23,7 @@ const THEMES={
  racing:{name:'Turbo Racer',a:'#ef4444',b:'#1f2937',root:370,s:[['🛞','Tire'],['⛽','Fuel'],['🏁','Flag'],['🏎️','Race car'],['🏆','Trophy'],['🏍️','Superbike']],sc:{e:'🚦',n:'Green Light',p:'Green Lights'},bonus:{name:'CHECKERED FLAG',unit:'Lap',m:[1,1,2,2,2,4],r:[3,3,3,3,3,3],d:'6 laps and the pace keeps rising: ×1, ×1, three at ×2, and the final lap at ×4.'}},
  olympus:{name:'Gods of Olympus',a:'#3b82f6',b:'#1e3a8a',root:196,s:[['🍇','Grapes'],['🏺','Amphora'],['🏛️','Temple'],['🦅','Eagle'],['🔱','Trident'],['⚡','Zeus']],sc:{e:'🌩️',n:'Storm Cloud',p:'Storm Clouds'},bonus:{name:'THUNDER OF ZEUS',unit:'Bolt',m:[2,2,20],r:[3,3,3],d:'3 bolts from the sky. Two warm-up strikes at ×2, then Zeus hurls the final thunderbolt and it pays ×20. Rare to trigger, huge when it lands.'}},
  heist:{name:'Diamond Heist',a:'#0d9488',b:'#042f2e',root:185,s:[['🔦','Flashlight'],['🔑','Key'],['🕶️','Shades'],['🚗','Getaway car'],['💎','Diamond'],['🏦','Vault']],sc:{e:'🚨',n:'Alarm',p:'Alarms'},bonus:{name:'VAULT CRACK',unit:'Safe',m:[2,2,7],r:[3,3,6],open:'THE VAULT DOOR BLASTS OPEN',d:'3 safes. Two quick cracks at ×2, then the vault door blasts open to 6 rows deep and the last safe pays ×7 on both sets of paylines.'}},
- pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'💎',n:'Pinball Diamond',p:'Pinball Diamonds'},bonus:{name:'PINBALL BONUS',unit:'Shot',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'A diamond on the right reel launches the pinball bonus. Bets of 100+ chips get 2 shots and 1,000+ chips get 5 shots.'}}};
+ pinball:{name:'OG Pinball',a:'#e11d48',b:'#312e81',root:220,s:[['🔴','Pop bumper'],['🎯','Drop target'],['🔔','Bell'],['⭐','Rollover star'],['🏆','High score'],['🎱','Steel ball']],sc:{e:'💎',n:'Pinball Diamond',p:'Pinball Diamonds'},bonus:{name:'PINBALL BONUS',unit:'Shot',m:[1,1,1,3,6],r:[3,3,3,3,3],d:'A diamond on the right reel launches the pinball bonus: pull the plunger and shoot the ball into the pockets or the bonus hole. Bets of 100+ chips get 2 shots and 1,000+ chips get 5 shots.'}}};
 /* SYMBOL ART: every symbol is a glossy tile in the machine's colors with a glyph on it (higher tiers get a gold rim). The bonus scatter is a gold starburst medallion so it is easy to spot. All inline SVG, no image files. */
 const tile=(e,i,z)=>{const rim=i>=4?'#ffd86b':'rgba(255,255,255,.35)',id='slt'+theme+i;return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${TH().a}"/><stop offset="1" style="stop-color:${TH().b}"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" fill="url(#${id})" stroke="${rim}" stroke-width="${i>=4?2:1.2}"/><path d="M6 12Q6 5 14 5H26Q34 5 34 12Q20 17 6 12Z" fill="rgba(255,255,255,.22)"/>${e==='7️⃣'?`<text x="20" y="29" text-anchor="middle" font-size="26" font-weight="900" font-family="Georgia,'Times New Roman',serif" fill="#ef233c" stroke="#fff" stroke-width="1.4" paint-order="stroke">7</text>`:`<text x="20" y="27.500" text-anchor="middle" font-size="21" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text>`}</svg>`};
 const medal=(e,z)=>{const pts=[];for(let k=0;k<24;k++){const r=k%2?13.500:16,a=k*Math.PI/12;pts.push((16+r*Math.sin(a)).toFixed(1)+','+(16-r*Math.cos(a)).toFixed(1))}return `<svg width="${z}" height="${z}" viewBox="0 0 32 32" aria-hidden="true"><defs><radialGradient id="slmd" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#f5c542"/><stop offset="1" stop-color="#b8860b"/></radialGradient></defs><polygon points="${pts.join(' ')}" fill="url(#slmd)" stroke="#8a6508" stroke-width=".6"/><circle cx="16" cy="16" r="10.500" fill="#2a1b05" stroke="#ffe680" stroke-width="1"/><text x="16" y="21.500" text-anchor="middle" font-size="14" font-family="'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">${e}</text></svg>`};
@@ -40,7 +40,7 @@ const PLINES=[[0,0,0]],PNAME=['Payline'],PK=1.61;
 let useP=false;
 const nrNow=()=>theme==='pinball'?3:5,baseRows=()=>theme==='pinball'?1:3;
 const lineRow=(l,c)=>useP?PLINES[l%PLINES.length][c]:LINES[l%9][c]+(l>=9?3:0),lname=l=>useP?PNAME[l%PNAME.length]:LNAME[l%9]+(l>=9?' (lower reels)':'');
-const SZ=()=>{try{return matchMedia('(min-width:900px)').matches?44:36}catch(e){return 36}};
+const SZ=()=>{try{if(theme==='pinball')return Math.max(40,Math.min(70,Math.floor(((window.innerWidth||375)-132)/3*.62)));return matchMedia('(min-width:900px)').matches?44:36}catch(e){return 36}};
 const sym=(k,z=SZ())=>k==='S'?medal(TH().sc.e,Math.round(z*1.32)):tile(TH().s[SYM.indexOf(k)][0],SYM.indexOf(k),Math.round(z*1.1));
 const cell=k=>`<div class="sl-c" data-k="${k}">${sym(k)}</div>`;
 const rnd=()=>SYM[Math.floor(Math.random()*SYM.length)];
@@ -311,7 +311,7 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-wrap[data-th="pinball"] .sl-rw{display:flex;justify-content:center;align-items:stretch;gap:8px}
 .sl-wrap[data-th="pinball"] .sl-rw .sl-reels{flex:0 1 auto;margin:0}
 .sl-wrap .sl-rw.pb>.sl-reels,.sl-wrap .sl-rw.pb>.sl-lev{display:none}
-.sl-pb{width:100%;max-width:300px;margin:0 auto}.sl-pb svg{display:block}
+.sl-pb{width:100%;max-width:360px;margin:0 auto}.sl-pb svg{display:block}
 .sl-wrap[data-th="pinball"] .sl-lev{display:block;position:relative;flex:none;width:34px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .sl-lev-groove{position:absolute;left:12px;right:12px;top:0;bottom:6px;border-radius:99px;background:linear-gradient(90deg,#0b0b14,#2a2a3c 50%,#0b0b14);box-shadow:inset 0 0 4px #000,0 0 0 1px rgba(255,255,255,.18)}
 .sl-lev-arm{position:absolute;left:50%;width:8px;margin-left:-4px;top:18px;bottom:14px;border-radius:4px;background:linear-gradient(90deg,#8b93a1,#f1f5f9 45%,#6b7280);box-shadow:0 0 2px rgba(0,0,0,.6)}
@@ -321,9 +321,117 @@ function slCss(){if(document.getElementById('slx-css'))return;const st=document.
 .sl-wrap[data-th="pinball"] .sl-reels{background:radial-gradient(circle at 15% 20%,rgba(244,63,94,.35),transparent 34%),radial-gradient(circle at 85% 80%,rgba(99,102,241,.4),transparent 38%),repeating-linear-gradient(45deg,#1e1b4b 0 10px,#241f5c 10px 20px);border:3px solid #cbd5e1;border-radius:20px;box-shadow:0 0 0 2px #1e1b4b,0 0 18px rgba(244,63,94,.35),inset 0 2px 12px rgba(0,0,0,.55)}
 .sl-wrap[data-th="pinball"] .sl-reel{background:rgba(10,8,30,.55);border-color:rgba(203,213,225,.45);height:var(--slh,56px)}
 .sl-wrap[data-th="pinball"].fs .sl-reels{box-shadow:0 0 0 2px var(--sla),0 0 22px color-mix(in srgb,var(--sla) 55%,transparent),inset 0 2px 10px rgba(0,0,0,.4)}
-@media(max-width:899px){.sl-wrap[data-th="pinball"]{--slh:50px}}
+
+.sl-wrap[data-th=\"pinball\"]{--slh:min(112px,calc((100vw - 132px)/3))}
+.sl-wrap[data-th=\"pinball\"] .sl-reels{padding:14px 12px;gap:8px;position:relative}
+.sl-wrap[data-th=\"pinball\"] .sl-reel{border-width:2px;border-radius:12px;background:linear-gradient(180deg,#0a0820,#1d1850 50%,#0a0820)}
+.sl-wrap[data-th=\"pinball\"] .sl-reel::after{background:linear-gradient(180deg,rgba(0,0,0,.6),transparent 30%,transparent 70%,rgba(0,0,0,.6)),linear-gradient(90deg,rgba(255,255,255,.12),transparent 25%,transparent 75%,rgba(255,255,255,.1))}
+.sl-wrap[data-th=\"pinball\"] .sl-reel:last-child{box-shadow:inset 0 0 0 2px rgba(251,191,36,.7),0 0 12px rgba(251,191,36,.35)}
+.sl-wrap[data-th=\"pinball\"] .sl-reels::before,.sl-wrap[data-th=\"pinball\"] .sl-reels::after{content:\"\";position:absolute;top:50%;margin-top:-8px;border-top:8px solid transparent;border-bottom:8px solid transparent;z-index:4;pointer-events:none;filter:drop-shadow(0 0 4px #f43f5e)}
+.sl-wrap[data-th=\"pinball\"] .sl-reels::before{left:1px;border-left:9px solid #f43f5e}
+.sl-wrap[data-th=\"pinball\"] .sl-reels::after{right:1px;border-right:9px solid #f43f5e}
+.sl-pb svg{max-height:68vh}
+.sl-wrap:has(.sl-rw.pb) .sl-th,.sl-wrap:has(.sl-rw.pb) .sl-bal{display:none}
+.sl-pbbp{transform-box:fill-box;transform-origin:center}
+.sl-pbbp.hit{animation:pbhit .38s ease-out}
+@keyframes pbhit{0%{transform:scale(1)}30%{transform:scale(1.2);filter:brightness(1.9) drop-shadow(0 0 8px #fff)}100%{transform:scale(1)}}
+@keyframes pbblink{50%{filter:brightness(2.2) drop-shadow(0 0 6px #fff)}}
+.sl-pbrl.on circle{fill:#fde047;stroke:#fff;filter:drop-shadow(0 0 5px #fde047)}
+.sl-pbpk.lit rect{fill:#e11d48;opacity:1;stroke:#fff}.sl-pbpk.lit text{fill:#fff}
+.sl-pbch.lit rect{fill:#b45309;stroke:#fff}.sl-pbch.lit text{fill:#fff}
+.sl-pbpk.hit,.sl-pbch.hit,#pbsc.hit{animation:pbblink .25s 3}
+.sl-pbring{animation:pbring 1.3s ease-in-out infinite}@keyframes pbring{50%{opacity:.3}}
+.sl-pbgo{display:block;width:100%;margin-top:8px;padding:15px 12px;border-radius:14px;border:2px solid #cbd5e1;background:#1e1b4b;color:#fff;font:900 14px var(--fd,inherit);letter-spacing:.08em;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;position:sticky;bottom:0;z-index:6;box-shadow:0 -6px 14px rgba(0,0,0,.25)}
+.sl-pbgo i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#f43f5e,#f59e0b);opacity:.9}
+.sl-pbgo span{position:relative}.sl-pbgo:disabled{opacity:.6}
 .sl-spc{color:var(--mu);font-weight:700;font-size:12px}`;
  document.head.appendChild(st)}
+
+/* ---- OG Pinball bonus physics (headless). The server picks where each ball ends; we search for a physically
+   simulated shot that really ends there, then replay it. ---- */
+const PB={W:360,H:612,C:[180,185],R:160,BR:8,LX:20,RX:340,LANE:316,G:640,DT:1/240,
+ FL:505,PT:440,PCW:296/5,
+ BUMP:[{x:104,y:238,r:19},{x:182,y:214,r:19},{x:246,y:270,r:19}],
+ PEGS:[[58,318],[128,330],[198,312],[238,326],[92,380],[165,392],[236,388]],
+ SAUCER:{x:170,y:352,rc:12},
+ ORDER:[0,1,3,2,4],
+ SEG:[[20,258,84,304],[316,318,262,364]]};
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* power 0..1. want = {kind:'u',pos:0..4} or {kind:'c'} or null (just simulate). steer = {k} optional gentle homing. */
+function pbRun(power,seed,want,steer){
+ const rnd=mulberry(seed),P=PB,r=P.BR,G=P.G,dt=P.DT;
+ const v0=(832+power*60)*(1+(rnd()-.5)*.03);
+ let x=329,y=468,vx=(rnd()-.5)*10,vy=-v0;
+ const xs=[x],ys=[y],ev=[];let step=0,res=null,rest=0,slow=0;
+ const tx=want?(want.kind==='c'?P.SAUCER.x:20+P.PCW*(want.pos+.5)):0;
+ const maxSteps=Math.round(26/dt);
+ const segs=[]; // vertical dividers
+ for(let k=1;k<5;k++)segs.push([20+P.PCW*k,P.PT,P.FL]);
+ const posts=[];for(let k=1;k<5;k++)posts.push([20+P.PCW*k,P.PT,3.5]);
+ while(step<maxSteps){
+  step++;
+  vy+=G*dt;
+  if(steer&&y>260&&y<430&&vy>0){vx+=steer.k*(tx-x)*dt}
+  x+=vx*dt;y+=vy*dt;
+  // arc (top)
+  if(y<P.C[1]){const dx=x-P.C[0],dy=y-P.C[1],d=Math.hypot(dx,dy),lim=P.R-r;
+   if(d>lim){const nx=dx/d,ny=dy/d;x=P.C[0]+nx*lim;y=P.C[1]+ny*lim;const vn=vx*nx+vy*ny;if(vn>0){vx-=(1+.18)*vn*nx;vy-=(1+.18)*vn*ny;if(vn>140)ev.push([step,'w',0,Math.min(1,vn/500)])}}}
+  else{
+   // left wall / right outer wall
+   if(x<P.LX+r){x=P.LX+r;if(vx<0){if(-vx>120)ev.push([step,'w',0,Math.min(1,-vx/500)]);vx=-vx*.3}}
+   if(x>P.RX-r){x=P.RX-r;if(vx>0){vx=-vx*.3}}
+  }
+  // lane inner wall (x=316, from y=205 down to 500): ball in lane or in field
+  if(y>200){
+   if(x>P.LANE-2&&x<P.LANE+2+r+2&&x>P.LANE){ // right side of wall
+    if(x<P.LANE+2+r){x=P.LANE+2+r;if(vx<0)vx=-vx*.2}}
+   else if(x<=P.LANE&&x>P.LANE-2-r){ // left side of wall
+    if(x>P.LANE-2-r){x=P.LANE-2-r;if(vx>0)vx=-vx*.3}}
+  }
+  // top cap of lane wall
+  {const cx=P.LANE,cy=205,dx=x-cx,dy=y-cy,d=Math.hypot(dx,dy);if(d<r+2&&d>0){const nx=dx/d,ny=dy/d;x=cx+nx*(r+2);y=cy+ny*(r+2);const vn=vx*nx+vy*ny;if(vn<0){vx-=1.3*vn*nx;vy-=1.3*vn*ny}}}
+  // one-way gate at the top of the shooter lane: a ball coming back round the arc is turned away
+  if(x>304&&y<205&&y>90&&vy>0&&vx>-1e9){x=304;vx=-Math.abs(vx)*.5-40;vy*=.7;ev.push([step,'g',0,.5])}
+  // pop bumpers
+  for(let i=0;i<P.BUMP.length;i++){const b=P.BUMP[i],dx=x-b.x,dy=y-b.y,d=Math.hypot(dx,dy),L=b.r+r;
+   if(d<L&&d>0){const nx=dx/d,ny=dy/d;x=b.x+nx*L;y=b.y+ny*L;const vn=vx*nx+vy*ny;if(vn<0){vx-=2*vn*nx;vy-=2*vn*ny}
+    const sp=Math.hypot(vx,vy),want2=Math.max(sp*1.02,420+rnd()*90);vx+=nx*(want2-Math.max(0,vn))*.9;vy+=ny*(want2-Math.max(0,vn))*.9;
+    ev.push([step,'b',i,1])}}
+  // slanted rubber guides on the side walls
+  for(const g of P.SEG){const ax=g[0],ay=g[1],bx=g[2],by=g[3],ex=bx-ax,ey=by-ay,l2=ex*ex+ey*ey;let t=((x-ax)*ex+(y-ay)*ey)/l2;t=Math.max(0,Math.min(1,t));const cx=ax+ex*t,cy=ay+ey*t,dx=x-cx,dy=y-cy,d=Math.hypot(dx,dy),L=r+2.5;
+   if(d<L&&d>0){const nx=dx/d,ny=dy/d;x=cx+nx*L;y=cy+ny*L;const vn=vx*nx+vy*ny;if(vn<0){vx-=(1+.5)*vn*nx;vy-=(1+.5)*vn*ny;if(vn<-90)ev.push([step,'g',0,Math.min(1,-vn/450)])}}}
+  // pegs
+  for(let i=0;i<P.PEGS.length;i++){const p=P.PEGS[i],dx=x-p[0],dy=y-p[1],d=Math.hypot(dx,dy),L=5+r;
+   if(d<L&&d>0){const nx=dx/d,ny=dy/d;x=p[0]+nx*L;y=p[1]+ny*L;const vn=vx*nx+vy*ny;if(vn<0){vx-=(1+.55)*vn*nx;vy-=(1+.55)*vn*ny;ev.push([step,'p',i,Math.min(1,-vn/400)])}}}
+  // divider posts (round tops) & walls
+  for(const q of posts){const dx=x-q[0],dy=y-q[1],d=Math.hypot(dx,dy),L=q[2]+r;
+   if(d<L&&d>0){const nx=dx/d,ny=dy/d;x=q[0]+nx*L;y=q[1]+ny*L;const vn=vx*nx+vy*ny;if(vn<0){vx-=(1+.4)*vn*nx;vy-=(1+.4)*vn*ny;ev.push([step,'p',9,Math.min(1,-vn/400)])}}}
+  for(const s of segs){if(y>s[1]&&y<s[2]){const dx=x-s[0];if(Math.abs(dx)<2+r){const sg=dx>=0?1:-1;x=s[0]+sg*(2+r);if(vx*sg<0)vx=-vx*.35}}}
+  // pocket floor
+  if(y>P.FL-r&&x<P.LANE){y=P.FL-r;if(vy>0){if(vy>90)ev.push([step,'f',0,Math.min(1,vy/500)]);vy=-vy*.32;vx*=.85}}
+  // lane floor / plunger rest
+  if(x>P.LANE&&y>470){y=470;if(vy>0)vy=-vy*.1}
+  // saucer capture
+  const S=P.SAUCER;if(Math.hypot(x-S.x,y-S.y)<S.rc&&y<P.PT){res={kind:'c',idx:0};xs.push(x);ys.push(y);ev.push([step,'s',0,1]);break}
+  // anti-stall nudge
+  const sp=Math.hypot(vx,vy);if(sp<12&&y<P.FL-r-2){slow++;if(slow>60){vx+=(rnd()-.5)*160;vy-=40+rnd()*60;slow=0}}else slow=0;
+  xs.push(x);ys.push(y);
+  // landed in a pocket
+  if(y>P.PT+10&&x<P.LANE&&x>P.LX){const pos=Math.max(0,Math.min(4,Math.floor((x-20)/P.PCW)));res={kind:'u',pos};
+   if(Math.abs(vy)<35&&y>P.FL-r-1.5){rest++;if(rest>50)break}else rest=0;
+   if(step>maxSteps-5)break}
+  // fell out of lane back down: invalid (power too low)
+  if(x>P.LANE&&y>=469&&step>100&&vy>=0){res={kind:'bad'};break}
+ }
+ return {xs,ys,ev,res,steps:step,dt};
+}
+function pbOk(r,want){if(!r.res)return false;if(want.kind==='c')return r.res.kind==='c';return r.res.kind==='u'&&r.res.pos===want.pos}
+/* find a seed whose physics lands the ball in the wanted spot */
+function pbFind(power,want,budgetMs){
+ const t0=Date.now();let n=0,base=(Math.random()*1e9)|0;
+ while(Date.now()-t0<budgetMs&&n<4000){const r=pbRun(power,base+n,want,null);n++;if(pbOk(r,want))return {tr:r,tries:n,steered:false}}
+ for(const k of [25,60,140,300,700]){for(let j=0;j<12;j++){const r=pbRun(power,base+n+j,want,{k});if(pbOk(r,want))return {tr:r,tries:n+j,steered:true}}n+=12}
+ return null}
 
 const shortN=n=>n>=1000?(n/1000)+'K':String(n),QUICK=[10,50,100,500,1000,5000,10000];
 function openSlots(startTheme){
@@ -331,7 +439,7 @@ function openSlots(startTheme){
  if(startTheme&&THEMES[startTheme]&&!busy&&!autoOn){theme=startTheme;try{localStorage.setItem('fx-slt',theme)}catch(e){}}
  rows=baseRows();const start=Array.from({length:nrNow()},()=>Array.from({length:rows},rnd));
  const m=modal(`<div class="sl-wrap" data-th="${theme}"><div class="sl-top"><h3 id="slname"></h3><button class="chip" id="slmu" data-slmute></button></div><div class="sl-th" id="slth"></div><div class="sl-bal"><span class="mu">Balance</span> <b id="slb"></b> <span class="sl-spc">chips</span> <button class="chip sl-cx" data-cx aria-label="Exchange SP and chips">Exchange</button></div><div class="sl-fs" id="slfs" hidden></div><div class="sl-rw"><div class="sl-svp" id="slsv" hidden></div><div class="sl-reels" id="slr">${start.map(c=>`<div class="sl-reel"><div class="sl-strip">${col3(c)}</div></div>`).join('')}</div><div class="sl-lev" id="sllev" role="button" aria-label="Pull the lever to spin"><i class="sl-lev-groove"></i><i class="sl-lev-arm"></i><i class="sl-lev-ball"></i><i class="sl-lev-base"></i></div></div><div class="sl-msg" id="slm"></div><div class="sl-bp"><div class="sl-bl"><span>Bet amount</span><small id="sltot"></small></div><div class="sl-bi"><span class="sl-coin" aria-hidden="true">\ud83e\ude99</span><input id="slbet" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="go" aria-label="Bet amount in chips"><button class="chip" data-slhalf aria-label="Halve bet">½</button><button class="chip" data-sldbl aria-label="Double bet">2×</button><button class="chip" data-slmax>Max</button></div><div class="sl-bq" id="slq"></div></div><button class="pri sl-go" id="slgo"></button><div class="sl-auto" id="slau"></div><button class="chip sl-svre" id="slsvre" data-svre hidden>Out of chips? Try a wager saver</button><button class="chip sl-info" id="slinfo">Paytable &amp; paylines</button><div class="sl-pt" id="slpt" hidden></div><p class="sl-rg"><b>Free play only. Chips and SP have no cash value. Gambling can be addictive. Play responsibly.</b> Need help? Call <a href="tel:18004262537">1-800-GAMBLER</a> (1-800-426-2537) or text 800GAM, 24/7.</p></div>`);
- const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ${P?'on the right reel':'×3 anywhere'}</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div>${P?`<div class="sl-note">Land a ${SCN()} on the right reel to launch the bonus. It costs nothing. You get 1 shot on bets up to 99 chips, 2 shots from 100 chips and 5 shots from 1,000 chips. Each ball lands in a pocket worth ×0.5, ×1, ×2, ×3 or ×1 your bet, or in the bonus chamber. The chamber fills from left to right and pays ×5, ×10, ×20, ×100 and ×200, so the biggest prize needs all 5 balls in the chamber. OG Pinball is 3 reels × 1 row with a single payline: line up all 3 symbols to win, and your whole bet rides on that line. Bigger bets pay back a little better. Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`:`<div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`}<div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
+ const ptHtml=()=>{const P=theme==='pinball';return `<div class="sl-pth">Line pays (× your bet, ${P?'3 in a row':'3 / 4 / 5 in a row from the left'})</div>${Object.keys(PAY).map(k=>`<div class="sl-ptr"><span>${sym(k,22)} ${tn(k)[1]}</span><b>${P?'×'+(PAY[k][0]*PK).toFixed(1):PAY[k].map(x=>'×'+(x/9).toFixed(1)).join(' / ')}</b></div>`).join('')}<div class="sl-ptr"><span>${sym('S',22)} ${SCN()} ${P?'on the right reel':'×3 anywhere'}</span><b>${TH().name} bonus</b></div><div class="sl-pth" style="margin-top:12px">${TH().name} bonus: ${TH().bonus.name}</div>${P?`<div class="sl-note">Land a ${SCN()} on the right reel to launch the bonus. It costs nothing. You get 1 shot on bets up to 99 chips, 2 shots from 100 chips and 5 shots from 1,000 chips. You pull the plunger yourself (hold, then release) and the ball runs round the arch, bounces off the pop bumpers and pegs, and drops into a pocket worth ×0.5, ×1, ×2, ×3 or ×1 your bet, or into the BONUS HOLE, which sends it to the bonus chamber. The chamber fills from left to right and pays ×5, ×10, ×20, ×100 and ×200, so the biggest prize needs all 5 balls in the chamber. How hard you pull never changes what you win. OG Pinball is 3 reels × 1 row with a single payline: line up all 3 symbols to win, and your whole bet rides on that line. Bigger bets pay back a little better. Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`:`<div class="sl-note">3 ${SCP()} anywhere start the bonus, and it costs nothing. ${TH().bonus.d} Free spin multipliers: ${TH().bonus.m.map(x=>'×'+x).join(' ')}.${TH().bonus.r.some(x=>x>3)?' The reels open up to 5 × 6, and the 9 paylines play again on the lower 3 rows (up to 18 lines).':''} Land 3 more ${SCP()} during the bonus for another full round (up to 4 rounds). Every machine has its own bonus. All 9 paylines are always active and each one stakes 1/9 of your bet. Bigger bets pay back a little better (about 88% on tiny bets up to about 96% from 9,000 chips). Bets run from ${fmt(MINBET)} to ${fmt(MAXBET)} chips.</div>`}<div class="sl-pth" style="margin-top:12px">Paylines</div><div class="sl-lines">${(P?PLINES:LINES).map((l,i)=>`<div>${mini(l,P?1:3)}<small>${(P?PNAME:LNAME)[i]}</small></div>`).join('')}</div>`};
  const $m=s=>m.querySelector(s),bal=v=>{$m('#slb').textContent=fmt(v)};
  /* the reel count depends on the machine: OG Pinball has 3 reels, every other machine has 5 */
  const fitReels=n=>{const R=$m('#slr');if(!R)return;R.querySelectorAll('.sl-pl').forEach(e=>e.remove());let k=R.querySelectorAll('.sl-reel').length;while(k>n){R.querySelectorAll('.sl-reel')[--k].remove()}while(k<n){const d=document.createElement('div');d.className='sl-reel';d.innerHTML='<div class="sl-strip">'+col3(Array.from({length:rows},rnd))+'</div>';if(rows!==baseRows())d.style.height=`calc(var(--slh,56px)*${rows})`;R.appendChild(d);k++}};
@@ -441,48 +549,134 @@ function openSlots(startTheme){
   if(m.isConnected)draw()}
 
 
- /* PINBALL BONUS (modeled on IGT Pinball): the server already decided where every ball lands (supabase/Slots-3.sql, slots_pb_play). We shoot each ball up the lane and let it fall into its pocket or the bonus chamber. */
- const PBU=[1,2,0.5,3,1],PBC=[5,10,20,100,200],PBX=[0.5,1,2,3,1];
+  /* PINBALL BONUS (modeled on IGT Pinball). The server decides where every ball ends (supabase/Slots-3.sql, slots_pb_play). For each shot we run a real physics
+    simulation (pbRun: gravity, arc, pop bumpers, pegs, rubber guides, pocket dividers) with a hidden random seed until the simulated ball ends exactly where the server said,
+    then replay that run. You pull the plunger yourself; the pull strength changes the launch, never the prize. */
+ const PBX=[0.5,1,2,3,1],PBC=[5,10,20,100,200];
  async function pinballBonus(r,stake){r0bet=r.bet||1;
-  const wrap=$m('.sl-wrap'),rw=$m('.sl-rw'),msg=$m('#slm'),bar=$m('#slfs'),sh=r.free.shots,N=sh.length,NS='http://www.w3.org/2000/svg';
-  const PX=i=>36+i*52,fx=v=>'×'+(Math.round(v*10)/10);
+  const wrap=$m('.sl-wrap'),rw=$m('.sl-rw'),msg=$m('#slm'),bar=$m('#slfs'),sh=r.free.shots,N=sh.length,P=PB;
+  const fx=v=>'×'+(Math.round(v*10)/10),px=i=>20+P.PCW*(i+.5),posOf=idx=>P.ORDER.indexOf(idx);
   let g='';
-  g+='<rect x="2" y="2" width="296" height="346" rx="22" fill="#1e1b4b" stroke="#cbd5e1" stroke-width="3"/>';
-  g+='<path d="M278 338V70Q278 22 230 20H70Q22 22 22 70V210" fill="none" stroke="rgba(203,213,225,.35)" stroke-width="3"/>';
-  [[70,110],[130,110],[190,110],[100,150],[160,150],[220,150],[70,190],[130,190],[190,190],[250,190]].forEach(p=>{g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="9" fill="#e11d48" stroke="#fff" stroke-width="2"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="#fff" opacity=".7"/>'});
-  PBU.forEach((v,i)=>{g+='<g id="slpu'+i+'"><rect x="'+(PX(i)-23)+'" y="226" width="46" height="34" rx="8" fill="#312e81" stroke="#94a3b8" stroke-width="2"/><text x="'+PX(i)+'" y="249" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">'+fx(v)+'</text></g>'});
-  g+='<text x="150" y="278" text-anchor="middle" font-size="10" font-weight="800" letter-spacing="1.5" fill="#fca5a5">BONUS CHAMBER</text>';
-  PBC.forEach((v,i)=>{g+='<g id="slpc'+i+'"><rect x="'+(PX(i)-23)+'" y="284" width="46" height="40" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="2"/><text x="'+PX(i)+'" y="309" text-anchor="middle" font-size="13" font-weight="800" fill="#fbbf24">'+fx(v)+'</text></g>'});
-  g+='<circle id="slpball" cx="278" cy="326" r="9" fill="url(#slpg)"/>';
-  rw.insertAdjacentHTML('beforeend','<div class="sl-pb" id="slpb"><svg viewBox="0 0 300 350" width="100%" aria-label="Pinball bonus board"><defs><radialGradient id="slpg" cx=".34" cy=".28" r=".9"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#94a3b8"/><stop offset="1" stop-color="#0f172a"/></radialGradient></defs>'+g+'</svg></div>');
+  g+='<defs><radialGradient id="pbg" cx=".34" cy=".28" r=".9"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#b6c0cf"/><stop offset="1" stop-color="#1e293b"/></radialGradient>'
+   +'<linearGradient id="pbf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1646"/><stop offset=".55" stop-color="#241a5e"/><stop offset="1" stop-color="#0f0c2e"/></linearGradient>'
+   +'<radialGradient id="pbb" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fecdd3"/><stop offset=".35" stop-color="#f43f5e"/><stop offset="1" stop-color="#7f1d33"/></radialGradient>'
+   +'<radialGradient id="pbh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000"/><stop offset=".7" stop-color="#05030f"/><stop offset="1" stop-color="#1e1b4b"/></radialGradient>'
+   +'<pattern id="pbs" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="4" cy="5" r="1" fill="#fff" opacity=".35"/><circle cx="17" cy="14" r="1.2" fill="#a5b4fc" opacity=".35"/><circle cx="9" cy="22" r=".8" fill="#fff" opacity=".25"/></pattern>'
+   +'<clipPath id="pbclip"><rect x="2" y="2" width="356" height="608" rx="24"/></clipPath></defs>';
+  g+='<rect x="2" y="2" width="356" height="608" rx="24" fill="#0b0920" stroke="#cbd5e1" stroke-width="3"/>';
+  // playfield: arch-shaped glass
+  g+='<path d="M20 185A160 160 0 0 1 340 185V540H316V505H20Z" fill="url(#pbf)"/><path d="M20 185A160 160 0 0 1 340 185V540H316V505H20Z" fill="url(#pbs)"/>';
+  g+='<text id="pbt1" x="168" y="118" text-anchor="middle" font-size="34" font-weight="900" letter-spacing="3" fill="#f43f5e" opacity=".9" style="paint-order:stroke" stroke="#fff" stroke-width="1.2">PINBALL</text>';
+  g+='<text id="pbt2" x="168" y="140" text-anchor="middle" font-size="11" font-weight="800" letter-spacing="7" fill="#fde68a">BONUS ROUND</text>';
+  g+='<circle cx="168" cy="95" r="0" fill="none"/>';
+  // arc and lane walls
+  g+='<path d="M20 505V185A160 160 0 0 1 340 185V540" fill="none" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/><path d="M20 505V185A160 160 0 0 1 340 185V540" fill="none" stroke="#6366f1" stroke-width="1.4" opacity=".8" transform="translate(0,0)"/>';
+  g+='<path d="M316 205V540" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>';
+  g+='<path d="M334 130l-14-10" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" id="pbgate"/>';
+  // rollover lights that chase along the arc
+  for(let k=0;k<6;k++){const a=(-165+k*30)*Math.PI/180,lx=P.C[0]+146*Math.cos(a),ly=P.C[1]+146*Math.sin(a);g+='<g id="pbr'+k+'" class="sl-pbrl"><circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="5" fill="#3b2a6b" stroke="#a5b4fc" stroke-width="1.3"/></g>'}
+  // side rubber guides
+  P.SEG.forEach(s=>{g+='<line x1="'+s[0]+'" y1="'+s[1]+'" x2="'+s[2]+'" y2="'+s[3]+'" stroke="#be123c" stroke-width="5" stroke-linecap="round"/><line x1="'+s[0]+'" y1="'+s[1]+'" x2="'+s[2]+'" y2="'+s[3]+'" stroke="#fda4af" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>'});
+  // pop bumpers
+  const bc=['#f43f5e','#f59e0b','#22d3ee'];
+  P.BUMP.forEach((b,i)=>{g+='<g id="pbp'+i+'" class="sl-pbbp"><circle cx="'+b.x+'" cy="'+b.y+'" r="'+(b.r+5)+'" fill="'+bc[i]+'" opacity=".2" class="sl-pbglow"/><circle cx="'+b.x+'" cy="'+b.y+'" r="'+(b.r+1)+'" fill="#111827" stroke="'+bc[i]+'" stroke-width="3"/><circle cx="'+b.x+'" cy="'+b.y+'" r="'+(b.r-6)+'" fill="'+bc[i]+'" class="sl-pbcap"/><circle cx="'+(b.x-4)+'" cy="'+(b.y-5)+'" r="4" fill="#fff" opacity=".55"/></g>'});
+  // pegs
+  P.PEGS.forEach(p=>{g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="6.5" fill="#cbd5e1" stroke="#475569" stroke-width="1.5"/><circle cx="'+(p[0]-1.5)+'" cy="'+(p[1]-1.8)+'" r="2" fill="#fff" opacity=".8"/>'});
+  // bonus hole
+  const S=P.SAUCER;g+='<g id="pbsc"><circle cx="'+S.x+'" cy="'+S.y+'" r="20" fill="none" stroke="#fbbf24" stroke-width="3" class="sl-pbring"/><circle cx="'+S.x+'" cy="'+S.y+'" r="16" fill="url(#pbh)" stroke="#fde68a" stroke-width="1.5"/><text x="'+S.x+'" y="'+(S.y-26)+'" text-anchor="middle" font-size="9" font-weight="900" letter-spacing="1.6" fill="#fbbf24">BONUS HOLE</text></g>';
+  // pockets
+  for(let k=1;k<5;k++){const x=20+P.PCW*k;g+='<line x1="'+x+'" y1="'+P.PT+'" x2="'+x+'" y2="'+P.FL+'" stroke="#e2e8f0" stroke-width="4"/><circle cx="'+x+'" cy="'+P.PT+'" r="4.5" fill="#fda4af" stroke="#be123c" stroke-width="1.5"/>'}
+  for(let k=0;k<5;k++){const idx=P.ORDER[k],v=PBX[idx];g+='<g id="pbu'+idx+'" class="sl-pbpk"><rect x="'+(px(k)-P.PCW/2+3)+'" y="'+(P.PT+8)+'" width="'+(P.PCW-6)+'" height="'+(P.FL-P.PT-9)+'" rx="6" fill="'+(v>=3?'#7c2d12':v>=2?'#5b21b6':'#312e81')+'" opacity=".55" stroke="#94a3b8" stroke-width="1.3"/><text x="'+px(k)+'" y="'+(P.PT+34)+'" text-anchor="middle" font-size="17" font-weight="900" fill="'+(v>=3?'#fbbf24':'#fff')+'">'+fx(v)+'</text></g>'}
+  g+='<rect x="20" y="'+P.FL+'" width="296" height="6" fill="#e2e8f0"/>';
+  // bonus chamber (lower section)
+  g+='<text x="168" y="528" text-anchor="middle" font-size="10" font-weight="900" letter-spacing="2.5" fill="#fca5a5">BONUS CHAMBER</text><path d="M168 531v7" stroke="#fbbf24" stroke-width="2"/>';
+  for(let k=0;k<5;k++)g+='<g id="pbc'+k+'" class="sl-pbch"><rect x="'+(px(k)-P.PCW/2+3)+'" y="542" width="'+(P.PCW-6)+'" height="56" rx="8" fill="#0b0b1e" stroke="#fbbf24" stroke-width="2"/><text x="'+px(k)+'" y="'+(k===4?566:566)+'" text-anchor="middle" font-size="'+(PBC[k]>=100?14:15)+'" font-weight="900" fill="#fbbf24">'+fx(PBC[k])+'</text></g>';
+  // shooter lane + plunger
+  g+='<g id="pbpl"><rect x="326" y="478" width="6" height="44" fill="#94a3b8"/><path d="M322 486h14M322 494h14M322 502h14M322 510h14M322 518h14" stroke="#64748b" stroke-width="2.2"/><rect x="321" y="478" width="16" height="6" rx="2" fill="#e2e8f0"/><circle cx="329" cy="530" r="9" fill="#ef4444" stroke="#fecaca" stroke-width="2" id="pbknob" style="cursor:pointer"/></g>';
+  // balls
+  g+='<g id="pbball" transform="translate(329,468)"><g id="pbtr"></g><ellipse cx="3" cy="5" rx="7" ry="5" fill="#000" opacity=".35"/><circle r="8" fill="url(#pbg)"/><circle cx="-2.6" cy="-3" r="2.2" fill="#fff" opacity=".85"/></g>';
+  rw.insertAdjacentHTML('beforeend','<div class="sl-pb" id="slpb"><svg viewBox="0 0 360 612" width="100%" aria-label="Pinball bonus playfield">'+g+'</svg><button class="sl-pbgo" id="slpbgo" type="button"><i id="slpbpw"></i><span id="slpbtx">HOLD TO PULL THE PLUNGER</span></button></div>');
   rw.classList.add('pb');wrap.classList.add('fs');bar.hidden=false;
-  const svg=rw.querySelector('#slpb svg'),ball=svg.querySelector('#slpball'),$s=id=>svg.querySelector(id);
-  let run=0;
+  const svg=rw.querySelector('#slpb svg'),ballG=svg.querySelector('#pbball'),plG=svg.querySelector('#pbpl'),go=rw.querySelector('#slpbgo'),pw=rw.querySelector('#slpbpw'),gtx=rw.querySelector('#slpbtx'),$s=id=>svg.querySelector(id);
+  const ghosts=[];for(let k=0;k<5;k++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r',String(7-k*1.1));c.setAttribute('fill','#e2e8f0');c.setAttribute('opacity','0');$s('#pbtr').appendChild(c);ghosts.push(c)}
+  let run=0,hist=[];
   const head=n=>{bar.innerHTML='<span>'+TH().bonus.unit+' <b>'+n+'</b> / '+N+'</span><span>Bonus win <b>+'+fmt(run)+'</b> chips</span>'};
-  const put=(x,y)=>{ball.setAttribute('cx',x.toFixed(1));ball.setAttribute('cy',y.toFixed(1))};
-  const along=(pts,ms,acc)=>new Promise(res=>{if(calm()||!ms){put(...pts[pts.length-1]);return res()}
+  const put=(x,y)=>{ballG.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+')');hist.unshift([x,y]);if(hist.length>12)hist.pop();ghosts.forEach((c,k)=>{const h=hist[(k+1)*2];if(h){c.setAttribute('cx',(h[0]-x).toFixed(1));c.setAttribute('cy',(h[1]-y).toFixed(1));c.setAttribute('opacity',String(.22-k*.04))}else c.setAttribute('opacity','0')})};
+  const say=(a,b,col)=>{const t1=$s('#pbt1'),t2=$s('#pbt2');if(!t1||!t2)return;t1.textContent=a;t1.setAttribute('font-size',a.length>10?'25':a.length>8?'30':'34');t1.setAttribute('fill',col||'#f43f5e');t2.textContent=b||'';t2.setAttribute('letter-spacing',(b||'').length>18?'1.2':(b||'').length>12?'3':'6')};
+  const clearTrail=()=>{hist=[];ghosts.forEach(c=>c.setAttribute('opacity','0'))};
+  const pull=(p)=>{plG.setAttribute('transform','translate(0,'+(p*38).toFixed(1)+')')};
+  const flash=(el,cls,ms)=>{if(!el)return;el.classList.remove(cls);void el.getBoundingClientRect();el.classList.add(cls);setTimeout(()=>el&&el.classList.remove(cls),ms||450)};
+  // sounds for the playfield
+  const snd={
+   bump:()=>{bell(1250+Math.random()*350,0,.3,.05);tone(520,0,.12,'square',.06,190);nz(0,.03,'bandpass',900,0,3,.18,.001)},
+   peg:s=>{nz(0,.018,'bandpass',2100+Math.random()*900,0,5,.04+.09*s,.001)},
+   wall:s=>{nz(0,.06,'lowpass',900,180,1,.03+.08*s,.002)},
+   guide:s=>{nz(0,.05,'bandpass',500,200,2,.08+.1*s,.001);tone(210,0,.05,'square',.04,120)},
+   floor:s=>{nz(0,.045,'bandpass',700,260,2,.08+.14*s,.001);tone(170,0,.07,'sine',.09,90)},
+   hole:()=>{tone(700,0,.5,'sawtooth',.05,90);for(let k=0;k<5;k++)bell(1500+k*220,.05+k*.07,.4,.04);knock(.4,.18)},
+   charge:p=>{nz(0,.02,'bandpass',500+p*1400,0,4,.1,.001);tone(100+p*180,0,.04,'sawtooth',.02)},
+   shoot:p=>{nz(0,.07,'lowpass',2600,300,1,.3,.001);tone(95,0,.18,'sine',.28,42);nz(.04,.3,'bandpass',500+p*400,2400,1,.06,.05)},
+   light:()=>{bell(1900,0,.12,.025)},land:()=>{knock(0,.18);bell(1568,.02,.4,.05)}};
+  // shoot: hold the button or the knob, release to launch. Returns the pull strength 0..1.
+  const getPower=()=>new Promise(res=>{
+   let t0=0,held=false,done=false,raf=0,lastTick=0,idle,startAt=performance.now();
+   const finish=p=>{if(done)return;done=true;clearTimeout(idle);cancelAnimationFrame(raf);go.removeEventListener('pointerdown',dn);$s('#pbknob').removeEventListener('pointerdown',dn);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);go.disabled=true;pw.style.width='0%';res(p)};
+   const pwr=()=>Math.min(1,(performance.now()-t0)/T(850));
+   const tick=t=>{if(done||!held)return;const p=pwr();pull(p);pw.style.width=(p*100)+'%';if(t-lastTick>75){lastTick=t;snd.charge(p)}raf=requestAnimationFrame(tick)};
+   const dn=e=>{if(done||held)return;if(e&&e.preventDefault)e.preventDefault();held=true;t0=performance.now();clearTimeout(idle);gtx.textContent='RELEASE TO SHOOT';raf=requestAnimationFrame(tick)};
+   const up=()=>{if(done||!held)return;const p=pwr();held=false;pull(0);finish(p)};
+   const kd=e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&!e.target.closest('input,textarea')){e.preventDefault();dn()}},ku=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();up()}};
+   go.disabled=false;gtx.textContent='HOLD TO PULL THE PLUNGER';pw.style.width='0%';
+   go.addEventListener('pointerdown',dn);$s('#pbknob').addEventListener('pointerdown',dn);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
+   const auto=calm()||autoOn;idle=setTimeout(()=>{if(!held){gtx.textContent='SHOOTING…';pull(.8);setTimeout(()=>{pull(0);finish(.8)},T(350))}},auto?T(650):9000)});
+  const along=(pts,ms)=>new Promise(res=>{if(calm()||!ms){put(...pts[pts.length-1]);return res()}
    const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const tot=L[L.length-1],t0=performance.now();
-   const step=t=>{if(!m.isConnected)return res();let p=Math.min(1,(t-t0)/ms);p=acc?p*p:1-(1-p)*(1-p);const d=p*tot;let i=1;while(i<L.length-1&&L[i]<d)i++;const f=(d-L[i-1])/((L[i]-L[i-1])||1);put(pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f);p<1?requestAnimationFrame(step):res()};requestAnimationFrame(step)});
-  const lit=(el,c)=>{const rc=el.querySelector('rect');rc.setAttribute('fill',c);rc.setAttribute('stroke','#fff')};
-  head(1);msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+N+(N>1?' shots':' shot')+' · tap nothing, just watch</small>';
-  await wait(calm()?200:T(600));
+   const step=t=>{if(!m.isConnected)return res();let p=Math.max(0,Math.min(1,(t-t0)/ms));p=p*p;const d=p*tot;let i=1;while(i<L.length-1&&L[i]<d)i++;const f=(d-L[i-1])/((L[i]-L[i-1])||1);put(pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f);p<1?requestAnimationFrame(step):res()};requestAnimationFrame(step)});
+  const lights=[];const lt=[];for(let k=0;k<6;k++){const a=(-165+k*30)*Math.PI/180;lights.push([P.C[0]+146*Math.cos(a),P.C[1]+146*Math.sin(a)])}
+  const replay=(tr)=>new Promise(res=>{
+   const xs=tr.xs,ys=tr.ys,ev=tr.ev,spd=turbo?1.8:1,t0=performance.now();let ei=0;
+   const frame=t=>{if(!m.isConnected)return res(false);const k=Math.max(0,Math.min(xs.length-1,((t-t0)/1000)*(1/tr.dt)*spd)),i=Math.max(0,Math.min(xs.length-2,Math.floor(k))),f=k-i;
+    if(xs.length>1)put(xs[i]+(xs[i+1]-xs[i])*f,ys[i]+(ys[i+1]-ys[i])*f);
+    while(ei<ev.length&&ev[ei][0]<=k){const e=ev[ei++];if(e[1]==='b'){snd.bump();flash($s('#pbp'+e[2]),'hit',380)}else if(e[1]==='p')snd.peg(e[3]);else if(e[1]==='w')snd.wall(e[3]);else if(e[1]==='g')snd.guide(e[3]);else if(e[1]==='f')snd.floor(e[3])}
+    for(let q=0;q<6;q++){if(Math.hypot(xs[i]-lights[q][0],ys[i]-lights[q][1])<15&&!lt[q]){lt[q]=1;snd.light();const el=$s('#pbr'+q);if(el){el.classList.add('on');setTimeout(()=>el.classList.remove('on'),900)}setTimeout(()=>{lt[q]=0},900)}}
+    if(k>=xs.length-1)res(true);else requestAnimationFrame(frame)};requestAnimationFrame(frame)});
+  // find a real simulated shot that ends where the server decided
+  const shoot=(power,q)=>{const want=q.kind==='c'?{kind:'c'}:{kind:'u',pos:posOf(q.idx)};let f=pbFind(power,want,260);
+   if(!f){for(let t=0;t<40&&!f;t++){const s=pbRun(power,(Math.random()*1e9)|0,want,{k:900+t*80});if(pbOk(s,want))f={tr:s}}}
+   return f?f.tr:null};
+  head(1);msg.innerHTML=TH().bonus.name+'!<small class="sl-sub">'+N+(N>1?' shots':' shot')+' · you pull the plunger</small>';say('PINBALL BONUS',N+(N>1?' SHOTS':' SHOT'),'#f43f5e');
+  await wait(calm()?200:T(700));
   for(const q of sh){
    if(!m.isConnected)return false;
-   head(q.n);put(278,326);ball.style.opacity=1;
-   sfx.pull();
-   await along([[278,326],[278,60],[262,28],[200,18],[110,22],[56,44]],T(750),false);
-   const tx=PX(q.idx),ty=q.kind==='c'?304:243,zig=[];let x=56+Math.random()*180;zig.push([x,70]);
-   for(const y of [112,150,190]){x=Math.max(40,Math.min(260,x+(Math.random()*100-50)));zig.push([x,y])}
-   zig.push([tx,q.kind==='c'?264:218],[tx,ty]);
-   await along([[56,44],...zig],T(1500),true);
-   if(!m.isConnected)return false;
+   head(q.n);clearTrail();pull(0);put(329,468);ballG.style.opacity=1;
+   msg.innerHTML='SHOT '+q.n+' OF '+N+'<small class="sl-sub">Hold the plunger, release to shoot</small>';say('SHOT '+q.n+' OF '+N,'HOLD & RELEASE THE PLUNGER');
+   const power=await getPower();if(!m.isConnected)return false;gtx.textContent='BALL IN PLAY…';
+   const tr=shoot(power,q);
+   snd.shoot(power);
+   let landed=true;
+   if(tr){ if(calm()){put(tr.xs[tr.xs.length-1],tr.ys[tr.ys.length-1])} else landed=await replay(tr); }
+   else{ // (never expected) show the ball dropping straight into the chosen spot
+    if(q.kind==='c')await along([[329,468],[329,60],[170,40],[170,330]],T(900));else await along([[329,468],[329,60],[px(posOf(q.idx)),60],[px(posOf(q.idx)),488]],T(1100))}
+   if(!m.isConnected||landed===false)return false;
    run=q.run;head(q.n);
-   const el=q.kind==='c'?$s('#slpc'+q.idx):$s('#slpu'+q.idx);lit(el,q.kind==='c'?'#b45309':'#e11d48');
-   sfx.coin();msg.innerHTML=(q.kind==='c'?'BONUS CHAMBER! ':'')+'+'+fmt(q.pay)+' chips<small class="sl-sub">'+fx(q.mult)+' your bet'+(q.kind==='c'?' · chamber slot '+(q.idx+1)+' of 5':'')+'</small>';
+   if(q.kind==='c'){
+    flash($s('#pbsc'),'hit',700);snd.hole();ballG.style.opacity=0;clearTrail();
+    msg.innerHTML='BONUS HOLE!<small class="sl-sub">the ball drops into the bonus chamber</small>';say('BONUS HOLE!','DROPS INTO THE CHAMBER','#fbbf24');
+    await wait(calm()?150:T(550));if(!m.isConnected)return false;
+    put(168,540);ballG.style.opacity=1;
+    await along([[168,540],[168,566],[px(q.idx),574]],T(calm()?0:700));
+    const el=$s('#pbc'+q.idx);if(el){el.classList.add('lit');flash(el,'hit',700)}
+   }else{
+    const el=$s('#pbu'+q.idx);if(el){el.classList.add('lit');flash(el,'hit',700)}
+   }
+   snd.land();sfx.coin();
+   msg.innerHTML=(q.kind==='c'?'BONUS CHAMBER! ':'')+'+'+fmt(q.pay)+' chips<small class="sl-sub">'+fx(q.mult)+' your bet'+(q.kind==='c'?' · chamber slot '+(q.idx+1)+' of 5':'')+'</small>';
+   say('+'+fmt(q.pay),fx(q.mult)+' YOUR BET'+(q.kind==='c'?' · CHAMBER '+(q.idx+1)+'/5':''),q.kind==='c'?'#fbbf24':'#4ade80');
    bal(S.chips-stake+(r.line_pay||0)+run);
-   await wait(calm()?200:T(900));
+   await wait(calm()?200:T(1100));
    if(!m.isConnected)return false;
-   ball.style.opacity=0;
+   ballG.style.opacity=0;
+   svg.querySelectorAll('.sl-pbpk.lit').forEach(e=>e.classList.remove('lit'));
   }
   await wait(calm()?150:T(500));
   const bd=$m('#slpb');if(bd)bd.remove();rw.classList.remove('pb');
