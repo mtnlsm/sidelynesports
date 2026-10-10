@@ -141,8 +141,21 @@
       const d = db(); if (!d || !alive() || busy) return; busy = 1;
       try {
         const since = new Date(Date.now() - 864e5).toISOString(), c = me();
-        const r = await d.from('live_posts').select('id,user_id,parent_id,body,created_at,profiles(username,display_name,avatar_url,flair,border),live_post_likes(count)').eq('game_id', String(g.id)).gt('created_at', since).order('created_at', { ascending: false }).limit(200);
-        if (r.error) { if (s.first) list.innerHTML = '<div class="lvf-e">The feed isn\u2019t available right now.</div>'; }
+        // Try the full query first, then simpler ones (in case optional profile columns / the likes embed aren't available).
+        const base = 'id,user_id,parent_id,body,created_at', tiers = [
+          base + ',profiles(username,display_name,avatar_url,flair,border),live_post_likes(count)',
+          base + ',profiles(username,display_name,avatar_url),live_post_likes(count)',
+          base + ',profiles(username,display_name,avatar_url)',
+          base];
+        let r = null;
+        for (const cols of tiers) {
+          r = await d.from('live_posts').select(cols).eq('game_id', String(g.id)).gt('created_at', since).order('created_at', { ascending: false }).limit(200);
+          if (!r.error) break;
+        }
+        if (r.error) {
+          console.error('Live feed error:', r.error);
+          if (s.first) { const m = String(r.error.message || r.error.code || ''), missing = /does not exist|schema cache|relation|42P01|PGRST20/i.test(m + ' ' + (r.error.code || '')); list.innerHTML = '<div class="lvf-e">The feed isn\u2019t available right now.<br><small>' + E(missing ? 'Database tables not found. Run supabase/live_chat.sql in the Supabase SQL Editor.' : m.slice(0, 160)) + '</small></div>'; }
+        }
         else if (r.data) {
           s.rows = r.data; s.cnt = {}; r.data.forEach((x) => { s.cnt[x.id] = (x.live_post_likes && x.live_post_likes[0] && Number(x.live_post_likes[0].count)) || 0; });
           if (c) { const lk = await d.from('live_post_likes').select('post_id,live_posts!inner(game_id)').eq('user_id', c.id).eq('live_posts.game_id', String(g.id)); if (!lk.error && lk.data) s.mine = new Set(lk.data.map((x) => x.post_id)); } else s.mine = new Set();
