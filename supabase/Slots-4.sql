@@ -8,6 +8,8 @@
 --      about 92% on tiny bets up to about 98% at 9,000+ chips.
 --   5) HIGH STAKES: OG Pinball needs a bet of at least 500 chips per spin (checked in slots_spin).
 --   public/slots.js must match (PK, PAIR, PBX, PBC, PIN_MIN and the help text).
+--   6) FREE SPINS NEVER PAY 0: a free-spins bonus is re-rolled until its free spins win something. Because that makes every bonus worth more, the
+--      chance of triggering one is cut by slots_bonus_p0 (the old chance that a bonus paid 0), so the payback stays the same. Bonuses are rarer but always pay.
 --   Everything is decided here; public/slots.js only plays the animation.
 
 create or replace function slots_pb_shots(p_bet int) returns int language sql immutable as $$ select 6 $$;   -- <== TUNE: shots per bonus (the same on every bet)
@@ -67,6 +69,31 @@ begin
   return jsonb_build_object('reels',reels,'wins',wins,'pay',least(round(pay)::bigint,1000000000),'scatters',scat);
 end $$;
 
+-- Chance that a free-spins bonus used to pay 0 on each machine (simulated from the reels, rows and retriggers). Used to keep the payback
+-- the same now that a 0 bonus is re-rolled. Pinball bonuses always pay, so it is not listed.   <== TUNE (set a row to 0 to keep that machine's bonus rate; its payback then rises)
+create or replace function slots_bonus_p0(p_theme text) returns numeric language sql immutable as $$
+  select case p_theme
+    when 'candy' then 0.2143
+    when 'classic' then 0.1161
+    when 'cosmic' then 0.2905
+    when 'dragon' then 0.0637
+    when 'egypt' then 0.0258
+    when 'frozen' then 0.3942
+    when 'gold' then 0.0463
+    when 'heist' then 0.2888
+    when 'jungle' then 0.2128
+    when 'luau' then 0.0865
+    when 'magic' then 0.2888
+    when 'neon' then 0.2890
+    when 'ocean' then 0.0864
+    when 'olympus' then 0.3953
+    when 'pirate' then 0.1170
+    when 'racing' then 0.1567
+    when 'spooky' then 0.0472
+    when 'viking' then 0.2130
+    when 'west' then 0.1573
+    else 0 end $$;
+
 create or replace function slots_spin(p_bet int,p_theme text default 'classic') returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid:=auth.uid();
@@ -77,7 +104,7 @@ declare
   c_ret_tot constant numeric:=0.072;   -- <== TUNE: chance of a retrigger over one round of free spins (split across the spins so every machine gets the same)
   c_rounds  constant int:=4;           -- max rounds of free spins in one bonus (first round + 3 retriggers)
   mults int[]; rws int[]; len int; c_ret numeric; c_fsmax int; mx int; rw int; unit numeric; adj numeric;
-  total int; bal int; last timestamptz; roll numeric:=random(); b jsonb; f jsonb; kind text; pay bigint:=0; lpay bigint:=0; run bigint:=0;
+  tries int:=0; total int; bal int; last timestamptz; roll numeric:=random(); b jsonb; f jsonb; kind text; pay bigint:=0; lpay bigint:=0; run bigint:=0;
   sc int:=0; fs_total int:=0; n int:=0; ret boolean; spins jsonb:='[]'::jsonb; flat text:=''; c int; nv int; fr jsonb; free jsonb:=null;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
@@ -89,6 +116,7 @@ begin
   c_bonus_p:=c_bonus_p*12.0/(select sum(tm*tr/3.0) from unnest(mults,rws) as t(tm,tr));
   if p_theme='pinball' then c_bonus_p:=0.1672/slots_pb_ev(slots_pb_shots(p_bet)); end if;   -- pinball: the bonus is worth about 25x your bet, so it triggers about once in 150 spins (0.1672 = the bonus share of the payback)   <== TUNE
   c_bonus_p:=c_bonus_p*slots_theme_bon(p_theme);   -- each machine has its own bonus frequency
+  c_bonus_p:=c_bonus_p*(1-slots_bonus_p0(p_theme));   -- a bonus can no longer pay 0, so it triggers a little less often (same payback)
   total:=p_bet; unit:=p_bet/case when p_theme='pinball' then 1.0 else 9.0 end; adj:=slots_adj_bet(p_bet)*slots_theme_pay(p_theme);   -- each machine has its own payback
 
   select chips into bal from profiles where id=uid for update;   -- lock the balance so two taps can never overspend
@@ -111,7 +139,8 @@ begin
     f:=slots_pb_play(p_bet,adj,slots_pb_shots(p_bet)); run:=(f->>'pay')::bigint; pay:=pay+run;
     free:=jsonb_build_object('theme',p_theme,'pinball',true,'start',slots_pb_shots(p_bet),'shots',f->'shots');
   elsif kind='bonus' then
-    fs_total:=len;
+    loop   -- a bonus must pay: play the free spins again if they all came up empty
+    tries:=tries+1; n:=0; run:=0; spins:='[]'::jsonb; fs_total:=len;
     while n<fs_total loop
       n:=n+1;
       mx:=mults[1+((n-1)%len)]; rw:=case when p_theme='pinball' then 1 else rws[1+((n-1)%len)] end;
@@ -121,6 +150,8 @@ begin
       if ret then fs_total:=fs_total+len; end if;
       run:=run+(f->>'pay')::bigint;
       spins:=spins||jsonb_build_array(jsonb_build_object('n',n,'x',mx,'rows',rw,'reels',f->'reels','wins',f->'wins','pay',(f->>'pay')::bigint,'run',run,'retrigger',ret,'total',fs_total));
+    end loop;
+    exit when run>0 or tries>=100;
     end loop;
     pay:=pay+run;
     free:=jsonb_build_object('start',len,'round',len,'theme',p_theme,'spins',spins);
