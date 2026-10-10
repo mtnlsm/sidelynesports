@@ -170,3 +170,8 @@ button.ss-row:active{background:color-mix(in srgb,var(--tx) 6%,transparent);tran
   :root[data-theme="dark"] .mc{box-shadow:none}
   .mc.lv{border-color:color-mix(in srgb,var(--bad) 35%,var(--bd))}
 }
+
+/* main event card: no gold band, same footer as every other card */
+.mc-me .mc-ft{background:none;color:inherit;border-top:1px solid var(--bd)}
+.mc-me .mc-ft .mu{color:var(--mu)}
+.mc-me .mc-r{color:var(--ab)}
