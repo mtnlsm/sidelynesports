@@ -51,7 +51,10 @@ end $$;
 drop trigger if exists live_posts_guard_t on live_posts;
 create trigger live_posts_guard_t before insert on live_posts for each row execute function live_posts_guard();
 
+alter table live_post_likes replica identity full;  -- lets realtime deliver unlikes
 do $$ begin alter publication supabase_realtime add table live_posts;
+  exception when duplicate_object then null; when undefined_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table live_post_likes;
   exception when duplicate_object then null; when undefined_object then null; end $$;
 
 -- 2) View counter (one row per game; no direct table access, only through the functions below)
