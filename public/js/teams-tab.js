@@ -4,8 +4,8 @@
 (function () {
   'use strict';
   var API = '/.netlify/functions/team';
-  var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL'];
-  var st = { sp: 'NFL', conf: 0 }, ST = {}, busy = {}, err = {};
+  var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'CFB'];
+  var st = { sp: 'NFL', conf: 0, cf: 'TOP25', poll: 0 }, ST = {}, busy = {}, err = {}, RK = {}, rkBusy = {}, rkErr = {};
 
   var E = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var label = function (c) { try { return spl(c); } catch (e) { return c; } };
@@ -24,6 +24,8 @@
     '.tt-tb tr[data-ttm]{cursor:pointer}',
     '.tt-tb tr[data-ttm]:active td{background:var(--sf2)}',
     '.tt-note{color:var(--mu);font-size:12px;margin-top:14px}',
+    '.tt-rk{font-size:11px;font-weight:800;color:var(--mu);margin-right:-2px}',
+    '.tt-up{color:var(--ok);font-size:12px;font-weight:700}.tt-dn{color:var(--bad);font-size:12px;font-weight:700}.tt-nw{color:var(--mu);font-size:11px;font-weight:700}',
     '.tt-rec{display:flex;align-items:baseline;gap:12px;margin:14px 0 6px;flex-wrap:wrap}',
     '.tt-rec b{font-family:var(--fd);font-size:44px;font-weight:900;font-style:italic;line-height:1}',
     '.tt-rec span{color:var(--mu)}',
@@ -59,7 +61,72 @@
   function groupsFor(sp) { var c = ST[sp]; return c ? c.d.groups || [] : null; }
   function parents(gs) { var out = []; gs.forEach(function (g) { if (g.parent && out.indexOf(g.parent) < 0) out.push(g.parent); }); return out; }
 
+
+  // ---- college football: Top 25 polls + every FBS conference ----
+  function loadRk(sp) {
+    var c = RK[sp];
+    if ((c && Date.now() - c.at < 600000) || rkBusy[sp]) return;
+    rkBusy[sp] = 1; delete rkErr[sp];
+    fetchJson('sport=' + sp + '&type=rankings').then(function (d) { RK[sp] = { d: d, at: Date.now() }; })
+      .catch(function () { rkErr[sp] = 1; })
+      .then(function () { rkBusy[sp] = 0; paint(); });
+  }
+  var CF_ORD = [/\b(sec|southeastern)\b/i, /big ten/i, /big 12/i, /\b(acc|atlantic coast)\b/i, /mountain west/i, /sun belt/i, /conference usa|\bc-usa\b/i, /mid-american|\bmac\b/i, /american|\baac\b/i, /pac-12|pac 12/i, /independ/i];
+  function cfRankOf(n) { for (var i = 0; i < CF_ORD.length; i++) if (CF_ORD[i].test(n)) return i; return 50; }
+  function cfList(gs) {
+    var seen = {}, out = [];
+    gs.forEach(function (g) { var c = g.conf || g.name; if (c && !seen[c]) { seen[c] = 1; out.push(c); } });
+    return out.sort(function (a, b) { return cfRankOf(a) - cfRankOf(b) || a.localeCompare(b); });
+  }
+  var cfShort = function (k) { return k === 'TOP25' ? 'Top 25' : String(k).replace(/ Conference$/i, ''); };
+  function rankMap() { var d = RK.CFB && RK.CFB.d, p = d && d.polls && d.polls[0], m = {}; if (p) p.ranks.forEach(function (r) { m[r.id] = r.rank; }); return m; }
+  function tbl(g, rm) {
+    var h = '<div class="glass card" style="padding:4px 12px"><div class="tt-sc"><table class="tt-tb"><thead><tr><th class="r"></th><th class="n"></th>' +
+      g.labels.map(function (l) { return '<th>' + E(l) + '</th>'; }).join('') + '</tr></thead><tbody>';
+    g.rows.forEach(function (r) {
+      h += '<tr data-ttm="' + E(r.id) + '" data-ttn="' + E(r.n) + '"><td class="r">' + r.rank + '</td><td class="n"><span>' + jr(r.n, 24, r.ab) +
+        (rm && rm[r.id] ? '<b class="tt-rk">#' + rm[r.id] + '</b>' : '') + E(r.n) + '</span></td>' +
+        r.v.map(function (v) { return '<td>' + E(v) + '</td>'; }).join('') + '</tr>';
+    });
+    return h + '</tbody></table></div></div>';
+  }
+  function trend(r) {
+    if (r.prev == null) return '<span class="tt-nw">NEW</span>';
+    var d = r.prev - r.rank;
+    return d > 0 ? '<span class="tt-up">\u25B2' + d + '</span>' : d < 0 ? '<span class="tt-dn">\u25BC' + (-d) + '</span>' : '<span class="mu">\u2013</span>';
+  }
+  function bodyCFB() {
+    var gs = groupsFor('CFB'), confs = gs ? cfList(gs) : [], keys = ['TOP25'].concat(confs);
+    var sel = st.cf !== 'TOP25' && confs.indexOf(st.cf) >= 0 ? st.cf : 'TOP25';
+    var h = '<div class="cat-row" role="tablist" style="margin-top:12px">' + keys.map(function (k, i) {
+      return '<button class="chip ' + (k === sel ? 'on' : '') + '" role="tab" data-ttcc="' + i + '">' + E(cfShort(k)) + '</button>';
+    }).join('') + '</div>';
+    if (sel === 'TOP25') {
+      var rk = RK.CFB;
+      if (!rk) return h + (rkErr.CFB ? '<p class="mu" style="margin:10px 0">The Top 25 isn\u2019t available right now.</p><button class="chip" data-ttretry>Retry</button>' : '<div class="sk"></div><div class="sk"></div>');
+      var polls = rk.d.polls || [], p = polls[Math.min(st.poll, polls.length - 1)];
+      if (!p) return h + '<p class="mu" style="margin:10px 0">No poll has been released yet.</p>';
+      var hasPts = p.ranks.some(function (r) { return r.pts != null; });
+      if (polls.length > 1) h += '<div class="cat-row" role="tablist" style="margin-top:8px">' + polls.map(function (x, i) {
+        return '<button class="chip ' + (x === p ? 'on' : '') + '" role="tab" data-ttpl="' + i + '">' + E(x.short || x.name) + '</button>'; }).join('') + '</div>';
+      h += '<h3 class="tt-h">' + E(p.name) + '</h3><div class="glass card" style="padding:4px 12px"><div class="tt-sc"><table class="tt-tb"><thead><tr><th class="r"></th><th class="n"></th><th>REC</th>' +
+        (hasPts ? '<th>PTS</th>' : '') + '<th></th></tr></thead><tbody>';
+      p.ranks.forEach(function (r) {
+        h += '<tr data-ttm="' + E(r.id) + '" data-ttn="' + E(r.n) + '"><td class="r">' + r.rank + '</td><td class="n"><span>' + jr(r.n, 24, r.ab) + E(r.n) + '</span></td><td>' + E(r.rec) + '</td>' +
+          (hasPts ? '<td>' + (r.pts != null ? E(r.pts.toLocaleString()) : '') + '</td>' : '') + '<td>' + trend(r) + '</td></tr>';
+      });
+      return h + '</tbody></table></div></div><p class="tt-note">Polls from ESPN, refreshed every few minutes. Tap a team for its record and recent games.</p>';
+    }
+    if (!gs) return h + (err.CFB ? '<p class="mu" style="margin:10px 0">Standings aren\u2019t available right now.</p><button class="chip" data-ttretry>Retry</button>' : '<div class="sk"></div><div class="sk"></div>');
+    var rm = rankMap();
+    gs.filter(function (g) { return (g.conf || g.name) === sel; }).forEach(function (g) {
+      h += '<h3 class="tt-h">' + E(g.div ? sel + ' \u00B7 ' + g.div : sel) + '</h3>' + tbl(g, rm);
+    });
+    return h + '<p class="tt-note">Conference standings from ESPN, ordered by conference record. #\u2009numbers are the current AP Top 25. Tap a team for its record and recent games.</p>';
+  }
+
   function body() {
+    if (st.sp === 'CFB') return bodyCFB();
     var sp = st.sp, gs = groupsFor(sp);
     if (!gs) {
       if (err[sp]) return '<p class="mu" style="margin:10px 0">Standings aren\u2019t available right now.</p><button class="chip" data-ttretry>Retry</button>';
@@ -88,7 +155,7 @@
   }
 
   R.teams = function () {
-    load(st.sp);
+    load(st.sp); if (st.sp === 'CFB') loadRk('CFB');
     return '<h2>Teams</h2><div class="cat-row" role="tablist">' + SPORTS.map(function (c) {
       return '<button class="chip ' + (c === st.sp ? 'on' : '') + '" role="tab" data-tts="' + c + '">' + E(label(c)) + '</button>';
     }).join('') + '</div><div id="tmx">' + body() + '</div>';
@@ -131,8 +198,10 @@
   document.addEventListener('click', function (e) {
     var c;
     if ((c = e.target.closest('[data-tts]'))) { st.sp = c.dataset.tts; st.conf = 0; go('teams'); return; }
+    if ((c = e.target.closest('[data-ttcc]'))) { var gs0 = groupsFor('CFB'), ks = ['TOP25'].concat(gs0 ? cfList(gs0) : []); st.cf = ks[+c.dataset.ttcc] || 'TOP25'; paint(); return; }
+    if ((c = e.target.closest('[data-ttpl]'))) { st.poll = +c.dataset.ttpl || 0; paint(); return; }
     if ((c = e.target.closest('[data-ttcf]'))) { st.conf = +c.dataset.ttcf; paint(); document.querySelectorAll('#tmx .cat-row .chip').forEach(function (b, i) { b.classList.toggle('on', i === st.conf); }); return; }
-    if (e.target.closest('[data-ttretry]')) { delete err[st.sp]; load(st.sp); paint(); return; }
+    if (e.target.closest('[data-ttretry]')) { delete err[st.sp]; delete rkErr[st.sp]; load(st.sp); if (st.sp === 'CFB') loadRk('CFB'); paint(); return; }
     if ((c = e.target.closest('[data-ttm]'))) { openTeam(c.dataset.ttm, c.dataset.ttn); }
   });
 })();
