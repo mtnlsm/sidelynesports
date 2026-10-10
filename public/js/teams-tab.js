@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var API = '/.netlify/functions/team';
-  var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'WNBA'];
+  var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL'];
   var st = { sp: 'NFL', conf: 0 }, ST = {}, busy = {}, err = {};
 
   var E = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
