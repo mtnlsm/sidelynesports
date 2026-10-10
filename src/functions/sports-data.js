@@ -182,7 +182,7 @@ function normUfc(ev, sp = 'UFC') {
     if (f.some((x) => !x.athlete || !x.athlete.displayName || /\b(TBA|TBD)\b|opponent/i.test(x.athlete.displayName))) return null; // fighter not confirmed
     const st = state(c.status && c.status.type ? c.status.type.state : ev.status.type.state);
     if (st === 'up' && /TBD|TBA/i.test(((c.status && c.status.type && c.status.type.shortDetail) || '') + ' ' + ((ev.status && ev.status.type && ev.status.type.shortDetail) || ''))) return null; // no confirmed start time
-    if (!fresh(st, c.date || ev.date)) return null;
+    if (!(st === 'up' ? Date.now() - Date.parse(c.date || ev.date) < 14 * 36e5 : fresh(st, c.date || ev.date))) return null; // a card runs for hours: fights still waiting their turn stay in Upcoming after the scheduled start passes
     const wc = String((c.type && (c.type.text || c.type.abbreviation)) || '').replace(/\s*bout$/i, '').slice(0, 40);
     const rd = Number(c.format && c.format.regulation && c.format.regulation.periods) || (i === 0 ? 5 : 3);
     return { id: sp + ':' + c.id, sp, ev: String(ev.name || ev.shortName || '').slice(0, 80), evi: String(ev.id || ''), a: f[0].athlete.displayName, b: f[1].athlete.displayName, ia: hs(f[0].athlete, sp, f[0].id), ib: hs(f[1].athlete, sp, f[1].id),
