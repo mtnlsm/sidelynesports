@@ -85,6 +85,7 @@ IMG=m}
 const LOGOK=window.LOGOK=new Set();
 /* Fighters outside today's games have no image in IMG, so look their headshot up by name once and remember it. */
 const FH=(()=>{try{return JSON.parse(localStorage.getItem('fx-fh')||'{}')||{}}catch(e){return{}}})();
+const NOFH=(()=>{try{return new Set(JSON.parse(localStorage.getItem('fx-nofh')||'[]'))}catch(e){return new Set()}})(),saveNO=()=>{try{localStorage.setItem('fx-nofh',JSON.stringify([...NOFH]))}catch(e){}};
 const crest=(n,sp,z=40)=>{if(!MMA(sp)&&!IMG['P|'+n])return jerseySvg(n,z,sp);const svg=crestSvg(n,sp,z),v=IMG[sp+'|'+n]||IMG['P|'+n]||(MMA(sp)&&FH[nm(n)]);if(!v||!/^https:\/\//.test(v.slice(1)))return MMA(sp)?svg.replace('<svg','<svg data-fn="'+esc(n)+'" data-sp="'+sp+'"'):svg;
 const u=v.slice(1),hs=v[0]==='h',dk=!hs&&isDark()&&/\/teamlogos\/[^/]+\/500\//.test(u),src=imgUrl(dk?u.replace('/500/','/500-dark/'):u,z,hs);
 const ok=LOGOK.has(src);return `<span class="cr ${hs?'hd':'lg'}" style="width:${z}px;height:${z}px">${ok?svg.replace('<svg','<svg style="visibility:hidden"'):svg}<img${ok?' class="ok"':''} src="${esc(src)}" data-o="${esc(imgUrl(u,z,hs))}"${dk?' data-d="1"':''} alt="" ${ok?'decoding="sync"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" onload="if(this.naturalWidth>8){LOGOK.add(this.getAttribute('src'));this.previousElementSibling.style.visibility='hidden';this.style.opacity=1}" onerror="if(this.dataset.d){this.removeAttribute('data-d');this.classList.add('wb');this.src=this.dataset.o}else this.remove()"></span>`};
@@ -98,7 +99,7 @@ const gameOf=n=>G.filter(g=>g.st!=='final'&&(MMA(g.sp)?nm(g.a)===nm(n)||nm(g.b)=
 const liveTag=n=>{const g=gameOf(n);return g?(g.st==='live'?' · LIVE now':g.date&&!isNaN(Date.parse(g.date))?' · '+when(g):''):''};
 {const ff=S.favF.map(n=>{const f=fighterOf(n);return f&&f.n}).filter(Boolean);if(ff.length!==S.favF.length||ff.some((n,i)=>n!==S.favF[i])){S.favF=ff;sv()}}
 let TLs=null,TLc=[];const TL=()=>{if(TLs!==TEAMS){TLs=TEAMS;const m=new Map();TEAMS.forEach(t=>{const e=m.get(t.n);if(e){if(!e.sps.includes(t.sp))e.sps.push(t.sp)}else m.set(t.n,{...t,sps:[t.sp]})});TLc=[...m.values()]}return TLc};
-const roster=k=>k==='T'?TL().map(t=>[t.n,t.sps[0],t.sps.map(spl).join(' · ')+liveTag(t.n),[t.n,t.full,t.ab,t.sps.join(' '),t.sps.map(spl).join(' ')].join(' ')]):FIGHTERS.map(f=>[f.n,'UFC',f.d+(f.nk?' · "'+f.nk+'"':'')+liveTag(f.n),f.n+' '+f.d+' '+f.nk+' ufc mma']);
+const roster=k=>k==='T'?TL().map(t=>[t.n,t.sps[0],t.sps.map(spl).join(' · ')+liveTag(t.n),[t.n,t.full,t.ab,t.sps.join(' '),t.sps.map(spl).join(' ')].join(' ')]):FIGHTERS.filter(f=>!NOFH.has(f.k)||S.favF.includes(f.n)).map(f=>[f.n,'UFC',f.d+(f.nk?' · "'+f.nk+'"':'')+liveTag(f.n),f.n+' '+f.d+' '+f.nk+' ufc mma']);
 const inAction=k=>{const seen=new Set(),out=[];G.forEach(g=>{if((k==='T')===!MMA(g.sp))[g.a,g.b].forEach(n=>{if(k==='F'){const f=fighterOf(n);if(!f||seen.has(f.k))return;seen.add(f.k);out.push([f.n,'UFC',f.d+liveTag(f.n)])}else if(!seen.has(n)){seen.add(n);out.push([n,g.sp,spl(g.sp)+liveTag(n)])}})});return out};
 const isFav=g=>[g.a,g.b].some(n=>S.favT.includes(n)||S.favF.some(f=>nm(f)===nm(n)));
 const spc=g=>`<span class="chip glass">${ic(g.sp.toLowerCase(),14)} ${spl(g.sp)}${isFav(g)?' '+ic('star',13,1):''}</span>`;
@@ -686,3 +687,13 @@ const chips=(opts,cur,attr)=>`<div class="row hs">${opts.map(o=>`<button class="
 const shown=L.slice(0,n);
 return`<div class="glass card"><div class="rp-h"><b>My picks</b>${W+Lo?`<span class="mu">${W}W · ${Lo}L${paidSP?' · '+paidSP.toLocaleString()+' SP paid':''}</span>`:''}</div>${chips(stOpts,st,'data-pkst')}${spOpts.length>2?chips(spOpts,sf,'data-pksp'):''}<div style="margin-top:6px">${shown.map(row).join('')||'<p class="mu">'+(all.length?'No picks match this filter.':'No picks yet — try the Picks tab.')+'</p>'}</div>${L.length>n?`<button class="chip" data-pkmore style="display:block;margin:10px auto 0">Show more (${L.length-n} left)</button>`:''}</div>`}
 (function(){var c=document.createElement('style');c.textContent='.rk{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font:800 11px/1.5 inherit;letter-spacing:.02em;background:var(--sf2);color:var(--mu);vertical-align:middle;white-space:nowrap}.rk-c{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;margin-left:5px;border-radius:50%;font-size:10px;line-height:1;background:linear-gradient(135deg,#ffe58a,#d4a017 60%,#a87400);color:#3a2a00;box-shadow:0 0 0 1px #b8860b inset,0 0 6px rgba(240,180,20,.55)}';document.head.appendChild(c)})();
+
+/* hide fighters that have no photo: look each one up once (cached on this device); no ESPN match or a broken image = hidden from the favorites list */
+(()=>{let started=0,run=0,done=0;const q=[];
+const mark=k=>{if(!NOFH.has(k)){NOFH.add(k);saveNO()}};
+function fin(){done++;if(done%8===0||(!q.length&&!run)){try{if(typeof curFM!=='undefined'&&curFM&&curFM.m&&curFM.m.isConnected)drawFM();else if(S.tab==='discover'&&!(document.activeElement&&document.activeElement.id==='gq'))repaint()}catch(e){}}}
+function next(){while(run<3&&q.length){const f=q.shift(),k=f.k;run++;
+fetch('/.netlify/functions/fighter?lite=1&name='+encodeURIComponent(f.n)).then(r=>{if(r.status===404){mark(k);return null}return r.ok?r.json():null}).then(j=>{if(!j)return;if(!j.headshot){mark(k);return}
+return new Promise(res=>{const im=new Image();im.referrerPolicy='no-referrer';im.onload=()=>{if(im.naturalWidth>8){FH[k]='h'+j.headshot;try{localStorage.setItem('fx-fh',JSON.stringify(FH))}catch(e){}}else mark(k);res()};im.onerror=()=>{mark(k);res()};im.src=j.headshot})}).catch(()=>{}).finally(()=>{run--;fin();next()})}}
+window.checkFighterPhotos=()=>{if(started)return;started=1;FIGHTERS.forEach(f=>{if(!NOFH.has(f.k)&&!FH[f.k])q.push(f)});next()};
+setTimeout(window.checkFighterPhotos,4000)})();
