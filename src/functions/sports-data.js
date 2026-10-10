@@ -115,6 +115,12 @@ function normSit(sp, s, ids) {
       ta: s.awayTimeouts != null ? Number(s.awayTimeouts) : undefined, tb: s.homeTimeouts != null ? Number(s.homeTimeouts) : undefined, lp }; }
   return lp ? { k: 'g', lp } : undefined;
 }
+// MLB / college baseball: probable starting pitcher per team (ESPN scoreboard "probables"), shown on the pick sheet.
+const probP = (x) => { const pb = ((x && x.probables) || []).find((q) => q && q.athlete); if (!pb) return '';
+  const a = pb.athlete, nm = String(a.displayName || a.shortName || a.fullName || '').slice(0, 40); if (!nm) return '';
+  const era = (pb.statistics || []).find((t) => t && /^era$/i.test(String(t.abbreviation || t.name || '')));
+  const rec = typeof pb.record === 'string' ? pb.record : (pb.record && pb.record.summary) || '';
+  return nm + (rec ? ' (' + String(rec).slice(0, 8) + ')' : '') + (era && era.displayValue ? ' \u00b7 ' + String(era.displayValue).slice(0, 6) + ' ERA' : ''); };
 function normTeam(sp, ev) {
   const c = ev.competitions && ev.competitions[0]; if (!c) return null;
   const home = c.competitors.find((x) => x.homeAway === 'home'), away = c.competitors.find((x) => x.homeAway === 'away');
@@ -127,6 +133,7 @@ function normTeam(sp, ev) {
     ca: String(away.team.conferenceId || ''), cb: String(home.team.conferenceId || ''),
     sa: st === 'up' ? '' : sa, sb: st === 'up' ? '' : sb, st, date: ev.date,
     od: st === 'up' ? normOdds(c) : undefined,
+    pp: st === 'up' && String(LEAGUES[sp] || '').startsWith('baseball') ? (() => { const a = probP(away), b = probP(home); return a || b ? { a, b } : undefined; })() : undefined,
     sit: st === 'live' ? normSit(sp, c.situation, { a: String(away.team.id), b: String(home.team.id) }) : undefined,
     ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: MMA_SP.has(sp) ? hs(o.athlete, sp) : '' } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0 } : null))).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
