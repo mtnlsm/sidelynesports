@@ -1,5 +1,6 @@
 -- SLOTS 3: everything new for the slots in ONE file. Run in the Supabase SQL editor after slots.sql and Slots-2.sql. Safe to re-run, and any future slot changes go in this same file.
---   1) 2 new BIG-WIN machines: olympus (Gods of Olympus) and heist (Diamond Heist), 19 in total.
+--   1) 3 new machines: olympus (Gods of Olympus), heist (Diamond Heist) and pinball (OG Pinball, with a lever), 20 in total.
+--      pinball Multiball: 5 balls, 1,1,1,3,6 on 3 rows (value 12)
 --   2) Different odds on every machine (slots_theme_pay and slots_theme_bon below).
 -- Most bonuses are worth 12 (sum of multiplier x rows/3). These two are worth more (see below) and trigger less often, so the payback stays the same.
 --   olympus Thunder of Zeus: 3 spins 2,2,20 on 3 rows (value 24)  |  heist Vault Crack: 3 spins 2,2,7, rows 3,3,6 (value 2+2+14 = 18)
@@ -26,6 +27,7 @@ create or replace function slots_bonus_mults(p_theme text) returns int[] languag
     when 'racing'  then array[1,1,2,2,2,4]
     when 'olympus' then array[2,2,20]
     when 'heist'   then array[2,2,7]
+    when 'pinball' then array[1,1,1,3,6]
     else null end $$;
 
 create or replace function slots_bonus_rows(p_theme text) returns int[] language sql immutable as $$
@@ -49,6 +51,7 @@ create or replace function slots_bonus_rows(p_theme text) returns int[] language
     when 'racing'  then array[3,3,3,3,3,3]
     when 'olympus' then array[3,3,3]
     when 'heist'   then array[3,3,6]
+    when 'pinball' then array[3,3,3,3,3]
     else null end $$;
 
 -- DIFFERENT ODDS ON EVERY MACHINE
@@ -56,7 +59,7 @@ create or replace function slots_bonus_rows(p_theme text) returns int[] language
 --   slots_theme_pay = payback factor. 1.00 = the standard payback (about 88% on tiny bets up to about 96% from 9,000 chips).
 --   slots_theme_bon = how often the free spins bonus triggers. 1.00 = standard.
 -- Rough payback at big bets (96% x pay x (0.855 + 0.145 x bonus)):
---   HOT   (about 97.9-98.9%): gold, dragon, neon, pirate, viking, west, olympus
+--   HOT   (about 97.9-98.9%): gold, dragon, neon, pirate, viking, west, olympus, pinball
 --   STANDARD (96%): classic, ocean, candy, jungle, luau, racing, heist
 --   COLD  (about 91-95%): frozen, cosmic, egypt, magic, spooky
 -- No machine goes above 100%, so the house always keeps an edge.   <== TUNE any number below
@@ -82,6 +85,7 @@ create or replace function slots_theme_pay(p_theme text) returns numeric languag
     when 'racing'  then 1.00
     when 'olympus' then 1.02
     when 'heist'   then 1.00
+    when 'pinball' then 1.02
     else 1.00 end $$;
 
 create or replace function slots_theme_bon(p_theme text) returns numeric language sql immutable as $$
