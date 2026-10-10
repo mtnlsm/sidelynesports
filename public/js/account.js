@@ -23,7 +23,8 @@ window.acctOpen = async (kind, onDone) => {
 
   const verify = async pw => {
     if (!pw) return 'Enter your current password.';
-    const r = await FX_DB.auth.signInWithPassword({ email: u.email, password: pw });
+    const cap = window.fxCaptcha ? await window.fxCaptcha() : undefined;
+    const r = await FX_DB.auth.signInWithPassword({ email: u.email, password: pw, options: { captchaToken: cap } });
     if (!r.error) return null;
     return /invalid|credentials/i.test(r.error.message) ? 'Incorrect password.' : r.error.message;
   };
