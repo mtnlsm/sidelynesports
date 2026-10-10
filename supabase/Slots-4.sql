@@ -1,21 +1,24 @@
--- SLOTS 4: OG Pinball rebuilt. Run in the Supabase SQL editor after Slots-3.sql. Safe to re-run.
---   1) PAIRS: 2 matching symbols next to each other now pay a small prize (x0.25 to x0.70 your bet, see slots_play_p).
---   2) A MUCH BIGGER BONUS: 6 shots on every bet. Each ball lands in one of 6 pockets (x3 to x12 your bet), or rarely in the DIAMOND chamber:
---      5 diamond slots that fill left to right and pay x35, x40, x50, x75 and x100 (each one is worth more than the biggest pocket).
---      A bonus is worth about x35 your bet on average and triggers about once in 210 spins.
---   3) The 3 in a row line pays a bit less (c_k 1.61 -> 1.20). The total payback is the same as before: line 0.504 + pairs 0.102 + bonus 0.168 = 0.774.
+-- SLOTS 4: OG Pinball. Run in the Supabase SQL editor after Slots-3.sql. Safe to re-run. Any future pinball tuning goes in THIS file.
+--   1) BONUS: 6 shots on every bet. Each ball lands in one of 6 pockets (x2 to x9 your bet), or rarely in the DIAMOND chamber:
+--      5 diamond slots that fill left to right and pay x25, x30, x40, x60 and x100 (each one is worth more than the biggest pocket).
+--      A bonus is worth about x25 your bet on average and triggers about once in 150 spins.
+--   2) PAIRS: 2 matching symbols next to each other (left two reels, or middle and right) pay x0.35 to x1.10 your bet (see slots_play_p).
+--   3) 3 in a row pays slots_mult x c_k (c_k = 1.00).
+--   4) Payback: raw return 0.744 (bonus 0.167 + line 0.420 + pairs 0.157), times the bet-size factor and the 1.02 machine factor =
+--      about 92% on tiny bets up to about 98% at 9,000+ chips.
+--   public/slots.js must match (PK, PAIR, PBX, PBC and the help text).
 --   Everything is decided here; public/slots.js only plays the animation.
 
 create or replace function slots_pb_shots(p_bet int) returns int language sql immutable as $$ select 6 $$;   -- <== TUNE: shots per bonus (the same on every bet)
 
 -- slots_pb_ev = average total bonus pay (x bet) for 6 shots. If you change the numbers in slots_pb_play, recompute it (and the 0.1679 in slots_spin).
-create or replace function slots_pb_ev(p_shots int) returns numeric language sql immutable as $$ select 35.1994::numeric $$;
+create or replace function slots_pb_ev(p_shots int) returns numeric language sql immutable as $$ select 25.0798::numeric $$;
 
 create or replace function slots_pb_play(p_bet int,p_adj numeric,p_shots int) returns jsonb language plpgsql volatile as $$
 declare
-  pv  constant numeric[]:=array[3,4,5,8,10,12];     -- <== TUNE: the 6 pocket prizes (x your bet)
+  pv  constant numeric[]:=array[2,3,4,5,7,9];     -- <== TUNE: the 6 pocket prizes (x your bet)
   pw  constant int[]:=array[28,24,20,14,9,5];       -- <== TUNE: chance of each pocket (out of 100, when the ball misses the diamond chamber)
-  cv  constant numeric[]:=array[35,40,50,75,100];   -- <== TUNE: the 5 diamond slots, filled left to right
+  cv  constant numeric[]:=array[25,30,40,60,100];   -- <== TUNE: the 5 diamond slots, filled left to right
   c_pc constant numeric:=0.015;                     -- <== TUNE: chance per ball of landing in the diamond chamber
   i int; k int; sel int; acc int; r numeric; cnt int:=0; kind text; idx int; mult numeric; pay bigint; run bigint:=0; shots jsonb:='[]'::jsonb;
 begin
@@ -39,7 +42,7 @@ end $$;
 create or replace function slots_play_p(p_unit numeric,p_adj numeric,p_scat int,p_x int) returns jsonb language plpgsql volatile as $$
 declare
   pool constant text[]:=array_fill('t1'::text,array[24])||array_fill('t2'::text,array[22])||array_fill('t3'::text,array[18])||array_fill('t4'::text,array[14])||array_fill('t5'::text,array[12])||array_fill('t6'::text,array[10]);
-  c_k constant numeric:=1.20;
+  c_k constant numeric:=1.00;
   g text[]:=array['x','x','x']; c int; lp numeric; pay numeric:=0; scat int:=0; pm numeric; fromc int;
   wins jsonb:='[]'::jsonb; reels jsonb:='[]'::jsonb;
 begin
@@ -52,7 +55,7 @@ begin
   elsif g[3]<>'S' and g[3]=g[2] then fromc:=1;
   end if;
   if fromc is not null then
-    pm:=case g[2] when 't1' then 0.25 when 't2' then 0.30 when 't3' then 0.35 when 't4' then 0.40 when 't5' then 0.50 else 0.70 end;   -- <== TUNE: pair prize x your bet
+    pm:=case g[2] when 't1' then 0.35 when 't2' then 0.45 when 't3' then 0.55 when 't4' then 0.65 when 't5' then 0.85 else 1.10 end;   -- <== TUNE: pair prize x your bet
     lp:=pm*p_unit*p_adj*p_x; pay:=lp;
     wins:=jsonb_build_array(jsonb_build_object('line',0,'sym',g[2],'count',2,'from',fromc,'pay',round(lp)::bigint));
   end if;
@@ -82,7 +85,7 @@ begin
   if mults is null or rws is null then raise exception 'Unknown machine, reload the page'; end if;
   len:=array_length(mults,1); c_ret:=c_ret_tot/len; c_fsmax:=len*c_rounds;
   c_bonus_p:=c_bonus_p*12.0/(select sum(tm*tr/3.0) from unnest(mults,rws) as t(tm,tr));
-  if p_theme='pinball' then c_bonus_p:=0.1679/slots_pb_ev(slots_pb_shots(p_bet)); end if;   -- pinball: the bonus is worth about 35x your bet, so it triggers about once in 210 spins (0.1679 = the bonus share of the payback)   <== TUNE
+  if p_theme='pinball' then c_bonus_p:=0.1672/slots_pb_ev(slots_pb_shots(p_bet)); end if;   -- pinball: the bonus is worth about 25x your bet, so it triggers about once in 150 spins (0.1672 = the bonus share of the payback)   <== TUNE
   c_bonus_p:=c_bonus_p*slots_theme_bon(p_theme);   -- each machine has its own bonus frequency
   total:=p_bet; unit:=p_bet/case when p_theme='pinball' then 1.0 else 9.0 end; adj:=slots_adj_bet(p_bet)*slots_theme_pay(p_theme);   -- each machine has its own payback
 
