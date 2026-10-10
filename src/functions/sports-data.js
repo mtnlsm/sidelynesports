@@ -9,7 +9,7 @@ const PATHS = { UFC: 'mma/ufc/scoreboard', PFL: 'mma/pfl/scoreboard' }, TEAM_PAT
 const MMA_SP = new Set(['UFC', 'PFL']); // fight leagues (ESPN mma/*), handled with the fighter-card code
 for (const k of Object.keys(LEAGUES)) { PATHS[k] = LEAGUES[k] + '/scoreboard'; TEAM_PATHS[k] = LEAGUES[k] + '/teams'; }
 // Leagues switched off to stay inside Cloudflare's free-plan CPU / request limits. To bring one back, delete it from this list.
-const OFF = ['CFL', 'CBB', 'CBASE']; for (const k of OFF) { delete PATHS[k]; delete TEAM_PATHS[k]; }
+const OFF = ['WNBA', 'CFL', 'CBB', 'CBASE']; for (const k of OFF) { delete PATHS[k]; delete TEAM_PATHS[k]; }
 // Extra query params ESPN needs for the big college scoreboards/team lists (FBS / Division I only).
 const EXTRA = { CFB: 'groups=80&limit=300', CBB: 'groups=50&limit=400', CBASE: 'limit=300' };
 const TEAM_Q = { CFB: 'groups=80&limit=500', CBB: 'groups=50&limit=500', CBASE: 'limit=500' };
