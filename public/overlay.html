@@ -21,7 +21,10 @@ body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:co
 #strip{display:flex;justify-content:center}
 .bnd{font:800 14px/1 'Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--ac);white-space:nowrap}
 .ct{gap:3px!important}
-.bar{display:grid;grid-template-columns:1fr 270px 1fr;align-items:stretch;height:92px;background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
+.ovc{background:var(--bg);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden}
+.bar{display:grid;grid-template-columns:1fr 270px 1fr;align-items:stretch;height:92px}
+.pkr{display:flex;align-items:center;justify-content:center;gap:18px;padding:8px 22px;border-top:1px solid var(--bd);background:var(--chip)}
+.pkr>*{flex:none}
 .tm{position:relative;display:flex;align-items:center;gap:14px;padding:0 22px}
 .tm.h{flex-direction:row-reverse;text-align:right}
 .tm .jy,.pt .jy{display:block;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
@@ -47,13 +50,13 @@ body.ov.top #stage{bottom:auto;top:34px;transform-origin:50% 0;flex-direction:co
 .sit .rz{color:#ff3b30}
 .strip{display:inline-flex;align-items:center;gap:16px;max-width:100%;padding:8px 26px 8px 10px;background:var(--bg);border:1px solid var(--bd);border-radius:999px;box-shadow:var(--sh);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .strip>*{flex:none}
-.strip .pt{display:flex;align-items:center;gap:12px;min-width:0}
-.strip .pt .k b{color:var(--ac);overflow:hidden;text-overflow:ellipsis}
-body.ov.light .strip .pt .k b{filter:brightness(.8)}
-.strip .pt .k small{text-transform:none;letter-spacing:.04em;font-size:14px;font-weight:600}
-.strip .sep{width:1px;height:30px;background:var(--bd)}
-.strip .num{font:700 22px 'Barlow Condensed',sans-serif;letter-spacing:.03em;color:var(--mu);white-space:nowrap}
-.strip .num b{color:var(--tx);font-weight:800}
+.strip .pt,.pkr .pt{display:flex;align-items:center;gap:12px;min-width:0}
+.strip .pt .k b,.pkr .pt .k b{color:var(--ac);overflow:hidden;text-overflow:ellipsis}
+body.ov.light .strip .pt .k b,body.ov.light .pkr .pt .k b{filter:brightness(.8)}
+.strip .pt .k small,.pkr .pt .k small{text-transform:none;letter-spacing:.04em;font-size:14px;font-weight:600}
+.strip .sep,.pkr .sep{width:1px;height:30px;background:var(--bd)}
+.strip .num,.pkr .num{font:700 22px 'Barlow Condensed',sans-serif;letter-spacing:.03em;color:var(--mu);white-space:nowrap}
+.strip .num b,.pkr .num b{color:var(--tx);font-weight:800}
 .res{display:inline-flex;align-items:center;gap:8px;font:800 20px 'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .res::before{content:'';width:9px;height:9px;border-radius:50%;background:currentColor}
 .res.win{color:#26c06a}.res.loss{color:#e5534b}.res.void{color:var(--mu)}
@@ -176,31 +179,36 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--bd);border-radiu
       return '';
     }
 
+    // pick content (jersey, team, stake and result), shown INSIDE the scoreboard card, or as a small pill when the score bar is off
+    function pickInner(size) {
+      const k = K && K.pick; if (!wantPick || !k) return '';
+      const u = K.user || {}, sd = sideOf(), side = D && sd ? (sd === 'a' ? D.away : D.home) : null;
+      const pay = k.stake > 0 && k.mult ? Math.round(k.stake * Number(k.mult)) : 0;
+      const res = k.result === 'win' ? `<span class="res win">Correct${k.awarded ? ' +' + Number(k.awarded).toLocaleString() + ' SP' : ''}</span>` : k.result === 'loss' ? '<span class="res loss">Missed</span>' : k.result === 'void' ? '<span class="res void">Void</span>' : '';
+      const num = k.stake > 0 ? `<div class="num"><b>${Number(k.stake).toLocaleString()}</b> SP${pay && !res ? ` &rarr; <b>${pay.toLocaleString()}</b> SP` : ''}</div>` : '';
+      return `<div class="pt">${logos && side ? jersey(side, size, D && D.sp) : ''}<div class="k"><small>@${E(u.username || u.name || 'fan')}&rsquo;s pick</small><b>${E(k.team)}</b></div></div>${num || res ? '<div class="sep"></div>' : ''}${num}${res}`;
+    }
+
     function drawBar() {
       if (!wantScore || !D) { barEl.innerHTML = ''; return; }
       const d = D, sd = sideOf(), sa = d.away.sc, sb = d.home.sc;
-      const sig = JSON.stringify([d.away.ab, d.home.ab, sa, sb, d.st, d.clk, d.sit, sd, logos]);
+      const pk = pickInner(38), sig = JSON.stringify([d.away.ab, d.home.ab, sa, sb, d.st, d.clk, d.sit, sd, logos, pk]);
       if (sig === barSig) return; barSig = sig;
       const bumpA = prev.a !== null && sa !== prev.a ? ' bump' : '', bumpB = prev.b !== null && sb !== prev.b ? ' bump' : '';
       prev = { a: sa, b: sb };
       const pill = d.st === 'live' ? '<span class="pill"><i></i>Live</span>' : d.st === 'final' ? '<span class="pill fin">Final</span>' : '<span class="pill up">Upcoming</span>';
       const clk = d.st === 'final' ? '' : d.clk;
-      barEl.innerHTML = `<div class="bar"><div class="tm a${sd === 'a' ? ' pk' : ''}">${sd === 'a' ? '<span class="tag">PICK</span>' : ''}${logo(d.away)}<div class="nm"><b>${E(d.away.ab || d.away.n)}</b><small>${E(d.away.n)}</small></div><div class="sc${bumpA}">${E(sa === '' ? '–' : sa)}</div></div>
+      barEl.innerHTML = `<div class="ovc"><div class="bar"><div class="tm a${sd === 'a' ? ' pk' : ''}">${sd === 'a' ? '<span class="tag">PICK</span>' : ''}${logo(d.away)}<div class="nm"><b>${E(d.away.ab || d.away.n)}</b><small>${E(d.away.n)}</small></div><div class="sc${bumpA}">${E(sa === '' ? '–' : sa)}</div></div>
         <div class="ct"><span class="bnd">Sidelyne Sports</span>${pill}${clk ? `<div class="clk">${E(clk)}</div>` : ''}${sit(d)}</div>
-        <div class="tm h${sd === 'b' ? ' pk' : ''}">${sd === 'b' ? '<span class="tag">PICK</span>' : ''}${logo(d.home)}<div class="nm"><b>${E(d.home.ab || d.home.n)}</b><small>${E(d.home.n)}</small></div><div class="sc${bumpB}">${E(sb === '' ? '–' : sb)}</div></div></div>`;
+        <div class="tm h${sd === 'b' ? ' pk' : ''}">${sd === 'b' ? '<span class="tag">PICK</span>' : ''}${logo(d.home)}<div class="nm"><b>${E(d.home.ab || d.home.n)}</b><small>${E(d.home.n)}</small></div><div class="sc${bumpB}">${E(sb === '' ? '–' : sb)}</div></div>${pk ? `<div class="pkr">${pk}</div>` : ''}</div>`;
     }
 
     const hue = (s) => { let h = 0; for (const c of String(s || '')) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
     function drawStrip() {
-      const k = K && K.pick;
-      if (!wantPick || !k) { stripEl.innerHTML = ''; stripHad = false; stripSig = ''; return; }
-      const u = K.user || {}, sd = sideOf(), side = D && sd ? (sd === 'a' ? D.away : D.home) : null;
-      const sig = JSON.stringify([u, k, sd, logos, side && side.lg]);
-      if (sig === stripSig) return; stripSig = sig;
-      const pay = k.stake > 0 && k.mult ? Math.round(k.stake * Number(k.mult)) : 0;
-      const res = k.result === 'win' ? `<span class="res win">Correct${k.awarded ? ' +' + Number(k.awarded).toLocaleString() + ' SP' : ''}</span>` : k.result === 'loss' ? '<span class="res loss">Missed</span>' : k.result === 'void' ? '<span class="res void">Void</span>' : '';
-      const num = k.stake > 0 ? `<div class="num"><b>${Number(k.stake).toLocaleString()}</b> SP${pay && !res ? ` &rarr; <b>${pay.toLocaleString()}</b> SP` : ''}</div>` : '';
-      stripEl.innerHTML = `<div class="strip${stripHad ? '' : ' enter'}"><div class="pt">${logos && side ? jersey(side, 44, D && D.sp) : ''}<div class="k"><small>@${E(u.username || u.name || 'fan')}&rsquo;s pick</small><b>${E(k.team)}</b></div></div>${num || res ? '<div class="sep"></div>' : ''}${num}${res}${wantScore ? '' : '<div class="sep"></div><div class="k"><span class="bnd">Sidelyne<br>Sports</span></div>'}</div>`;
+      const inner = wantScore ? '' : pickInner(44);
+      if (!inner) { stripEl.innerHTML = ''; stripHad = false; stripSig = ''; return; }
+      if (inner === stripSig) return; stripSig = inner;
+      stripEl.innerHTML = `<div class="strip${stripHad ? '' : ' enter'}">${inner}<div class="sep"></div><div class="k"><span class="bnd">Sidelyne<br>Sports</span></div></div>`;
       stripHad = true;
     }
 
