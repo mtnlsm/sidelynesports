@@ -104,6 +104,31 @@ async function addMmaOdds(sp, events, fights) {
     if (od) g.od = od;
   }));
 }
+// UFC champions + divisional rankings (ESPN mma/ufc/rankings). Result: { <name key>: 'C' (champion) | <rank number> }. Pound-for-pound lists are ignored.
+const nkey = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function parseRanks(j) {
+  const map = {};
+  for (const gp of (j && (j.rankings || j.items || j.groups)) || []) {
+    if (/pound|p4p/i.test(String(gp.name || gp.shortName || gp.headline || ''))) continue;
+    const rows = [];
+    for (const e of gp.ranks || gp.athletes || gp.entries || gp.items || []) {
+      const a = (e && e.athlete) || e || {}, nm = a.displayName || a.fullName || a.shortName || (e && e.displayName) || '';
+      const raw = e && (e.current != null ? e.current : e.rank != null ? e.rank : e.position);
+      const champ = !!e && (e.isChampion === true || e.champion === true || /^c(hamp(ion)?)?$/i.test(String(raw == null ? '' : raw)) || /champ/i.test(String(e.rankDisplay || e.label || e.type || '')) || (raw != null && raw !== '' && Number(raw) === 0));
+      const n = Number(raw);
+      if (nkey(nm)) rows.push({ k: nkey(nm), champ, n: Number.isFinite(n) ? n : 0 });
+    }
+    // some feeds number the champion as #1 and give 16 names (champion + top 15): shift so the champion is C and the rest are #1-#15
+    if (rows.length >= 16 && !rows.some((r) => r.champ) && Math.min(...rows.map((r) => r.n)) === 1) rows.forEach((r) => { if (r.n === 1) r.champ = true; else r.n -= 1; });
+    for (const r of rows) { const v = r.champ ? 'C' : r.n > 0 ? r.n : null; if (v != null && (map[r.k] == null || v === 'C')) map[r.k] = v; }
+  }
+  return map;
+}
+const ufcRanks = () => cached('ufcranks1', 6 * 3600, async () => {
+  const j = await (await espn(BASE + 'mma/ufc/rankings')).json(), map = parseRanks(j);
+  if (!Object.keys(map).length) throw new Error('no UFC rankings found in ESPN response');
+  return { map, updated: new Date().toISOString() };
+}, { provider: 'espn' });
 // Live situation (ESPN scoreboard/summary "situation"): baseball = count/outs/runners/batter/pitcher, football = down & distance/possession, others = last play.
 const pn = (o) => { if (!o) return ''; const a = o.athlete || o; return String(a.shortName || a.displayName || a.fullName || '').slice(0, 30); };
 function normSit(sp, s, ids) {
@@ -199,6 +224,7 @@ async function load(sp) {
     kept: out.length, games: events.filter((e) => e && !MMA_SP.has(sp)).map((e) => (e.shortName || e.name) + ' | ' + (e.status && e.status.type && e.status.type.state) + ' | ' + e.date), kept_up: out.filter((g) => g.st === 'up').length, kept_live: out.filter((g) => g.st === 'live').length, kept_final: out.filter((g) => g.st === 'final').length,
     next_up: (out.filter((g) => g.st === 'up').map((g) => g.date).sort()[0]) || null, sample_dropped: events.filter((e) => e && !MMA_SP.has(sp) && !normTeam(sp, e)).slice(0, 2).map((e) => ({ name: e.shortName, date: e.date, state: e.status && e.status.type && e.status.type.state, detail: e.status && e.status.type && e.status.type.shortDetail, timeValid: e.competitions && e.competitions[0] && e.competitions[0].timeValid })) };
   if (MMA_SP.has(sp)) { try { await addMmaOdds(sp, events, out); } catch (e) {} }
+  if (sp === 'UFC') { try { const rk = (await ufcRanks()).map || {}; out.forEach((g) => { const a = rk[nkey(g.a)], b = rk[nkey(g.b)]; if (a != null) g.qa = a; if (b != null) g.qb = b; }); } catch (e) {} } // qa/qb = 'C' (champion) or rank number
   return out;
 }
 // ESPN gives team colors as 6-digit hex without '#'. Used by the SP Shop team themes.
@@ -217,6 +243,12 @@ exports.load = load; // used by _settle.js to fetch only the leagues that have u
 exports.handler = async (event) => {
   const { sport = 'ALL', type = 'games' } = event.queryStringParameters || {};
   const S = sport.toUpperCase();
+  if (type === 'ufcranks') { // /sports-data?type=ufcranks  (add &debug=1 to see what ESPN returned, for checking the field names)
+    try {
+      if ((event.queryStringParameters || {}).debug) { const j = await (await espn(BASE + 'mma/ufc/rankings')).json(); return { statusCode: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify({ parsed: parseRanks(j), raw: JSON.stringify(j).slice(0, 6000) }) }; }
+      return { statusCode: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }, body: JSON.stringify(await ufcRanks()) };
+    } catch (e) { return { statusCode: 502, body: JSON.stringify({ error: 'rankings unavailable', detail: String(e.message || e) }) }; }
+  }
   if (type === 'teams') {
     const tl = S === 'ALL' ? Object.keys(TEAM_PATHS) : [S];
     if (tl.some((s) => !TEAM_PATHS[s])) return { statusCode: 400, body: JSON.stringify({ error: 'bad sport' }) };
