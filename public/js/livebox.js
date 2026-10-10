@@ -3,6 +3,7 @@
 (function () {
   const E = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const isTeam = (g) => g && g.st === 'live' && g.sp !== 'UFC' && g.sp !== 'PFL';
+  const isMma = (g) => g && (g.sp === 'UFC' || g.sp === 'PFL') && (g.st === 'live' || g.st === 'final');
   const C = {}; // game id -> { d, err, tab, tm, gi }
 
   // Diamond with base runners (filled = occupied).
@@ -77,7 +78,38 @@
     return `<div class="lv-ts"><div class="lv-tsh"><b>${E(d.away.ab || d.away.n)}</b><span></span><b>${E(d.home.ab || d.home.n)}</b></div>${d.ts.map((r) => `<div><b>${E(r[1])}</b><span>${E(r[0])}</span><b>${E(r[2])}</b></div>`).join('')}</div>`;
   }
 
+
+  // ---------- UFC / PFL: live fight stats ----------
+  const fph = (u) => (u && /^https:\/\//.test(u) ? `<img class="uf-ph" src="${E(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : '<i class="uf-ph"></i>');
+  const acc = (x) => (x && x.d ? Math.round((x.n / x.d) * 100) + '%' : '');
+  const val = (x) => (x.t ? E(x.t) : x.d != null ? `${x.n}<small>/${x.d}</small>` : String(x.n));
+  function mmaRow(r) {
+    const an = r.a.n || 0, bn = r.b.n || 0, tot = an + bn, pa = tot ? (an / tot) * 100 : 50, lead = an > bn ? 'a' : bn > an ? 'b' : '';
+    const sub = r.a.d || r.b.d ? `<div class="ufr-s"><span>${acc(r.a) ? acc(r.a) + ' acc.' : ''}</span><span>${acc(r.b) ? acc(r.b) + ' acc.' : ''}</span></div>` : '';
+    return `<div class="ufr"><div class="ufr-t"><b class="${lead === 'a' ? 'w' : ''}">${val(r.a)}</b><span>${E(r.l)}</span><b class="${lead === 'b' ? 'w' : ''}">${val(r.b)}</b></div><div class="ufr-b${tot ? '' : ' z'}${an === 0 || bn === 0 ? ' solo' : ''}"><i class="a" style="width:${pa}%"></i><i class="b"></i></div>${sub}</div>`;
+  }
+  function roundDots(g, d) {
+    const n = Math.max(g.rd || 3, d.rd || 0), fin = g.st === 'final';
+    return `<div class="uf-rd">${Array.from({ length: n }, (_, i) => `<i class="${fin || i + 1 < d.rd ? 'dn' : i + 1 === d.rd ? 'now' : ''}"></i>`).join('')}</div>`;
+  }
+  function mmaInner(g) {
+    const c = C[g.id];
+    if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Fight stats aren\u2019t available right now.' : 'Loading fight stats\u2026'}</p>`;
+    const d = c.d, fin = g.st === 'final';
+    const status = fin ? [d.res, d.rd ? 'Round ' + d.rd + (d.ck ? ' \u00b7 ' + d.ck : '') : ''].filter(Boolean).join(' \u00b7 ') : d.rd ? `Round ${d.rd}${d.ck ? ' \u00b7 ' + E(d.ck) : ''}` : E(d.clk || g.clk || '');
+    const head = `<div class="uf-hd"><div class="uf-f a${d.win === 0 ? ' win' : ''}">${fph(g.ia)}<b>${E(g.a)}</b>${g.ra ? `<small>${E(g.ra)}</small>` : ''}</div>
+      <div class="uf-mid">${g.wc ? `<small>${E(g.wc)}</small>` : ''}${roundDots(g, d)}<span class="uf-st">${status}</span></div>
+      <div class="uf-f b${d.win === 1 ? ' win' : ''}">${fph(g.ib)}<b>${E(g.b)}</b>${g.rb ? `<small>${E(g.rb)}</small>` : ''}</div></div>`;
+    const grp = (k) => d.stats.filter((r) => r.g === k);
+    const sec = (t, k) => (grp(k).length ? `<div class="lv-h">${t}</div>${grp(k).map(mmaRow).join('')}` : '');
+    const body = d.stats.length
+      ? `<div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
+      : `<p class="mu uf-none">${fin ? 'Detailed stats aren\u2019t available for this fight.' : 'Stats show up here once the first round gets going.'}</p>`;
+    return `${head}${body}${fin ? '' : '<p class="mu uf-note">Updates automatically \u00b7 stats can lag the action by a few seconds.</p>'}${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
+  }
+
   function inner(g) {
+    if (isMma(g)) return mmaInner(g);
     const c = C[g.id];
     if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Live details aren\u2019t available right now.' : 'Loading live details\u2026'}</p>`;
     const d = c.d, tabs = [['live', 'Live'], ['box', 'Box score'], ['lu', 'Lineups'], ['ts', 'Team stats']].filter((t) => t[0] !== 'lu' || d.lu[0] || d.lu[1]).filter((t) => t[0] !== 'ts' || d.ts.length);
@@ -87,10 +119,10 @@
   }
 
   // Placeholder container for the game sheet template (re-rendered from cache whenever the sheet redraws).
-  window.lvHtml = (g) => (isTeam(g) ? `<div id="lvd" class="lvd">${inner(g)}</div>` : '');
+  window.lvHtml = (g) => (isTeam(g) || isMma(g) ? `<div id="lvd" class="lvd${isMma(g) ? ' uf' : ''}">${inner(g)}</div>` : '');
 
   window.startLive = (g, m) => {
-    if (!isTeam(g)) return;
+    if (!isTeam(g) && !isMma(g)) return;
     const c = (C[g.id] = C[g.id] || { tab: 'live', tm: 0, gi: 0 });
     const paint = () => { const b = m.querySelector('#lvd'); if (b) b.innerHTML = inner(g); };
     m.addEventListener('click', (e) => {
@@ -99,8 +131,8 @@
     });
     const pull = async () => {
       if (!m.isConnected) return;
-      if (!document.hidden) { try { c.d = await FX_API.gameDetail(g.id); c.err = 0; } catch (e) { c.err = 1; } paint(); }
-      if (m.isConnected) setTimeout(pull, 15000);
+      if (!document.hidden) { try { c.d = await (isMma(g) ? fetch('/.netlify/functions/game-detail?id=' + encodeURIComponent(g.id) + '&evi=' + encodeURIComponent(g.evi || '') + '&_=' + Date.now(), { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }) : FX_API.gameDetail(g.id)); c.err = 0; } catch (e) { c.err = 1; } paint(); }
+      if (m.isConnected && g.st !== 'final') setTimeout(pull, 15000);
     };
     pull();
   };
