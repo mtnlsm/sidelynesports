@@ -5,7 +5,7 @@
   'use strict';
   var API = '/.netlify/functions/team';
   var SPORTS = ['NFL', 'NBA', 'MLB', 'NHL', 'CFB'];
-  var st = { sp: 'NFL', conf: 0, cf: 'TOP25', poll: 0 }, ST = {}, busy = {}, err = {}, RK = {}, rkBusy = {}, rkErr = {};
+  var st = { sp: 'NFL', conf: 0, cf: 'TOP25', poll: 0, view: 'stand', pb: {}, tg: {}, ts: {} }, SD = {}, sbusy = {}, serr = {}, ST = {}, busy = {}, err = {}, RK = {}, rkBusy = {}, rkErr = {};
 
   var E = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var label = function (c) { try { return spl(c); } catch (e) { return c; } };
@@ -40,6 +40,16 @@
     '.tt-gd{text-align:right;font-size:13px;color:var(--mu);flex:none}',
     '.tt-hd{display:flex;gap:12px;align-items:center}',
     '.tt-lg{width:60px;height:60px;flex:none}.tt-lg img,.tt-lg svg{width:100%;height:100%;object-fit:contain;display:block}',
+    '.st-sw{display:flex;gap:6px;margin:12px 0 0;padding:4px;background:var(--sf2);border-radius:12px}',
+    '.st-sw button{flex:1;border:0;background:transparent;color:var(--mu);font:inherit;font-weight:700;font-size:13px;padding:9px 6px;border-radius:9px;cursor:pointer}',
+    '.st-sw button.on{background:var(--sf);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.18)}',
+    '.st-ph{width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:top;background:var(--sf2);flex:none;display:block}',
+    '.st-pl{display:flex;align-items:center;gap:9px;min-width:150px}.st-pl b{display:block;line-height:1.15}.st-pl small{display:block;color:var(--mu);font-size:11.5px;font-weight:600}',
+    '.st-tb th[data-tgs]{cursor:pointer;white-space:nowrap}.st-tb th.on{color:var(--tx)}.st-tb td.on{font-weight:800;background:color-mix(in srgb,var(--ab,#0e8f4a) 10%,transparent)}',
+    '.st-tb tbody tr:nth-child(-n+3) td.r{color:var(--tx);font-weight:800}',
+    '.st-lead{display:flex;align-items:center;gap:14px;padding:14px;margin-top:12px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--ab,#0e8f4a) 22%,var(--sf2)),var(--sf2))}',
+    '.st-lead .st-ph{width:64px;height:64px;border:3px solid var(--ab,#0e8f4a)}.st-lead small{color:var(--mu);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}',
+    '.st-lead b{display:block;font-size:17px;line-height:1.15}.st-lead .big{font-family:var(--fd);font-style:italic;font-weight:900;font-size:34px;line-height:1;margin-left:auto;text-align:right}.st-lead .big small{display:block;margin-top:3px}',
     '.tt-nm{font-family:var(--fd);font-size:26px;font-weight:800;text-transform:uppercase;line-height:1.05;margin:0;overflow-wrap:anywhere}'
   ].join('');
   document.head.appendChild(css);
@@ -126,6 +136,7 @@
   }
 
   function body() {
+    if (st.view !== 'stand') return statsBody();
     if (st.sp === 'CFB') return bodyCFB();
     var sp = st.sp, gs = groupsFor(sp);
     if (!gs) {
@@ -149,15 +160,78 @@
     return h + '<p class="tt-note">Tap a team for its record and recent games. Standings from ESPN, refreshed every few minutes.</p>';
   }
 
+
+  // ---------------- Player + team stats (data from /.netlify/functions/stats) ----------------
+  var SAPI = '/.netlify/functions/stats';
+  var BOARDS = {
+    NFL: [['pass', 'Passing'], ['rush', 'Rushing'], ['rec', 'Receiving'], ['tkl', 'Tackles'], ['sck', 'Sacks'], ['int', 'Interceptions']],
+    CFB: [['pass', 'Passing'], ['rush', 'Rushing'], ['rec', 'Receiving'], ['tkl', 'Tackles'], ['sck', 'Sacks']],
+    NBA: [['pts', 'Points'], ['reb', 'Rebounds'], ['ast', 'Assists'], ['stl', 'Steals'], ['blk', 'Blocks']],
+    MLB: [['hr', 'Home runs'], ['avg', 'Batting avg'], ['rbi', 'RBIs'], ['k', 'Strikeouts'], ['w', 'Pitching wins']],
+    NHL: [['pts', 'Points'], ['g', 'Goals'], ['a', 'Assists']]
+  };
+  function sload(key, qs) {
+    var c = SD[key];
+    if ((c && Date.now() - c.at < 600000) || sbusy[key]) return;
+    sbusy[key] = 1; delete serr[key];
+    fetch(SAPI + '?' + qs).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'error'); return j; }); })
+      .then(function (d) { SD[key] = { d: d, at: Date.now() }; })
+      .catch(function () { serr[key] = 1; })
+      .then(function () { sbusy[key] = 0; paint(); });
+  }
+  function sState(key) {
+    if (SD[key]) return '';
+    return serr[key] ? '<p class="mu" style="margin:10px 0">These stats aren\u2019t available right now.</p><button class="chip" data-ttsretry="' + E(key) + '">Retry</button>' : '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+  }
+  function playersBody() {
+    var sp = st.sp, bs = BOARDS[sp] || [], id = st.pb[sp] && bs.some(function (b) { return b[0] === st.pb[sp]; }) ? st.pb[sp] : (bs[0] || [])[0];
+    var key = 'p:' + sp + ':' + id;
+    sload(key, 'sport=' + sp + '&kind=players&id=' + id);
+    var h = '<div class="cat-row" role="tablist" style="margin-top:12px">' + bs.map(function (b) { return '<button class="chip ' + (b[0] === id ? 'on' : '') + '" role="tab" data-tpb="' + b[0] + '">' + E(b[1]) + '</button>'; }).join('') + '</div>';
+    if (!SD[key]) return h + sState(key);
+    var d = SD[key].d, top = d.rows[0], sc = d.cols[d.sortCol] || d.cols[0];
+    h += '<div class="st-lead">' + (top.img ? '<img class="st-ph" src="' + E(top.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '') +
+      '<div style="min-width:0"><small>League leader \u00b7 ' + E(d.label) + '</small><b>' + E(top.n) + '</b><span class="mu">' + E([top.t, top.pos].filter(Boolean).join(' \u00b7 ')) + '</span></div>' +
+      '<div class="big">' + E(top.v[d.sortCol] || top.v[0]) + '<small>' + E(sc.t || sc.l) + '</small></div></div>';
+    h += '<h3 class="tt-h">' + E(d.label) + ' leaders</h3><div class="glass card" style="padding:4px 12px"><div class="tt-sc"><table class="tt-tb st-tb"><thead><tr><th class="r"></th><th class="n"></th>' +
+      d.cols.map(function (c, i) { return '<th class="' + (i === d.sortCol ? 'on' : '') + '" title="' + E(c.t) + '">' + E(c.l) + '</th>'; }).join('') + '</tr></thead><tbody>';
+    d.rows.forEach(function (r, i) {
+      h += '<tr><td class="r">' + (i + 1) + '</td><td class="n"><div class="st-pl">' + (r.img ? '<img class="st-ph" src="' + E(r.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">' : '<i class="st-ph"></i>') +
+        '<span><b>' + E(r.n) + '</b><small>' + E([r.t, r.pos].filter(Boolean).join(' \u00b7 ')) + '</small></span></div></td>' +
+        r.v.map(function (v, k) { return '<td class="' + (k === d.sortCol ? 'on' : '') + '">' + E(v) + '</td>'; }).join('') + '</tr>';
+    });
+    return h + '</tbody></table></div></div><p class="tt-note">Top 25 for the current season from ESPN, refreshed every few minutes.</p>';
+  }
+  function numOf(v) { var n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : -Infinity; }
+  function teamsBody() {
+    var sp = st.sp, key = 't:' + sp;
+    sload(key, 'sport=' + sp + '&kind=teams');
+    if (!SD[key]) return sState(key);
+    var d = SD[key].d, gs = d.groups, gk = st.tg[sp] && gs.some(function (g) { return g.k === st.tg[sp]; }) ? st.tg[sp] : gs[0].k, g = gs.filter(function (x) { return x.k === gk; })[0];
+    var so = st.ts[sp + ':' + gk] || { i: 0, dir: -1 };
+    var rows = d.rows.slice().sort(function (a, b) { var x = numOf((a.v[gk] || [])[so.i]), y = numOf((b.v[gk] || [])[so.i]); return (x === y ? 0 : x < y ? -1 : 1) * so.dir || a.n.localeCompare(b.n); });
+    var h = '<div class="cat-row" role="tablist" style="margin-top:12px">' + gs.map(function (x) { return '<button class="chip ' + (x.k === gk ? 'on' : '') + '" role="tab" data-tgc="' + E(x.k) + '">' + E(x.n) + '</button>'; }).join('') + '</div>';
+    h += '<h3 class="tt-h">Team ' + E(g.n.toLowerCase()) + '</h3><div class="glass card" style="padding:4px 12px"><div class="tt-sc"><table class="tt-tb st-tb"><thead><tr><th class="r"></th><th class="n"></th>' +
+      g.cols.map(function (c, i) { return '<th data-tgs="' + i + '" class="' + (i === so.i ? 'on' : '') + '" title="' + E(c.t) + '">' + E(c.l) + (i === so.i ? (so.dir < 0 ? ' \u25BE' : ' \u25B4') : '') + '</th>'; }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (r, i) {
+      h += '<tr><td class="r">' + (i + 1) + '</td><td class="n"><span>' + jr(r.n, 24, r.ab) + E(r.n) + '</span></td>' +
+        (r.v[gk] || []).map(function (v, k) { return '<td class="' + (k === so.i ? 'on' : '') + '">' + E(v) + '</td>'; }).join('') + '</tr>';
+    });
+    return h + '</tbody></table></div></div><p class="tt-note">Tap a column heading to sort. Season totals and averages from ESPN.</p>';
+  }
+  function statsBody() { return st.view === 'players' ? playersBody() : teamsBody(); }
+
   function paint() {
     if (typeof S === 'undefined' || S.tab !== 'teams') return;
     var b = document.getElementById('tmx'); if (b) b.innerHTML = body();
   }
 
   R.teams = function () {
-    load(st.sp); if (st.sp === 'CFB') loadRk('CFB');
+    if (st.view === 'stand') { load(st.sp); if (st.sp === 'CFB') loadRk('CFB'); }
     return '<h2>Teams</h2><div class="cat-row" role="tablist">' + SPORTS.map(function (c) {
       return '<button class="chip ' + (c === st.sp ? 'on' : '') + '" role="tab" data-tts="' + c + '">' + E(label(c)) + '</button>';
+    }).join('') + '</div><div class="st-sw" role="tablist">' + [['stand', 'Standings'], ['players', 'Player stats'], ['teams', 'Team stats']].map(function (v) {
+      return '<button class="' + (v[0] === st.view ? 'on' : '') + '" role="tab" data-tsv="' + v[0] + '">' + v[1] + '</button>';
     }).join('') + '</div><div id="tmx">' + body() + '</div>';
   };
 
@@ -197,6 +271,11 @@
 
   document.addEventListener('click', function (e) {
     var c;
+    if ((c = e.target.closest('[data-tsv]'))) { st.view = c.dataset.tsv; go('teams'); return; }
+    if ((c = e.target.closest('[data-tpb]'))) { st.pb[st.sp] = c.dataset.tpb; paint(); return; }
+    if ((c = e.target.closest('[data-tgc]'))) { st.tg[st.sp] = c.dataset.tgc; paint(); return; }
+    if ((c = e.target.closest('[data-tgs]'))) { var gk2 = st.tg[st.sp] || '', k2 = st.sp + ':' + gk2, o = st.ts[k2] || { i: 0, dir: -1 }, ni = +c.dataset.tgs; if (!gk2 && SD['t:' + st.sp]) { gk2 = SD['t:' + st.sp].d.groups[0].k; k2 = st.sp + ':' + gk2; o = st.ts[k2] || o; } st.ts[k2] = o.i === ni ? { i: ni, dir: -o.dir } : { i: ni, dir: -1 }; paint(); return; }
+    if ((c = e.target.closest('[data-ttsretry]'))) { delete serr[c.dataset.ttsretry]; paint(); return; }
     if ((c = e.target.closest('[data-tts]'))) { st.sp = c.dataset.tts; st.conf = 0; go('teams'); return; }
     if ((c = e.target.closest('[data-ttcc]'))) { var gs0 = groupsFor('CFB'), ks = ['TOP25'].concat(gs0 ? cfList(gs0) : []); st.cf = ks[+c.dataset.ttcc] || 'TOP25'; paint(); return; }
     if ((c = e.target.closest('[data-ttpl]'))) { st.poll = +c.dataset.ttpl || 0; paint(); return; }
