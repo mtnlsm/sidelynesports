@@ -3,7 +3,7 @@
 (function () {
   const E = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const isTeam = (g) => g && g.st === 'live' && g.sp !== 'UFC' && g.sp !== 'PFL';
-  const isMma = (g) => g && (g.sp === 'UFC' || g.sp === 'PFL') && (g.st === 'live' || g.st === 'final');
+  const isMma = (g) => g && (g.sp === 'UFC' || g.sp === 'PFL'); // every UFC/PFL fight gets the overlay: upcoming = tale of the tape, live/final = fight stats too
   const C = {}; // game id -> { d, err, tab, tm, gi }
 
   // Diamond with base runners (filled = occupied).
@@ -92,20 +92,89 @@
     const n = Math.max(g.rd || 3, d.rd || 0), fin = g.st === 'final';
     return `<div class="uf-rd">${Array.from({ length: n }, (_, i) => `<i class="${fin || i + 1 < d.rd ? 'dn' : i + 1 === d.rd ? 'now' : ''}"></i>`).join('')}</div>`;
   }
-  function mmaInner(g) {
-    const c = C[g.id];
+
+  // Fighter profiles (record, age, reach, last 5) come from the existing /fighter function. undefined = not asked yet, null = loading, 0 = failed.
+  const F = {};
+  const eid = (u) => { const m = String(u || '').match(/players\/full\/(\d+)\./); return m ? m[1] : ''; };
+  function loadF(g, side, done) {
+    const name = side === 'a' ? g.a : g.b, id = eid(side === 'a' ? g.ia : g.ib);
+    if (F[name] !== undefined) return;
+    F[name] = null;
+    fetch('/.netlify/functions/fighter?' + (id ? 'id=' + id : 'name=' + encodeURIComponent(name))).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then((d) => { F[name] = d; }).catch(() => { F[name] = 0; }).then(done);
+  }
+  const impl = (m) => { const n = parseInt(m, 10); return n ? (n < 0 ? -n / (-n + 100) : 100 / (n + 100)) : 0; };
+  const inches = (t) => { const m = String(t || '').match(/(\d+)'\s*(\d+)?/); if (m) return +m[1] * 12 + (+m[2] || 0); const n = String(t || '').match(/(\d+(\.\d+)?)/); return n ? +n[1] : 0; };
+  const fmtWhen = (d) => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + ' \u00b7 ' + t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+  const fmtD = (d) => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleDateString([], { month: 'short', year: '2-digit' }); };
+  const rkTag = (q) => (q === 'C' ? '<em class="uf2-rk c">Champion</em>' : q > 0 ? `<em class="uf2-rk">#${q} ranked</em>` : '');
+
+  function fighterCol(g, side, d) {
+    const a = side === 'a', n = a ? g.a : g.b, p = F[n], rec = (a ? g.ra : g.rb) || (p && p.record && p.record.summary) || '', fl = a ? g.fa : g.fb, q = a ? g.qa : g.qb, win = d && d.win === (a ? 0 : 1), lose = d && d.win === (a ? 1 : 0);
+    return `<div class="uf2-f ${side}${win ? ' win' : ''}${lose ? ' lose' : ''}"><span class="uf2-pw">${fph(a ? g.ia : g.ib).replace('uf-ph', 'uf-ph uf2-ph')}${fl && /^https:/.test(fl) ? `<i class="uf2-fl" style="background-image:url('${E(fl)}')"></i>` : ''}${win ? '<i class="uf2-w">W</i>' : ''}</span>
+      ${rkTag(q)}<b class="uf2-n">${E(n)}</b>${p && p.nickname ? `<small class="uf2-nk">\u201c${E(p.nickname)}\u201d</small>` : ''}<span class="uf2-rec">${E(rec || '\u2013')}</span></div>`;
+  }
+  function oddsBar(g) {
+    const o = g.od; if (g.st !== 'up' || !o || !o.a || !o.b) return '';
+    const x = impl(o.a), y = impl(o.b), t = x + y; if (!t) return '';
+    const pa = Math.round((x / t) * 100), pb = 100 - pa;
+    return `<div class="uf2-od"><div class="uf2-od-h"><b>${pa}%</b><span>Win probability</span><b>${pb}%</b></div><div class="uf2-od-b"><i class="a" style="width:${pa}%"></i><i class="b"></i></div><div class="uf2-od-s"><span>${E(o.a)}</span><span>${o.p ? 'Odds \u00b7 ' + E(o.p) : 'Moneyline'}</span><span>${E(o.b)}</span></div></div>`;
+  }
+  function hero(g, d) {
+    d = d || {};
+    const fin = g.st === 'final', lv = g.st === 'live';
+    const mid = fin ? [d.res, d.rd ? 'R' + d.rd + (d.ck ? ' ' + d.ck : '') : ''].filter(Boolean).join(' \u00b7 ') : lv ? (d.rd ? `Round ${d.rd}${d.ck ? ' \u00b7 ' + d.ck : ''}` : g.clk || 'Live') : fmtWhen(g.date);
+    return `<div class="uf2-hero"><div class="uf2-top">${g.ev ? `<span>${E(g.ev)}</span>` : ''}${lv ? '<span class="live"><i></i>LIVE</span>' : ''}</div>
+      <div class="uf2-row">${fighterCol(g, 'a', d)}<div class="uf2-mid"><span class="uf2-vs">VS</span>${g.wc ? `<small>${E(g.wc)}</small>` : ''}<small>${g.rd || 3} rounds</small>${lv || fin ? roundDots(g, d) : ''}<span class="uf-st">${E(mid)}</span></div>${fighterCol(g, 'b', d)}</div>
+      ${g.vn ? `<div class="uf2-vn">${E(g.vn)}</div>` : ''}</div>`;
+  }
+  function tapeRow(label, av, bv, edge) {
+    if ((av == null || av === '') && (bv == null || bv === '')) return '';
+    const ea = edge > 0 ? ' e' : '', eb = edge < 0 ? ' e' : '';
+    return `<div class="uf2-tr"><b class="${ea.trim()}">${E(av == null || av === '' ? '\u2013' : av)}</b><span>${E(label)}</span><b class="${eb.trim()}">${E(bv == null || bv === '' ? '\u2013' : bv)}</b></div>`;
+  }
+  const cmp = (x, y) => (x > y ? 1 : y > x ? -1 : 0);
+  function form(p) {
+    const f = (p && p.fights) || []; if (!f.length) return '';
+    return `<div class="uf2-fm">${f.slice(0, 5).reverse().map((x) => `<i class="${E(x.result)}" title="${E((x.result || '') + ' vs ' + (x.opponent || '') + (x.method ? ' \u00b7 ' + x.method : ''))}">${E(x.result)}</i>`).join('')}</div>`;
+  }
+  function recent(g) {
+    const col = (n) => { const p = F[n]; if (!p || !p.fights || !p.fights.length) return ''; return `<div class="uf2-rc"><div class="lv-h">${E(n)}</div>${p.fights.slice(0, 5).map((x) => `<div class="uf2-fr"><i class="${E(x.result)}">${E(x.result)}</i><div><b>${E(x.opponent)}</b><small>${E([x.method, x.round ? 'R' + x.round : '', fmtD(x.date)].filter(Boolean).join(' \u00b7 '))}</small></div></div>`).join('')}</div>`; };
+    const h = col(g.a) + col(g.b); return h ? `<div class="uf2-rcs">${h}</div>` : '';
+  }
+  function tape(g) {
+    const A = F[g.a], B = F[g.b];
+    if (A == null || B == null) return '<p class="mu lv-ld">Loading fighter details\u2026</p>';
+    if (!A && !B) return '<p class="mu uf-none">Fighter details aren\u2019t available right now.</p>';
+    const ra = (A && A.record) || {}, rb = (B && B.record) || {};
+    const rows = [
+      tapeRow('Record', g.ra || ra.summary, g.rb || rb.summary, 0),
+      tapeRow('Streak', A && A.streak, B && B.streak, 0),
+      tapeRow('Age', A && A.age, B && B.age, 0),
+      tapeRow('Height', A && A.height, B && B.height, cmp(inches(A && A.height), inches(B && B.height))),
+      tapeRow('Reach', A && A.reach, B && B.reach, cmp(inches(A && A.reach), inches(B && B.reach))),
+      tapeRow('Weight', A && A.weight, B && B.weight, 0),
+      tapeRow('Stance', A && A.stance, B && B.stance, 0),
+      tapeRow('Wins by KO/TKO', ra.ko, rb.ko, cmp(ra.ko || 0, rb.ko || 0)),
+      tapeRow('Wins by submission', ra.sub, rb.sub, cmp(ra.sub || 0, rb.sub || 0)),
+      tapeRow('Wins by decision', ra.dec, rb.dec, cmp(ra.dec || 0, rb.dec || 0))
+    ].join('');
+    return `<div class="lv-h">Tale of the tape</div><div class="uf-stats">${rows}</div>${A || B ? `<div class="uf2-fmw"><div>${form(A)}</div><span>Last 5</span><div>${form(B)}</div></div>` : ''}${recent(g)}`;
+  }
+  function statsBody(g, c) {
     if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Fight stats aren\u2019t available right now.' : 'Loading fight stats\u2026'}</p>`;
     const d = c.d, fin = g.st === 'final';
-    const status = fin ? [d.res, d.rd ? 'Round ' + d.rd + (d.ck ? ' \u00b7 ' + d.ck : '') : ''].filter(Boolean).join(' \u00b7 ') : d.rd ? `Round ${d.rd}${d.ck ? ' \u00b7 ' + E(d.ck) : ''}` : E(d.clk || g.clk || '');
-    const head = `<div class="uf-hd"><div class="uf-f a${d.win === 0 ? ' win' : ''}">${fph(g.ia)}<b>${E(g.a)}</b>${g.ra ? `<small>${E(g.ra)}</small>` : ''}</div>
-      <div class="uf-mid">${g.wc ? `<small>${E(g.wc)}</small>` : ''}${roundDots(g, d)}<span class="uf-st">${status}</span></div>
-      <div class="uf-f b${d.win === 1 ? ' win' : ''}">${fph(g.ib)}<b>${E(g.b)}</b>${g.rb ? `<small>${E(g.rb)}</small>` : ''}</div></div>`;
     const grp = (k) => d.stats.filter((r) => r.g === k);
     const sec = (t, k) => (grp(k).length ? `<div class="lv-h">${t}</div>${grp(k).map(mmaRow).join('')}` : '');
     const body = d.stats.length
-      ? `<div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
+      ? `<div class="lv-h">Fight stats</div><div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
       : `<p class="mu uf-none">${fin ? 'Detailed stats aren\u2019t available for this fight.' : 'Stats show up here once the first round gets going.'}</p>`;
-    return `${head}${body}${fin ? '' : '<p class="mu uf-note">Updates automatically \u00b7 stats can lag the action by a few seconds.</p>'}${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
+    return `${body}${fin ? '' : '<p class="mu uf-note">Updates automatically \u00b7 stats can lag the action by a few seconds.</p>'}${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
+  }
+  function mmaInner(g) {
+    const c = C[g.id] || {}, up = g.st === 'up', tab = up || c.tab === 'tape' ? 'tape' : 'stats';
+    const tabs = up ? '' : `<div class="lv-tabs">${[['stats', 'Fight stats'], ['tape', 'Tale of the tape']].map((t) => `<button class="${t[0] === tab ? 'on' : ''}" data-lvt="${t[0]}">${t[1]}</button>`).join('')}</div>`;
+    return `${hero(g, c.d)}${oddsBar(g)}${tabs}<div class="lv-body">${tab === 'tape' ? tape(g) : statsBody(g, c)}</div>`;
   }
 
   function inner(g) {
@@ -123,7 +192,7 @@
 
   window.startLive = (g, m) => {
     if (!isTeam(g) && !isMma(g)) return;
-    const c = (C[g.id] = C[g.id] || { tab: 'live', tm: 0, gi: 0 });
+    const c = (C[g.id] = C[g.id] || { tab: isMma(g) ? 'stats' : 'live', tm: 0, gi: 0 });
     const paint = () => { const b = m.querySelector('#lvd'); if (b) b.innerHTML = inner(g); };
     m.addEventListener('click', (e) => {
       const t = e.target.closest('[data-lvt]'), x = e.target.closest('[data-lvm]'), y = e.target.closest('[data-lvg]');
@@ -134,6 +203,7 @@
       if (!document.hidden) { try { c.d = await (isMma(g) ? fetch('/.netlify/functions/game-detail?id=' + encodeURIComponent(g.id) + '&evi=' + encodeURIComponent(g.evi || '') + '&_=' + Date.now(), { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }) : FX_API.gameDetail(g.id)); c.err = 0; } catch (e) { c.err = 1; } paint(); }
       if (m.isConnected && g.st !== 'final') setTimeout(pull, 15000);
     };
+    if (isMma(g)) { const redo = () => { if (m.isConnected) paint(); }; loadF(g, 'a', redo); loadF(g, 'b', redo); if (g.st === 'up') return; } // upcoming fights: tale of the tape only, nothing to poll
     pull();
   };
 })();
