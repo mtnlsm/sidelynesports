@@ -162,56 +162,13 @@
     return `<div class="lv-h">Tale of the tape</div><div class="uf-stats">${rows}</div>${A || B ? `<div class="uf2-fmw"><div>${form(A)}</div><span>Last 5</span><div>${form(B)}</div></div>` : ''}${recent(g)}`;
   }
 
-  // ---------- Damage skeletons: strikes TAKEN by each fighter (the opponent's landed head/body/leg strikes). Yellow = taking damage, red = badly hurt. ----------
-  const TH = { head: [3, 8], body: [5, 12], leg: [5, 12] }; // [yellow, red] landed strikes
-  const lvl = (z, n, hurt) => (hurt && z === 'head' ? 'bad' : n >= TH[z][1] ? 'bad' : n >= TH[z][0] ? 'warn' : n > 0 ? 'lite' : '');
-  // Anatomical front-view skeleton. Each zone (head / torso / legs) is tinted by how much damage that area has taken.
-  const bn = (d, w) => `<path class="bo" d="${d}" stroke-width="${w + 2.6}"/><path class="bi" d="${d}" stroke-width="${w}"/>`;
-  let skN = 0;
-  const gd = (id) => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".3" stop-color="var(--f)" stop-opacity=".62"/><stop offset=".7" stop-color="var(--f)" stop-opacity=".3"/><stop offset="1" stop-color="var(--s)" stop-opacity=".55"/></linearGradient></defs>`;
-  function skel(t, hurt) {
-    const k = 'skg' + (skN++);
-    const h = lvl('head', t.head, hurt), b = lvl('body', t.body, 0), l = lvl('leg', t.leg, 0);
-    const ribs = [0, 1, 2, 3, 4, 5, 6].map((i) => { const y = 160 + i * 13.5, w = 40 - Math.abs(i - 2) * 4 - (i > 4 ? (i - 4) * 5 : 0), x = 94 - w; return bn(`M95 ${y} C ${x + 8} ${y - 12}, ${x - 6} ${y - 2}, ${x} ${y + 24 - i * 1.2}`, 4.4 - i * 0.2) + bn(`M105 ${y} C ${200 - x - 8} ${y - 12}, ${200 - x + 6} ${y - 2}, ${200 - x} ${y + 24 - i * 1.2}`, 4.4 - i * 0.2); }).join('');
-    const vert = (n, y0, step, w) => Array.from({ length: n }, (_, i) => `<rect class="fl" x="${100 - (w + i * 0.6) / 2}" y="${y0 + i * step}" width="${w + i * 0.6}" height="${step - 2.6}" rx="2.6"/>`).join('');
-    return `<svg class="sk-fig" viewBox="0 0 200 560" aria-hidden="true">
-      <g class="sk-sil"><ellipse cx="100" cy="62" rx="40" ry="52"/><path d="M60 140Q100 124 140 140L150 160 140 250 134 300 150 350 132 450 128 548H72L68 450 50 350 66 300 60 250 50 160Z"/><path d="M50 148L34 240 26 330M150 148L166 240 174 330" class="lim" stroke-width="24"/></g>
-      <g class="sk-z ${h}" style="--gr:url(#${k}h)">${gd(k + 'h')}<ellipse class="gl" cx="100" cy="58" rx="46" ry="56"/>
-        <path class="fl" d="M100 12C72 12 60 32 62 56c1 14 7 22 14 28v14c0 5 5 8 10 8h28c5 0 10-3 10-8V84c7-6 13-14 14-28C140 32 128 12 100 12Z"/>
-        <path class="fl" d="M76 92q2 26 24 28 22-2 24-28l-6 3q-2 14-18 17-16-3-18-17z"/>
-        <ellipse class="ey" cx="86" cy="58" rx="10" ry="11"/><ellipse class="ey" cx="114" cy="58" rx="10" ry="11"/><path class="ey" d="M100 70l-7 15h14z"/>
-        <path class="ln" d="M87 100h26M92 96v8M100 96v8M108 96v8"/><path class="ln" d="M70 40q4-18 30-22"/></g>
-      <g class="sk-z ${b}" style="--gr:url(#${k}b)">${gd(k + 'b')}<ellipse class="gl" cx="100" cy="230" rx="58" ry="104"/>
-        ${vert(4, 124, 8, 11)}${bn('M98 150Q74 140 48 148', 5.4)}${bn('M102 150Q126 140 152 148', 5.4)}
-        ${vert(5, 252, 9.6, 14)}${ribs}
-        <path class="fl" d="M100 150l-7 8 2 52 5 10 5-10 2-52z"/><path class="ln" d="M95 176h10M95 196h10"/>
-        <path class="fl" d="M96 296C80 276 52 278 46 296c-2 18 8 36 28 46l16-6c2-14 4-24 6-34z"/><path class="fl" d="M104 296c16-20 44-18 50 0 2 18-8 36-28 46l-16-6c-2-14-4-24-6-34z"/>
-        <path class="fl" d="M88 298h24l-6 36h-12z"/><ellipse class="ey" cx="76" cy="326" rx="6" ry="9"/><ellipse class="ey" cx="124" cy="326" rx="6" ry="9"/></g>
-      <g class="sk-z n" style="--gr:url(#${k}n)">${gd(k + 'n')}${bn('M50 150L36 238', 7)}${bn('M150 150L164 238', 7)}${bn('M36 246L28 328', 5)}${bn('M44 246L36 330', 4)}${bn('M164 246L172 328', 5)}${bn('M156 246L164 330', 4)}
-        <circle class="fl" cx="46" cy="150" r="7"/><circle class="fl" cx="154" cy="150" r="7"/><circle class="fl" cx="36" cy="242" r="6"/><circle class="fl" cx="164" cy="242" r="6"/>
-        <path class="ln" d="M24 336l-4 20M30 338l-1 24M36 338l2 22M41 335l5 18M168 336l4 20M174 338l1 24M180 338l-2 22M185 335l-5 18" stroke-width="3"/></g>
-      <g class="sk-z ${l}" style="--gr:url(#${k}l)">${gd(k + 'l')}<ellipse class="gl" cx="100" cy="450" rx="62" ry="112"/>
-        ${bn('M70 346L84 446', 8.6)}${bn('M130 346L116 446', 8.6)}<circle class="fl" cx="68" cy="344" r="9"/><circle class="fl" cx="132" cy="344" r="9"/>
-        <ellipse class="fl" cx="86" cy="454" rx="9" ry="10"/><ellipse class="fl" cx="114" cy="454" rx="9" ry="10"/>
-        ${bn('M86 466L90 540', 6.4)}${bn('M114 466L110 540', 6.4)}${bn('M97 468L96 538', 3)}${bn('M103 468L104 538', 3)}
-        <path class="fl" d="M80 542q10-6 20 0l4 12H72zM100 542q10-6 20 0l8 12h-32z"/></g></svg>`;
-  }
-  function damage(g, d) {
-    const row = (k) => d.stats.find((r) => r.k === k) || { a: { n: 0 }, b: { n: 0 } };
-    const kd = row('kd'), hd = row('head'), bd = row('body'), lg = row('leg');
-    const fin = g.st === 'final', koA = fin && d.win === 1 && /ko|tko|sub/i.test(d.res || ''), koB = fin && d.win === 0 && /ko|tko|sub/i.test(d.res || '');
-    // fighter A takes what B lands (and the other way round)
-    const tA = { head: hd.b.n || 0, body: bd.b.n || 0, leg: lg.b.n || 0 }, tB = { head: hd.a.n || 0, body: bd.a.n || 0, leg: lg.a.n || 0 };
-    const col = (name, t, hurt, side) => `<div class="sk-c ${side}">${skel(t, hurt)}<b>${E(name)}</b><div class="sk-n"><span class="${lvl('head', t.head, hurt)}">Head <i>${t.head}</i></span><span class="${lvl('body', t.body, 0)}">Body <i>${t.body}</i></span><span class="${lvl('leg', t.leg, 0)}">Legs <i>${t.leg}</i></span></div></div>`;
-    return `<div class="lv-h">Damage taken</div><div class="sk-w">${col(g.a, tA, (kd.b.n || 0) > 0 || koA, 'a')}${col(g.b, tB, (kd.a.n || 0) > 0 || koB, 'b')}</div><div class="sk-lg"><span><i class="warn"></i>Taking damage</span><span><i class="bad"></i>Badly hurt</span></div>`;
-  }
   function statsBody(g, c) {
     if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Fight stats aren\u2019t available right now.' : 'Loading fight stats\u2026'}</p>`;
     const d = c.d, fin = g.st === 'final';
     const grp = (k) => d.stats.filter((r) => r.g === k);
     const sec = (t, k) => (grp(k).length ? `<div class="lv-h">${t}</div>${grp(k).map(mmaRow).join('')}` : '');
     const body = d.stats.length
-      ? `${damage(g, d)}<div class="lv-h">Fight stats</div><div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
+      ? `<div class="lv-h">Fight stats</div><div class="uf-stats">${grp('main').map(mmaRow).join('')}</div>${sec('Significant strikes by target', 'tgt')}${sec('Significant strikes by position', 'pos')}`
       : `<p class="mu uf-none">${fin ? 'Detailed stats aren\u2019t available for this fight.' : 'Stats show up here once the first round gets going.'}</p>`;
     return `${body}${fin ? '' : '<p class="mu uf-note">Updates automatically \u00b7 stats can lag the action by a few seconds.</p>'}${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
   }
