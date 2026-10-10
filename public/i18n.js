@@ -92,7 +92,7 @@ function walk(root){if(lang==='en'||!root)return;
 let busy=false;
 new MutationObserver(ms=>{if(lang==='en'||busy)return;busy=true;ms.forEach(m=>{if(m.type==='childList')m.addedNodes.forEach(walk);else if(m.type==='characterData')walk(m.target)});busy=false}).observe(document.body,{childList:true,subtree:true,characterData:true});
 function setLang(l){lang=l;try{localStorage.setItem('fx-lang',l)}catch(e){}document.documentElement.lang=l;
- $('#nav').innerHTML=NAV.map(n=>`<button data-t="${n[0]}" aria-label="${n[2]}" class="${n[0]===S.tab?'on':''}"><span>${ic(n[1],22)}</span>${n[2]}</button>`).join('')+($('#nav').classList.contains('has-admin')?`<button data-t="admin" aria-label="Admin" class="${S.tab==='admin'?'on':''}"><span>${ic('shield',22)}</span>Admin</button>`:'');
+ $('#nav').innerHTML=NAV.map(n=>navBtn(n[0],n[1],n[2],n[0]===S.tab)).join('')+($('#nav').classList.contains('has-admin')?navBtn('admin','nv_admin','Admin',S.tab==='admin'):'');
  walk(document.body);if(R[S.tab])go(S.tab,true)}
 const SD={size:'m',rm:'off',pop:'on',start:'community'};
 const getSet=()=>{try{return{...SD,...JSON.parse(localStorage.getItem('fx-set')||'{}')}}catch(e){return{...SD}}};
