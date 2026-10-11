@@ -10,8 +10,9 @@
 --   * Picks are scored automatically when a game goes final (trigger on finished_games).
 --   * SEASONS: standings reset every 2 months (league_cfg 'season_months'). The old season's top players are saved in
 --     league_seasons and shown as "Past seasons" in the league. Picks on games that haven't finished yet carry over.
---   * There is no end-of-league bonus because leagues have no end. (league_finalize() is kept only so leagues created before
---     this version that still had an end date close out cleanly; re-running this file converts active ones to permanent.)
+--   * PRIZE: when a season ends, #1 wins the bonus (20,000 SP, league_cfg 'bonus'). Anti-farming: the league needs at least
+--     'min_members' players and the winner needs 'min_picks' graded picks that season, otherwise no bonus is paid.
+--   * (league_finalize() is also kept for old leagues that still had an end date; re-running this file converts active ones to permanent.)
 
 do $$ begin
   if to_regprocedure('sp_credit(uuid,integer,integer,text,text)') is null then raise exception 'Run supabase/stake.sql first (it creates sp_credit).'; end if;
@@ -21,7 +22,7 @@ end $$;
 -- ============ SETTINGS (edit here) ============
 create or replace function league_cfg() returns jsonb language sql immutable as $$
   select jsonb_build_object(
-    'bonus',20000,        -- SP paid to the #1 player when a league ends
+    'bonus',20000,        -- SP paid to the #1 player when a season ends
     'min_members',3,      -- league needs at least this many players for the bonus
     'min_picks',5,        -- winner needs at least this many graded (win/loss) picks for the bonus
     'max_members',100,    -- players per league
@@ -96,7 +97,11 @@ create table if not exists league_seasons(
   ended_at timestamptz not null,
   winner uuid references profiles on delete set null,
   standings jsonb not null default '[]'::jsonb,   -- top 10 at the end of the season
+  bonus int not null default 0,
+  bonus_paid boolean not null default false,
   primary key(league_id,season));
+alter table league_seasons add column if not exists bonus int not null default 0;
+alter table league_seasons add column if not exists bonus_paid boolean not null default false;
 alter table league_seasons enable row level security;
 revoke all on league_seasons from anon, authenticated;
 create index if not exists idx_league_members_user on league_members(user_id);
@@ -276,7 +281,7 @@ create trigger league_final_trg after insert on finished_games for each row exec
 -- Saves the top 10 of the finished season, zeroes everyone's points, clears settled picks, starts the next season.
 -- Safe to call any time (league_finalize() calls it, and so does every league_my()/league_detail()).
 create or replace function league_roll() returns int language plpgsql security definer set search_path=public as $$
-declare mo int:=(league_cfg()->>'season_months')::int; l leagues; n int:=0; st jsonb; w uuid; ns timestamptz;
+declare cfg jsonb:=league_cfg(); mo int:=(cfg->>'season_months')::int; l leagues; n int:=0; st jsonb; w record; ns timestamptz; cnt int; paid boolean;
 begin
   for l in select x.* from leagues x where x.status='active' and x.season_start+make_interval(months=>mo)<=now()
            order by x.season_start limit 50 for update of x skip locked loop
@@ -286,10 +291,15 @@ begin
         from (select m.user_id,p.username,p.display_name,p.avatar_url,m.points,m.wins,m.losses,
                      row_number() over (order by m.points desc,m.losses asc,m.joined_at asc) rn
               from league_members m join profiles p on p.id=m.user_id where m.league_id=l.id) q where q.rn<=10;
-      select m.user_id into w from league_members m where m.league_id=l.id and m.points>0
+      select count(*) into cnt from league_members where league_id=l.id;
+      select m.user_id,m.points,m.wins,m.losses into w from league_members m where m.league_id=l.id and m.points>0
         order by m.points desc,m.losses asc,m.joined_at asc limit 1;
-      insert into league_seasons(league_id,season,started_at,ended_at,winner,standings)
-        values(l.id,l.season,l.season_start,l.season_start+make_interval(months=>mo),w,st) on conflict do nothing;
+      paid:=false;
+      if w.user_id is not null and cnt>=(cfg->>'min_members')::int and (w.wins+w.losses)>=(cfg->>'min_picks')::int then
+        paid:=sp_credit(w.user_id,(cfg->>'bonus')::int,0,'League win',l.id::text||':s'||l.season);   -- unique per league + season, can never pay twice
+      end if;
+      insert into league_seasons(league_id,season,started_at,ended_at,winner,standings,bonus,bonus_paid)
+        values(l.id,l.season,l.season_start,l.season_start+make_interval(months=>mo),w.user_id,st,case when paid then (cfg->>'bonus')::int else 0 end,paid) on conflict do nothing;
       update league_members set points=0,wins=0,losses=0 where league_id=l.id;
       delete from league_picks where league_id=l.id and settled_at is not null;   -- unfinished games stay and count in the new season
     end if;
@@ -337,6 +347,8 @@ begin
            l.avatar_url,l.banner_url,l.bio,l.color,l.color2,l.season,l.season_start,
            (l.season_start+make_interval(months=>(league_cfg()->>'season_months')::int)) as season_ends,
            (l.owner=uid) as is_owner,
+           (select max(s.season) from league_seasons s where s.league_id=l.id and s.winner=uid and s.bonus_paid) as won_season,
+           (select s.bonus from league_seasons s where s.league_id=l.id and s.winner=uid and s.bonus_paid order by s.season desc limit 1) as won_bonus,
            (l.winner=uid and l.bonus_paid) as i_won,
            (select count(*) from league_members z where z.league_id=l.id)::int as members,
            m.points,m.wins,m.losses,
@@ -378,7 +390,7 @@ begin
     select coalesce(jsonb_agg(jsonb_build_object('game_id',game_id,'pick',pick,'matchup',matchup,'sport',sport,'result',result,'updated_at',updated_at)
              order by updated_at desc),'[]'::jsonb) into pk from league_picks where league_id=p_id and user_id=uid;
   end if;
-  select coalesce(jsonb_agg(jsonb_build_object('season',h.season,'started_at',h.started_at,'ended_at',h.ended_at,'winner',h.winner,
+  select coalesce(jsonb_agg(jsonb_build_object('season',h.season,'started_at',h.started_at,'ended_at',h.ended_at,'winner',h.winner,'bonus',h.bonus,'bonus_paid',h.bonus_paid,
            'top',(select coalesce(jsonb_agg(e order by i),'[]'::jsonb) from jsonb_array_elements(h.standings) with ordinality as t(e,i) where i<=3)) order by h.season desc),'[]'::jsonb) into hist
     from (select * from league_seasons where league_id=p_id order by season desc limit 8) h;
   return jsonb_build_object(
