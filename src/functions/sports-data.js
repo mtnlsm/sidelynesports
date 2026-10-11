@@ -97,7 +97,7 @@ async function fetchMmaOdds(sp, evId, c, f) {
 async function addMmaOdds(sp, events, fights) {
   const by = new Map();
   events.forEach((ev) => (ev.competitions || []).forEach((c) => by.set(sp + ':' + c.id, { ev, c })));
-  await Promise.allSettled(fights.filter((g) => g.st === 'up' && !g.od).map(async (g) => {
+  await Promise.allSettled(fights.filter((g) => g.st !== 'final' && !g.od).map(async (g) => {
     const x = by.get(g.id); if (!x) return;
     const f = (x.c.competitors || []).slice().sort((p, q) => (p.order || 0) - (q.order || 0));
     const od = await fetchMmaOdds(sp, x.ev.id, x.c, f);
