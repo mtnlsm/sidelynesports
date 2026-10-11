@@ -2,15 +2,14 @@
 -- Run in Supabase SQL Editor AFTER stake.sql and results.sql (needs sp_credit() and finished_games).
 --
 -- HOW IT WORKS
---   * Anyone can create a league (private with an invite code, or public), pick a sport (or all sports) and a length (1-90 days).
+--   * Anyone can create a league (private with an invite code, or public) and pick a sport (or all sports).
+--   * Leagues NEVER expire: they run until the owner deletes them. Owners can edit them any time and delete them any time.
+--   * Leagues are customizable: picture, banner, bio and two league colors.
 --   * Members make their league picks on upcoming games. League picks are FREE: no SP stake, no SP lost, separate from your normal picks.
 --   * Each correct pick = 1 point. Ranking: most points, then fewest losses, then who joined first.
---   * When the league ends, #1 gets the winner bonus (20,000 SP, counts toward level like any SP you earn).
---   * Picks are scored automatically when a game goes final (trigger on finished_games), and ended leagues are paid out by
---     league_finalize() (the 5-minute settle cron calls it, and it also runs whenever someone opens a league).
---
--- ANTI-FARMING (so nobody can make a solo league and collect 20,000 SP): the bonus is only paid if the league had enough
--- players and the winner made enough graded picks. Change the numbers in league_cfg() below.
+--   * Picks are scored automatically when a game goes final (trigger on finished_games).
+--   * There is no end-of-league bonus because leagues have no end. (league_finalize() is kept only so leagues created before
+--     this version that still had an end date close out cleanly; re-running this file converts active ones to permanent.)
 
 do $$ begin
   if to_regprocedure('sp_credit(uuid,integer,integer,text,text)') is null then raise exception 'Run supabase/stake.sql first (it creates sp_credit).'; end if;
@@ -38,12 +37,17 @@ create table if not exists leagues(
   sport text not null default 'ALL',
   is_public boolean not null default false,
   starts_at timestamptz not null default now(),
-  ends_at timestamptz not null,
+  ends_at timestamptz,   -- null = permanent (the normal case)
   status text not null default 'active' check(status in('active','finished')),
   winner uuid references profiles on delete set null,
   bonus_paid boolean not null default false,
   bonus int not null default 0,
   finished_at timestamptz,
+  avatar_url text,
+  banner_url text,
+  bio text check(bio is null or length(bio)<=200),
+  color text check(color is null or color ~ '^#[0-9a-fA-F]{6}$'),
+  color2 text check(color2 is null or color2 ~ '^#[0-9a-fA-F]{6}$'),
   created_at timestamptz not null default now());
 create table if not exists league_members(
   league_id uuid not null references leagues on delete cascade,
@@ -62,6 +66,22 @@ create table if not exists league_picks(
   settled_at timestamptz,
   primary key(league_id,user_id,game_id),
   foreign key(league_id,user_id) references league_members(league_id,user_id) on delete cascade);
+
+-- Upgrade for databases that already had the old leagues table (no-ops on a fresh install).
+alter table leagues alter column ends_at drop not null;
+alter table leagues add column if not exists avatar_url text;
+alter table leagues add column if not exists banner_url text;
+alter table leagues add column if not exists bio text;
+alter table leagues add column if not exists color text;
+alter table leagues add column if not exists color2 text;
+do $$ begin
+  if not exists(select 1 from pg_constraint where conname='leagues_bio_len') then
+    alter table leagues add constraint leagues_bio_len check(bio is null or length(bio)<=200); end if;
+  if not exists(select 1 from pg_constraint where conname='leagues_color_hex') then
+    alter table leagues add constraint leagues_color_hex check((color is null or color ~ '^#[0-9a-fA-F]{6}$') and (color2 is null or color2 ~ '^#[0-9a-fA-F]{6}$')); end if;
+end $$;
+update leagues set ends_at=null where status='active' and ends_at is not null;   -- active leagues become permanent
+drop function if exists league_create(text,text,int,boolean);
 create index if not exists idx_league_members_user on league_members(user_id);
 create index if not exists idx_leagues_open on leagues(status,ends_at);
 create index if not exists idx_league_picks_open on league_picks(game_id) where settled_at is null;
@@ -84,27 +104,65 @@ begin
   return c;
 end $$;
 
--- ============ CREATE / JOIN / LEAVE ============
-create or replace function league_create(p_name text,p_sport text,p_days int,p_public boolean default false) returns jsonb
+-- ============ CREATE / EDIT / DELETE / JOIN / LEAVE / PICKS ============
+drop function if exists league_create(text,text,int,boolean);
+create or replace function league_create(
+  p_name text,p_sport text,p_public boolean default false,
+  p_bio text default null,p_color text default null,p_color2 text default null,
+  p_avatar text default null,p_banner text default null) returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid(); cfg jsonb:=league_cfg(); l leagues; nm text:=btrim(coalesce(p_name,'')); sp text:=upper(coalesce(nullif(btrim(p_sport),''),'ALL'));
+        bi text:=nullif(btrim(coalesce(p_bio,'')),'');
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   if not exists(select 1 from profiles where id=uid and onboarded) then raise exception 'Finish setting up your profile first'; end if;
   if length(nm) not between 3 and 40 then raise exception 'League name must be 3 to 40 characters'; end if;
   if sp !~ '^[A-Z0-9]{2,10}$' then raise exception 'Invalid sport'; end if;
-  if p_days is null or p_days not between 1 and 90 then raise exception 'A league can run for 1 to 90 days'; end if;
+  if bi is not null and length(bi)>200 then raise exception 'Bio can be up to 200 characters'; end if;
+  if p_color is not null and p_color !~ '^#[0-9a-fA-F]{6}$' then raise exception 'Invalid color'; end if;
+  if p_color2 is not null and p_color2 !~ '^#[0-9a-fA-F]{6}$' then raise exception 'Invalid color'; end if;
   if (select count(*) from leagues where owner=uid and status='active')>=(cfg->>'max_owned')::int then
     raise exception 'You can run up to % active leagues at once',cfg->>'max_owned'; end if;
   if (select count(*) from league_members m join leagues x on x.id=m.league_id where m.user_id=uid and x.status='active')>=(cfg->>'max_joined')::int then
     raise exception 'You are in too many active leagues'; end if;
-  insert into leagues(name,code,owner,sport,is_public,ends_at)
-    values(nm,league_new_code(),uid,sp,coalesce(p_public,false),now()+make_interval(days=>p_days)) returning * into l;
+  insert into leagues(name,code,owner,sport,is_public,ends_at,bio,color,color2,avatar_url,banner_url)
+    values(nm,league_new_code(),uid,sp,coalesce(p_public,false),null,bi,p_color,p_color2,nullif(p_avatar,''),nullif(p_banner,'')) returning * into l;
   insert into league_members(league_id,user_id) values(l.id,uid);
   return jsonb_build_object('id',l.id,'code',l.code);
 end $$;
 
--- Join with an invite code, or (public leagues only) by id.
+-- ============ EDIT (owner only) ============
+create or replace function league_update(
+  p_id uuid,p_name text,p_bio text,p_color text,p_color2 text,p_avatar text,p_banner text,p_public boolean) returns void
+language plpgsql security definer set search_path=public as $$
+declare uid uuid:=auth.uid(); l leagues; nm text:=btrim(coalesce(p_name,'')); bi text:=nullif(btrim(coalesce(p_bio,'')),'');
+begin
+  if uid is null then raise exception 'Not signed in'; end if;
+  select * into l from leagues where id=p_id for update;
+  if not found then raise exception 'League not found'; end if;
+  if l.owner<>uid then raise exception 'Only the league owner can edit it'; end if;
+  if length(nm) not between 3 and 40 then raise exception 'League name must be 3 to 40 characters'; end if;
+  if bi is not null and length(bi)>200 then raise exception 'Bio can be up to 200 characters'; end if;
+  if p_color is not null and p_color !~ '^#[0-9a-fA-F]{6}$' then raise exception 'Invalid color'; end if;
+  if p_color2 is not null and p_color2 !~ '^#[0-9a-fA-F]{6}$' then raise exception 'Invalid color'; end if;
+  update leagues set name=nm,bio=bi,color=p_color,color2=p_color2,avatar_url=nullif(p_avatar,''),banner_url=nullif(p_banner,''),
+         is_public=coalesce(p_public,is_public)
+   where id=p_id;
+end $$;
+
+-- ============ DELETE (owner only, any time) ============
+create or replace function league_delete(p_id uuid) returns void
+language plpgsql security definer set search_path=public as $$
+declare uid uuid:=auth.uid(); l leagues;
+begin
+  if uid is null then raise exception 'Not signed in'; end if;
+  select * into l from leagues where id=p_id for update;
+  if not found then raise exception 'League not found'; end if;
+  if l.owner<>uid then raise exception 'Only the league owner can delete it'; end if;
+  delete from leagues where id=p_id;   -- members and picks go with it (on delete cascade)
+end $$;
+
+-- ============ JOIN / LEAVE / PICKS (no end date any more) ============
 create or replace function league_join(p_code text default null,p_id uuid default null) returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid(); cfg jsonb:=league_cfg(); l leagues; cnt int;
@@ -116,7 +174,7 @@ begin
   else raise exception 'Enter an invite code'; end if;
   if not found then raise exception 'League not found. Check the code and try again.'; end if;
   if exists(select 1 from league_members where league_id=l.id and user_id=uid) then return jsonb_build_object('id',l.id); end if;
-  if l.status<>'active' or l.ends_at<=now() then raise exception 'This league has already ended'; end if;
+  if l.status<>'active' or (l.ends_at is not null and l.ends_at<=now()) then raise exception 'This league has already ended'; end if;
   select count(*) into cnt from league_members where league_id=l.id;
   if cnt>=(cfg->>'max_members')::int then raise exception 'This league is full'; end if;
   if (select count(*) from league_members m join leagues x on x.id=m.league_id where m.user_id=uid and x.status='active')>=(cfg->>'max_joined')::int then
@@ -125,24 +183,17 @@ begin
   return jsonb_build_object('id',l.id);
 end $$;
 
--- Leave a league (your picks there are removed). The owner can only leave by deleting a league nobody else joined.
+-- Members can leave any time. The owner deletes the league instead (league_delete).
 create or replace function league_leave(p_id uuid) returns void language plpgsql security definer set search_path=public as $$
-declare uid uuid:=auth.uid(); l leagues; cnt int;
+declare uid uuid:=auth.uid(); l leagues;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into l from leagues where id=p_id for update;
   if not found then raise exception 'League not found'; end if;
-  if l.status<>'active' then raise exception 'This league has ended'; end if;
-  select count(*) into cnt from league_members where league_id=p_id;
-  if l.owner=uid then
-    if cnt>1 then raise exception 'You run this league, so you cannot leave while others are in it'; end if;
-    delete from leagues where id=p_id;
-  else
-    delete from league_members where league_id=p_id and user_id=uid;
-  end if;
+  if l.owner=uid then raise exception 'You run this league. Delete it instead of leaving.'; end if;
+  delete from league_members where league_id=p_id and user_id=uid;
 end $$;
 
--- ============ PICKS ============
 create or replace function league_save_pick(p_league uuid,p_game text,p_sport text,p_pick text,p_matchup text,p_start timestamptz default null) returns jsonb
 language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid(); l leagues; sides text[];
@@ -150,7 +201,7 @@ begin
   if uid is null then raise exception 'Not signed in'; end if;
   select * into l from leagues where id=p_league;
   if not found then raise exception 'League not found'; end if;
-  if l.status<>'active' or l.ends_at<=now() then raise exception 'This league has ended'; end if;
+  if l.status<>'active' or (l.ends_at is not null and l.ends_at<=now()) then raise exception 'This league has ended'; end if;
   if not exists(select 1 from league_members where league_id=p_league and user_id=uid) then raise exception 'Join this league first'; end if;
   if coalesce(length(p_game),0) not between 3 and 80 or coalesce(length(p_pick),0) not between 1 and 100 or coalesce(length(p_matchup),0) not between 3 and 200 then
     raise exception 'Invalid pick'; end if;
@@ -159,7 +210,6 @@ begin
   if array_length(sides,1)<>2 or not (p_pick=any(sides)) then raise exception 'Invalid pick'; end if;
   if exists(select 1 from finished_games where game_id=p_game) then raise exception 'That game is already over'; end if;
   if p_start is not null and p_start<=now() then raise exception 'That game has already started'; end if;
-  -- Re-saving the same side does not touch updated_at. A pick first saved or changed after kickoff is voided when the game is scored.
   insert into league_picks(league_id,user_id,game_id,sport,pick,matchup) values(p_league,uid,p_game,left(p_sport,10),p_pick,p_matchup)
     on conflict(league_id,user_id,game_id) do update
       set pick=excluded.pick,matchup=excluded.matchup,
@@ -168,6 +218,7 @@ begin
   if not found then raise exception 'This pick is already settled'; end if;
   return jsonb_build_object('ok',true,'pick',p_pick);
 end $$;
+
 
 -- ============ SCORING (called when a game goes final) ============
 create or replace function settle_league_game(p_game text,p_winner text,p_start timestamptz) returns int
@@ -228,14 +279,16 @@ begin
   return n;
 end $$;
 
--- ============ READ FUNCTIONS (what the app shows) ============
+-- ============ READ FUNCTIONS ============
 create or replace function league_my() returns jsonb language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid();
 begin
   if uid is null then return '[]'::jsonb; end if;
   perform league_finalize();
-  return coalesce((select jsonb_agg(to_jsonb(t) order by (t.status='active') desc,t.ends_at asc) from (
-    select l.id,l.name,l.code,l.sport,l.is_public,l.starts_at,l.ends_at,l.status,l.bonus_paid,l.bonus,l.winner,
+  return coalesce((select jsonb_agg(to_jsonb(t) order by (t.status='active') desc,t.created_at desc) from (
+    select l.id,l.name,l.code,l.sport,l.is_public,l.starts_at,l.ends_at,l.status,l.bonus_paid,l.bonus,l.winner,l.created_at,
+           l.avatar_url,l.banner_url,l.bio,l.color,l.color2,
+           (l.owner=uid) as is_owner,
            (l.winner=uid and l.bonus_paid) as i_won,
            (select count(*) from league_members z where z.league_id=l.id)::int as members,
            m.points,m.wins,m.losses,
@@ -243,19 +296,19 @@ begin
               (z.points>m.points or (z.points=m.points and (z.losses<m.losses or (z.losses=m.losses and z.joined_at<m.joined_at)))))::int as rank
     from league_members m join leagues l on l.id=m.league_id
     where m.user_id=uid
-    order by (l.status='active') desc,l.ends_at desc limit 60) t),'[]'::jsonb);
+    order by (l.status='active') desc,l.created_at desc limit 60) t),'[]'::jsonb);
 end $$;
 
 create or replace function league_public() returns jsonb language plpgsql security definer set search_path=public as $$
 declare uid uuid:=auth.uid();
 begin
   if uid is null then return '[]'::jsonb; end if;
-  return coalesce((select jsonb_agg(to_jsonb(t) order by t.members desc,t.ends_at asc) from (
-    select l.id,l.name,l.sport,l.ends_at,
+  return coalesce((select jsonb_agg(to_jsonb(t) order by t.members desc,t.created_at desc) from (
+    select l.id,l.name,l.sport,l.ends_at,l.created_at,l.avatar_url,l.bio,l.color,l.color2,
            (select count(*) from league_members z where z.league_id=l.id)::int as members,
            (select username from profiles where id=l.owner) as owner_name,
            exists(select 1 from league_members z where z.league_id=l.id and z.user_id=uid) as joined
-    from leagues l where l.is_public and l.status='active' and l.ends_at>now()
+    from leagues l where l.is_public and l.status='active' and (l.ends_at is null or l.ends_at>now())
     order by l.created_at desc limit 40) t),'[]'::jsonb);
 end $$;
 
@@ -270,7 +323,7 @@ begin
   if not mem and not l.is_public then raise exception 'League not found'; end if;
   select username into own from profiles where id=l.owner;
   select coalesce(jsonb_agg(jsonb_build_object('id',p.id,'username',p.username,'display_name',p.display_name,'avatar_url',p.avatar_url,
-           'flair',p.flair,'border',p.border,'points',m.points,'wins',m.wins,'losses',m.losses,'rank',m.rn) order by m.rn),'[]'::jsonb) into st
+           'flair',p.flair,'border',p.border,'points',m.points,'wins',m.wins,'losses',m.losses,'rank',m.rn,'is_owner',(p.id=l.owner)) order by m.rn),'[]'::jsonb) into st
     from (select x.*,row_number() over (order by x.points desc,x.losses asc,x.joined_at asc) rn from league_members x where x.league_id=p_id) m
     join profiles p on p.id=m.user_id;
   if mem then
@@ -279,16 +332,20 @@ begin
   end if;
   return jsonb_build_object(
     'is_member',mem,
+    'is_owner',(l.owner=uid),
     'league',jsonb_build_object('id',l.id,'name',l.name,'code',case when mem then l.code end,'sport',l.sport,'is_public',l.is_public,
-       'starts_at',l.starts_at,'ends_at',l.ends_at,'status',l.status,'owner',l.owner,'owner_username',own,
-       'winner',l.winner,'bonus_paid',l.bonus_paid,'bonus',l.bonus,'members',jsonb_array_length(st)),
+       'starts_at',l.starts_at,'ends_at',l.ends_at,'created_at',l.created_at,'status',l.status,'owner',l.owner,'owner_username',own,
+       'winner',l.winner,'bonus_paid',l.bonus_paid,'bonus',l.bonus,'members',jsonb_array_length(st),
+       'avatar_url',l.avatar_url,'banner_url',l.banner_url,'bio',l.bio,'color',l.color,'color2',l.color2),
     'cfg',cfg,'standings',st,'picks',pk);
 end $$;
 
 -- ============ PERMISSIONS ============
 revoke all on function league_cfg() from public,anon;
 revoke all on function league_new_code() from public,anon,authenticated;
-revoke all on function league_create(text,text,int,boolean) from public,anon;
+revoke all on function league_create(text,text,boolean,text,text,text,text,text) from public,anon;
+revoke all on function league_update(uuid,text,text,text,text,text,text,boolean) from public,anon;
+revoke all on function league_delete(uuid) from public,anon;
 revoke all on function league_join(text,uuid) from public,anon;
 revoke all on function league_leave(uuid) from public,anon;
 revoke all on function league_save_pick(uuid,text,text,text,text,timestamptz) from public,anon;
@@ -299,7 +356,9 @@ revoke all on function league_finalize() from public,anon;
 revoke all on function settle_league_game(text,text,timestamptz) from public,anon,authenticated;
 revoke all on function league_on_final() from public,anon,authenticated;
 grant execute on function league_cfg() to authenticated,service_role;
-grant execute on function league_create(text,text,int,boolean) to authenticated;
+grant execute on function league_create(text,text,boolean,text,text,text,text,text) to authenticated;
+grant execute on function league_update(uuid,text,text,text,text,text,text,boolean) to authenticated;
+grant execute on function league_delete(uuid) to authenticated;
 grant execute on function league_join(text,uuid) to authenticated;
 grant execute on function league_leave(uuid) to authenticated;
 grant execute on function league_save_pick(uuid,text,text,text,text,timestamptz) to authenticated;
@@ -313,5 +372,6 @@ notify pgrst,'reload schema';
 
 -- ============ CHECK (run on its own after the file above; all should say true) ============
 -- select to_regprocedure('league_finalize()') is not null as functions_ok,
+--        to_regprocedure('league_delete(uuid)') is not null as delete_ok,
 --        exists(select 1 from pg_trigger where tgname='league_final_trg') as trigger_ok,
 --        to_regclass('league_picks') is not null as tables_ok;
