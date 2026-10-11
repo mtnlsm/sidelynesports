@@ -402,3 +402,8 @@ html:not(#_) #gq{margin:0}
 html:not(#_) button.ss-row:not(#_){border-radius:0}
 html:not(#_) .ss-logos button:not(#_){border-radius:12px;font:600 13px/1 var(--fb)}
 html:not(#_) #stg>.ss-h:first-child{margin-top:14px}
+
+/* custom stake box: the generic ".modal .pri{width:100%}" rules above were beating the Set/Raise button's own sizing on desktop, stretching it across the whole row */
+html:not(#_) .stk-cu{display:flex;align-items:stretch;gap:8px;box-sizing:border-box}
+html:not(#_) .stk-cu input{flex:1 1 0;min-width:0;width:auto}
+html:not(#_) .stk-cu .pri,html:not(#_) .modal .stk-cu .pri,html:not(#_) .card .stk-cu .pri{flex:none;width:auto;min-width:84px;min-height:46px;padding:0 20px}
