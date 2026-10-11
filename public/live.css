@@ -51,7 +51,7 @@
 
 /* box score player photos */
 .lv-pn{display:inline-flex;align-items:center;gap:8px}
-.lv-ph{flex:none;width:28px;height:28px;border-radius:50%;object-fit:cover;object-position:top;background:var(--sf2);display:block}
+.lv-ph{flex:none;width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:50% 12%;background:var(--sf2);display:block;box-shadow:0 0 0 1px var(--bd)}
 
 /* ===== BIGGER LIVE GAME POPUP + roomier box score ===== */
 .modal>.glass:has(.lvd){width:min(760px,100%);max-height:92vh}
@@ -69,7 +69,9 @@
 
 /* player photos in box score */
 .lv-nc{display:flex;align-items:center;gap:8px}
-.lv-bx .lv-ph{width:30px;height:30px}
+.lv-bx .lv-ph{width:42px;height:42px}
+.lv-lu .lv-ph{width:44px;height:44px}
+.lv-nc{gap:10px}
 
 /* ===== UFC fight-card layout (main event / co-main / prelims) ===== */
 .mc-ev{margin:6px 0 22px}
