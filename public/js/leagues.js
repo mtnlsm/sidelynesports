@@ -1,8 +1,9 @@
 /* ===== LEAGUES (needs supabase/leagues.sql) =====
    Has its own tab in the main navigation (bottom bar on mobile, side bar on desktop). You vs everyone in the league: make free picks on upcoming games, 1 point per
-   correct pick. Leagues never expire: they run until the owner deletes them. Owners can customize them (picture, banner, bio, colors). Everything goes through database functions (league_*), nothing is
+   correct pick. Leagues never expire: they run until the owner deletes them. Standings reset every 2 months (a new season). Owners can customize them (picture, banner, bio, colors). Everything goes through database functions (league_*), nothing is
    written to the tables directly. Loaded after app.js, so it can reuse its helpers (esc, modal, avHtml, crest, G, ME ...). */
 (() => {
+  const BONUS = 20000; // only used for text before the server answers; the real amount comes from league_cfg() in leagues.sql
   const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set(), sf: 'all', pf: 'all', seg: 'all', open: {} };
   const SPORTS = ['ALL', 'NFL', 'NBA', 'MLB', 'NHL', 'CFB', 'UFC', 'PFL'];
   const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#64748b'];
@@ -51,6 +52,10 @@ select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:v
 .lgx-ok{font-size:12px;font-weight:700;color:var(--lc,var(--ab))}
 .lgx-side small{font-size:11px;font-weight:600}
 .lgx-rec{display:flex;gap:10px;align-items:center;margin:16px 2px 8px}
+.lgx-prize{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--lc,#3b82f6) 22%,var(--sf)),color-mix(in srgb,var(--lc2,#8b5cf6) 22%,var(--sf)));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--lc,var(--ab)) 55%,transparent)}
+.lgx-prize b{font-size:16px}
+.lgx-prize p{margin:2px 0 0}
+.lgx-pz{display:inline-block;font-size:12px;font-weight:700;color:var(--lc,var(--ab))}
 .lgx-sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
 .lgx-sw button{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
 .lgx-sw button.on{border-color:var(--tx)}
@@ -73,7 +78,8 @@ textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:
     return d > 0 ? d + 'd ' + h + 'h left' : h > 0 ? h + 'h ' + (m % 60) + 'm left' : Math.max(1, m) + 'm left';
   };
   const isOpen = (l) => l.status === 'active' && (!l.ends_at || Date.parse(l.ends_at) > Date.now());
-  const stateTxt = (l) => (l.status !== 'active' ? 'Finished' : !l.ends_at ? 'Always on' : Date.parse(l.ends_at) <= Date.now() ? 'Finishing…' : left(l.ends_at));
+  const seasonTxt = (l) => { if (!l.season_ends) return 'Always on'; const ms = Date.parse(l.season_ends) - Date.now(); return 'Season ' + (l.season || 1) + ' · ' + (ms <= 0 ? 'resetting…' : left(l.season_ends)); };
+  const stateTxt = (l) => (l.status !== 'active' ? 'Finished' : !l.ends_at ? seasonTxt(l) : Date.parse(l.ends_at) <= Date.now() ? 'Finishing…' : left(l.ends_at));
   const c1 = (l) => (l && HEX.test(l.color || '') ? l.color : DEF1);
   const c2 = (l) => (l && HEX.test(l.color2 || '') ? l.color2 : (l && HEX.test(l.color || '') ? l.color : DEF2));
   const cv = (l) => `--lc:${c1(l)};--lc2:${c2(l)}`;
@@ -106,21 +112,24 @@ textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:
   // Tell the player when a league they were in finished and they won (once per league), and refresh their SP.
   function scan(rows) {
     const s = seen(); let won = false;
-    (rows || []).forEach((l) => { if (l.i_won && !s.has(l.id)) { mark(l.id); won = true; toast('You won ' + l.name + '! +' + fmt(l.bonus) + ' SP'); } });
+    (rows || []).forEach((l) => {
+      if (l.won_season) { const k = l.id + ':s' + l.won_season; if (!s.has(k)) { mark(k); won = true; toast('You finished #1 in ' + l.name + '! +' + fmt(l.won_bonus || BONUS) + ' SP'); } }
+      else if (l.i_won && !s.has(l.id)) { mark(l.id); won = true; toast('You won ' + l.name + '! +' + fmt(l.bonus) + ' SP'); }
+    });
     if (won && typeof syncNovas === 'function') syncNovas('League win');
   }
 
   /* ---------- home: my leagues, public leagues, create / join ---------- */
   const cardHtml = (l) => `<div class="glass card" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer;${cv(l)};box-shadow:inset 4px 0 0 var(--lc)">
 <div class="row sp"><div class="row" style="min-width:0;gap:10px">${lav(l, 36)}<b class="ellip" style="min-width:0">${esc(l.name)}</b></div><span class="chip" style="flex:none">${esc(stateTxt(l))}</span></div>
-<div class="mu" style="margin:4px 0 8px">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.is_public ? ' · Public' : ''}${l.is_owner ? ' · Yours' : ''}</div>${l.bio ? `<div class="mu ellip" style="margin:-2px 0 8px">${esc(l.bio)}</div>` : ''}
+<div class="mu" style="margin:4px 0 8px">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.is_public ? ' · Public' : ''}${l.is_owner ? ' · Yours' : ''}</div>${isOpen(l) ? `<div class="lgx-pz" style="margin:0 0 6px">#1 wins ${fmt(BONUS)} SP</div>` : ''}${l.bio ? `<div class="mu ellip" style="margin:-2px 0 8px">${esc(l.bio)}</div>` : ''}
 <div class="row sp"><span>Rank <b>#${l.rank}</b> of ${l.members}</span><span class="mu">${l.wins} W · ${l.losses} L${l.i_won ? ' · <b style="color:var(--ab)">Won +' + fmt(l.bonus) + ' SP</b>' : ''}</span></div></div>`;
   const pubHtml = (l) => `<div class="glass card row sp" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer;gap:10px;${cv(l)};box-shadow:inset 4px 0 0 var(--lc)">
-${lav(l, 40)}<div style="min-width:0;flex:1"><b class="ellip" style="display:block">${esc(l.name)}</b><div class="mu ellip">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.owner_name ? ' · @' + esc(l.owner_name) : ''}</div>${l.bio ? `<div class="mu ellip">${esc(l.bio)}</div>` : ''}</div>
+${lav(l, 40)}<div style="min-width:0;flex:1"><b class="ellip" style="display:block">${esc(l.name)}</b><div class="mu ellip">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.owner_name ? ' · @' + esc(l.owner_name) : ''}</div><div class="lgx-pz">#1 wins ${fmt(BONUS)} SP</div>${l.bio ? `<div class="mu ellip">${esc(l.bio)}</div>` : ''}</div>
 <button class="chip on" data-lgx="joinpub" data-lid="${esc(l.id)}" style="flex:none">Join</button></div>`;
   function homeHtml() {
     const mine = LG.mine || [], pub = (LG.pub || []).filter((x) => !x.joined);
-    return `<div class="glass card"><b>Leagues</b><p class="mu" style="margin:6px 0 0">Pick winners against your friends (or everyone). 1 point per correct pick, no SP at risk. Leagues never expire: they stay open until the owner deletes them, and you can give yours a picture, banner, bio and colors.</p></div>
+    return `<div class="glass card"><b>Leagues</b><p class="mu" style="margin:6px 0 0">Pick winners against your friends (or everyone). 1 point per correct pick, no SP at risk. <b>Finish #1 when a season ends and you win ${fmt(BONUS)} SP.</b> Leagues never expire: they stay open until the owner deletes them. Standings reset every 2 months, and you can give your league a picture, banner, bio and colors.</p></div>
 <div class="row" style="gap:8px;margin-bottom:10px"><button class="pri" data-lgx="new" style="flex:1">Create a league</button></div>
 <div class="glass card"><div class="row" style="gap:8px"><input id="lgx-code" maxlength="8" placeholder="Have an invite code?" autocapitalize="characters" autocomplete="off" spellcheck="false" style="font-size:16px;text-transform:uppercase"><button class="chip on" data-lgx="joincode" style="flex:none">Join</button></div></div>
 <h2 style="margin:16px 0 10px">My leagues</h2>${mine.length ? mine.map(cardHtml).join('') : '<p class="mu">You are not in a league yet. Create one, or enter an invite code above.</p>'}
@@ -220,8 +229,16 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
     const fin = l.status !== 'active';
     return rows.map((u) => {
       const me = ME && u.id === ME.id, top = fin && u.rank === 1 && l.bonus_paid;
-      return `<div class="glass card row sp${top ? ' lgx-win' : ''}" style="${me && !top ? 'box-shadow:inset 0 0 0 1.5px var(--ab)' : ''}"><a class="ulk row" href="/@${esc(u.username)}" data-u="${esc(u.username)}" style="min-width:0;flex:1"><b style="width:26px;text-align:center;flex:none;color:${u.rank <= 3 ? 'var(--ab)' : 'var(--mu)'}">${u.rank}</b>${avHtml(u, 40)}<div style="min-width:0"><b class="ellip" style="display:block">${dname(u)}${flr(u)}</b><div class="mu">@${esc(u.username)}${top ? ' · Won +' + fmt(l.bonus) + ' SP' : ''}</div></div></a><div style="text-align:right;flex:none"><b>${u.points} pt${u.points === 1 ? '' : 's'}</b><div class="mu">${u.wins}W · ${u.losses}L</div></div></div>`;
+      return `<div class="glass card row sp${top ? ' lgx-win' : ''}" style="${me && !top ? 'box-shadow:inset 0 0 0 1.5px var(--ab)' : ''}"><a class="ulk row" href="/@${esc(u.username)}" data-u="${esc(u.username)}" style="min-width:0;flex:1"><b style="width:26px;text-align:center;flex:none;color:${u.rank <= 3 ? 'var(--ab)' : 'var(--mu)'}">${u.rank}</b>${avHtml(u, 40)}<div style="min-width:0"><b class="ellip" style="display:block">${dname(u)}${flr(u)}</b><div class="mu">@${esc(u.username)}${top ? ' · Won +' + fmt(l.bonus) + ' SP' : (!fin && u.rank === 1 && u.points > 0 ? ' · Leading for ' + fmt(BONUS) + ' SP' : '')}</div></div></a><div style="text-align:right;flex:none"><b>${u.points} pt${u.points === 1 ? '' : 's'}</b><div class="mu">${u.wins}W · ${u.losses}L</div></div></div>`;
     }).join('') || '<p class="mu">No players yet.</p>';
+  }
+  function pastHtml(h) {
+    if (!h.length) return '';
+    return '<h2 style="margin:20px 0 10px">Past seasons</h2>' + h.map((s) => {
+      const top = s.top || [];
+      const dt = new Date(s.ended_at).toLocaleDateString([], { month: 'short', year: 'numeric' });
+      return `<div class="glass card"><div class="row sp"><b>Season ${s.season}</b><span class="mu">Ended ${esc(dt)}${s.bonus_paid ? ' · <b style="color:var(--ab)">Winner got +' + fmt(s.bonus) + ' SP</b>' : ''}</span></div>${top.length ? top.map((u, i) => `<div class="row sp" style="margin-top:8px"><div class="row" style="min-width:0;gap:8px"><b style="width:20px;text-align:center;flex:none;color:${i === 0 ? 'var(--ab)' : 'var(--mu)'}">${i + 1}</b>${avHtml({ username: u.username, display_name: u.display_name, avatar_url: u.avatar_url }, 28)}<span class="ellip" style="min-width:0">${esc(u.display_name || u.username)}${i === 0 && s.winner ? ' ' + ic('crown', 14, 1) : ''}</span></div><span class="mu" style="flex:none">${u.points} pt${u.points === 1 ? '' : 's'} · ${u.wins}W ${u.losses}L</span></div>`).join('') : '<p class="mu" style="margin:8px 0 0">No picks were settled this season.</p>'}</div>`;
+    }).join('');
   }
   function detailHtml() {
     const d = LG.det; if (!d) return skel;
@@ -230,6 +247,7 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
     const code = mem && open ? `<div class="lgx-code"><div><small class="mu">Invite code</small><b>${esc(l.code)}</b></div><button class="chip" data-lgx="copycode">Copy code</button><button class="chip" data-lgx="copylink">Copy invite link</button></div>` : '';
     const join = !mem && open ? `<button class="pri" data-lgx="joinpub" data-lid="${esc(l.id)}" style="margin-top:12px">Join this league</button>` : '';
     const banner = winner ? `<div class="glass card lgx-win"><div class="row sp"><b>${ic('crown', 16, 1)} ${l.bonus_paid ? esc(winner.display_name || winner.username) + ' won the league' : 'Final standings'}</b>${l.bonus_paid ? '<b>+' + fmt(l.bonus) + ' SP</b>' : ''}</div>${l.bonus_paid ? '' : `<p class="mu" style="margin:6px 0 0">No bonus this time: a league needs ${cfg.min_members || 3}+ players and a winner with ${cfg.min_picks || 5}+ graded picks.</p>`}</div>` : '';
+    const prize = open ? `<div class="lgx-prize">${ic('crown', 26, 1)}<div><b>#1 wins ${fmt(cfg.bonus || BONUS)} SP</b><p class="mu">Finish first when the season ends${l.season_ends ? ' (' + new Date(l.season_ends).toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')' : ''}. Needs ${cfg.min_members || 3}+ players and ${cfg.min_picks || 5}+ graded picks from the winner. Standings reset every ${cfg.season_months || 2} months.</p></div></div>` : '';
     const ban = safeUrl(l.banner_url) ? `background-image:url('${esc(l.banner_url).replace(/'/g, '%27')}')` : '';
     const info = `<div class="lgx-hero"><div class="lgx-ban" style="${ban}"></div><div class="lgx-hb"><div class="row sp" style="align-items:flex-end;gap:10px">${lav(l, 68, 1)}<div class="row" style="gap:8px;flex:none;margin-bottom:4px">${mine ? '<button class="chip" data-lgx="edit">Edit league</button>' : ''}<span class="chip">${esc(stateTxt(l))}</span></div></div>
 <b class="ellip" style="display:block;font-size:20px;margin-top:8px">${esc(l.name)}</b>
@@ -238,9 +256,9 @@ ${l.bio ? `<p style="margin:10px 0 0;white-space:pre-wrap;word-break:break-word"
 <div class="lgx-bar"></div>
 ${open ? `<p class="mu" style="margin:0">Make free picks on upcoming games. 1 point per correct pick.</p>` : ''}${code}${join}</div></div>`;
     const tabs = mem ? `<div class="row hs sb" style="margin-bottom:10px">${[['picks', 'Picks'], ['stand', 'Standings']].map(([k, v]) => `<button class="sbtn ${LG.tab === k ? 'on' : ''}" data-lgx="tab" data-lt="${k}">${v}</button>`).join('')}</div>` : '<h2 style="margin:16px 0 10px">Standings</h2>';
-    const body = mem && LG.tab === 'picks' ? picksHtml(l) : standHtml(l, d.standings);
+    const body = mem && LG.tab === 'picks' ? picksHtml(l) : standHtml(l, d.standings) + pastHtml(d.history || []);
     const leave = mine ? `<div style="margin-top:16px"><button class="chip" data-lgx="del">Delete league</button></div>` : (mem && open ? `<div style="margin-top:16px"><button class="chip" data-lgx="leave">Leave league</button></div>` : '');
-    return `<div style="${cv(l)}"><div class="row sp" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div>${banner}${info}${tabs}${body}${leave}</div>`;
+    return `<div style="${cv(l)}"><div class="row sp" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div>${banner}${prize}${info}${tabs}${body}${leave}</div>`;
   }
   async function loadDetail(silent) {
     const id = LG.id;
@@ -290,7 +308,7 @@ ${open ? `<p class="mu" style="margin:0">Make free picks on upcoming games. 1 po
 ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-sel">${SPORTS.map((s) => `<option value="${s}">${esc(sportName(s))}</option>`).join('')}</select>`}
 <div class="row" style="margin:0 0 6px"><button type="button" class="chip" data-v="0">Private</button><button type="button" class="chip" data-v="1">Public</button></div>
 <p class="mu" id="lgx-vh" style="margin:0 0 12px"></p>
-<p class="mu" style="margin:0 0 12px">${ed ? 'The sport can\'t be changed after a league is created.' : 'Leagues never expire. They stay open until you delete them.'}</p>
+<p class="mu" style="margin:0 0 12px">${ed ? 'The sport can\'t be changed after a league is created.' : 'Leagues never expire. Standings reset every 2 months and whoever is #1 at the end of a season wins ' + fmt(BONUS) + ' SP (needs 3+ players and 5+ graded picks).'}</p>
 <button class="pri" id="lgx-go">${ed ? 'Save changes' : 'Create league'}</button>`);
     const q = (x) => m.querySelector(x);
     const preview = () => {
