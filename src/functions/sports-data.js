@@ -134,7 +134,17 @@ const pn = (o) => { if (!o) return ''; const a = o.athlete || o; return String(a
 function normSit(sp, s, ids) {
   if (!s || typeof s !== 'object') return undefined;
   const lg = LEAGUES[sp] || '', lp = s.lastPlay && s.lastPlay.text ? String(s.lastPlay.text).slice(0, 200) : '';
-  if (lg.startsWith('baseball')) return { k: 'b', ba: Number(s.balls) || 0, sk: Number(s.strikes) || 0, o: Number(s.outs) || 0, r1: !!s.onFirst, r2: !!s.onSecond, r3: !!s.onThird, bt: pn(s.batter), pt: pn(s.pitcher), lp };
+  if (lg.startsWith('baseball')) {
+    // ESPN sends each base as either true/false or an object with the runner ({playerId, athlete:{id,headshot,...}}); pull out the name + photo when it's there.
+    const who = (o) => {
+      if (!o || typeof o !== 'object') return null;
+      const a = o.athlete || o, id = o.playerId || a.id || o.id || '';
+      return { n: pn(o), ph: hs(a, sp, id) };
+    };
+    const b1 = who(s.onFirst), b2 = who(s.onSecond), b3 = who(s.onThird);
+    return { k: 'b', ba: Number(s.balls) || 0, sk: Number(s.strikes) || 0, o: Number(s.outs) || 0, r1: !!s.onFirst, r2: !!s.onSecond, r3: !!s.onThird, bt: pn(s.batter), pt: pn(s.pitcher),
+      n1: b1 ? b1.n : '', n2: b2 ? b2.n : '', n3: b3 ? b3.n : '', p1: b1 ? b1.ph : '', p2: b2 ? b2.ph : '', p3: b3 ? b3.ph : '', lp };
+  }
   if (lg.startsWith('football')) { const p = s.possession != null ? String(s.possession) : '';
     return { k: 'f', dd: String(s.downDistanceText || s.shortDownDistanceText || '').slice(0, 40), pt: String(s.possessionText || '').slice(0, 30), po: ids && p === ids.a ? 'a' : ids && p === ids.b ? 'b' : '', rz: !!s.isRedZone,
       ta: s.awayTimeouts != null ? Number(s.awayTimeouts) : undefined, tb: s.homeTimeouts != null ? Number(s.homeTimeouts) : undefined, lp }; }
