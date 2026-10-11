@@ -1,5 +1,5 @@
 /* ===== LEAGUES (needs supabase/leagues.sql) =====
-   Lives inside the Ranks tab as a "Leagues" button. You vs everyone in the league: make free picks on upcoming games, 1 point per
+   Has its own tab in the main navigation (bottom bar on mobile, side bar on desktop). You vs everyone in the league: make free picks on upcoming games, 1 point per
    correct pick, #1 when the league ends wins the bonus SP. Everything goes through database functions (league_*), nothing is
    written to the tables directly. Loaded after app.js, so it can reuse its helpers (esc, modal, avHtml, crest, G, ME ...). */
 (() => {
@@ -77,7 +77,7 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
     try {
       const [m, p] = await Promise.all([rpc('league_my'), rpc('league_public').catch(() => [])]);
       LG.mine = m; LG.pub = p; scan(m);
-      if (LG.id || S.tab !== 'board' || BD !== 'lg') return;
+      if (LG.id || S.tab !== 'leagues') return;
       const inp = document.getElementById('lgx-code'), v = inp ? inp.value : '';
       paint(homeHtml());
       const i2 = document.getElementById('lgx-code'); if (i2 && v) i2.value = v;
@@ -131,7 +131,7 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
       if (LG.id !== id) return;
       const first = !LG.det; LG.det = d;
       if (first) LG.tab = d.is_member && isOpen(d.league) ? 'picks' : 'stand';
-      if (S.tab === 'board' && BD === 'lg') paint(detailHtml());
+      if (S.tab === 'leagues') paint(detailHtml());
     } catch (e) {
       if (silent) return;
       paint(`<div class="row" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div><div class="glass card"><b>Couldn't open this league</b><p class="mu">${esc((e && e.message) || e)}</p></div>`);
@@ -140,11 +140,18 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
   function openLeague(id) { LG.id = id; LG.det = null; LG.tab = 'picks'; paint(skel); loadDetail(); }
   function open() { if (LG.id) { LG.det ? paint(detailHtml()) : paint(skel); loadDetail(); } else loadHome(); }
 
-  /* ---------- Ranks tab hook: add the "Leagues" button and draw it instead of the normal board ---------- */
-  if (typeof BDS !== 'undefined' && !BDS.some((x) => x[0] === 'lg')) BDS.unshift(['lg', 'Leagues']);
-  const origBoard = window.loadBoard;
-  window.loadBoard = function () { if (typeof BD !== 'undefined' && BD === 'lg') return open(); return origBoard.apply(this, arguments); };
-  document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-bd="lg"]'); if (b && BD === 'lg') { LG.id = null; LG.det = null; } }, true); // tapping "Leagues" again goes back to the list
+  /* ---------- own nav tab: bottom bar on mobile, side bar on desktop ---------- */
+  P.nv_leagues = '<path class="f" d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11M12 14v4M8.5 20h7"/>';
+  R.leagues = () => '<div id="lb">' + skel + '</div>';
+  if (!NAV.some((n) => n[0] === 'leagues')) {
+    NAV.splice(NAV.findIndex((n) => n[0] === 'board') + 1, 0, ['leagues', 'nv_leagues', 'Leagues']);
+    $('#nav').innerHTML = NAV.map((n) => navBtn(n[0], n[1], n[2])).join('');
+    const cur = $('#nav [data-t="' + S.tab + '"]'); if (cur) cur.classList.add('on');
+    const ns = document.createElement('style'); ns.textContent = '#nav.nav button{max-width:none}'; document.head.append(ns); // room for one more tab
+  }
+  const origGo = window.go;
+  window.go = function (t) { const r = origGo.apply(this, arguments); if (t === 'leagues') open(); return r; };
+  document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#nav [data-t="leagues"]')) { LG.id = null; LG.det = null; } }, true); // tapping the tab again goes back to the list
 
   /* ---------- create / join ---------- */
   function createModal() {
@@ -214,7 +221,7 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
   });
 
   /* ---------- keep things fresh ---------- */
-  const here = () => S.tab === 'board' && BD === 'lg' && !document.hidden && !document.querySelector('.modal');
+  const here = () => S.tab === 'leagues' && !document.hidden && !document.querySelector('.modal');
   setInterval(() => { if (here() && LG.id && LG.det && LG.tab === 'picks') paint(detailHtml()); }, 15000);   // new games from the live feed
   setInterval(() => { if (here()) { if (LG.id) loadDetail(true); else loadHome(); } }, 60000);               // standings / time left
   async function bg() { if (typeof ME === 'undefined' || !ME || !window.FX_DB) return; try { const rows = await rpc('league_my'); LG.mine = rows; scan(rows); } catch (e) {} }
@@ -228,7 +235,7 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
         if (Date.now() - t0 > 90000) { clearInterval(iv); return; }
         if (typeof ME !== 'undefined' && ME && S.loaded) {
           clearInterval(iv);
-          setTimeout(() => { try { history.replaceState({}, '', '/'); } catch (e) {} BD = 'lg'; go('board'); inviteModal(q.toUpperCase()); }, 1200);
+          setTimeout(() => { try { history.replaceState({}, '', '/'); } catch (e) {} go('leagues'); inviteModal(q.toUpperCase()); }, 1200);
         }
       }, 600);
     }
