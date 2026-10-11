@@ -8,6 +8,8 @@
 --   * Members make their league picks on upcoming games. League picks are FREE: no SP stake, no SP lost, separate from your normal picks.
 --   * Each correct pick = 1 point. Ranking: most points, then fewest losses, then who joined first.
 --   * Picks are scored automatically when a game goes final (trigger on finished_games).
+--   * SEASONS: standings reset every 2 months (league_cfg 'season_months'). The old season's top players are saved in
+--     league_seasons and shown as "Past seasons" in the league. Picks on games that haven't finished yet carry over.
 --   * There is no end-of-league bonus because leagues have no end. (league_finalize() is kept only so leagues created before
 --     this version that still had an end date close out cleanly; re-running this file converts active ones to permanent.)
 
@@ -25,6 +27,7 @@ create or replace function league_cfg() returns jsonb language sql immutable as 
     'max_members',100,    -- players per league
     'max_owned',3,        -- active leagues one person can run at once
     'max_joined',25,      -- active leagues one person can be in at once
+    'season_months',2,    -- standings reset (new season) every this many months
     'grace_hours',24      -- after a league ends, wait for unfinished games up to this long before closing it
   ) $$;
 
@@ -48,6 +51,8 @@ create table if not exists leagues(
   bio text check(bio is null or length(bio)<=200),
   color text check(color is null or color ~ '^#[0-9a-fA-F]{6}$'),
   color2 text check(color2 is null or color2 ~ '^#[0-9a-fA-F]{6}$'),
+  season int not null default 1,
+  season_start timestamptz not null default now(),
   created_at timestamptz not null default now());
 create table if not exists league_members(
   league_id uuid not null references leagues on delete cascade,
@@ -74,6 +79,8 @@ alter table leagues add column if not exists banner_url text;
 alter table leagues add column if not exists bio text;
 alter table leagues add column if not exists color text;
 alter table leagues add column if not exists color2 text;
+alter table leagues add column if not exists season int not null default 1;
+alter table leagues add column if not exists season_start timestamptz not null default now();
 do $$ begin
   if not exists(select 1 from pg_constraint where conname='leagues_bio_len') then
     alter table leagues add constraint leagues_bio_len check(bio is null or length(bio)<=200); end if;
@@ -82,6 +89,16 @@ do $$ begin
 end $$;
 update leagues set ends_at=null where status='active' and ends_at is not null;   -- active leagues become permanent
 drop function if exists league_create(text,text,int,boolean);
+create table if not exists league_seasons(
+  league_id uuid not null references leagues on delete cascade,
+  season int not null,
+  started_at timestamptz not null,
+  ended_at timestamptz not null,
+  winner uuid references profiles on delete set null,
+  standings jsonb not null default '[]'::jsonb,   -- top 10 at the end of the season
+  primary key(league_id,season));
+alter table league_seasons enable row level security;
+revoke all on league_seasons from anon, authenticated;
 create index if not exists idx_league_members_user on league_members(user_id);
 create index if not exists idx_leagues_open on leagues(status,ends_at);
 create index if not exists idx_league_picks_open on league_picks(game_id) where settled_at is null;
@@ -255,12 +272,42 @@ end $$;
 drop trigger if exists league_final_trg on finished_games;
 create trigger league_final_trg after insert on finished_games for each row execute function league_on_final();
 
--- ============ FINISH ENDED LEAGUES + PAY THE WINNER ============
+-- ============ SEASONS: reset standings every season_months ============
+-- Saves the top 10 of the finished season, zeroes everyone's points, clears settled picks, starts the next season.
+-- Safe to call any time (league_finalize() calls it, and so does every league_my()/league_detail()).
+create or replace function league_roll() returns int language plpgsql security definer set search_path=public as $$
+declare mo int:=(league_cfg()->>'season_months')::int; l leagues; n int:=0; st jsonb; w uuid; ns timestamptz;
+begin
+  for l in select x.* from leagues x where x.status='active' and x.season_start+make_interval(months=>mo)<=now()
+           order by x.season_start limit 50 for update of x skip locked loop
+    if exists(select 1 from league_members where league_id=l.id and wins+losses>0) then
+      select coalesce(jsonb_agg(jsonb_build_object('user_id',q.user_id,'username',q.username,'display_name',q.display_name,'avatar_url',q.avatar_url,
+               'points',q.points,'wins',q.wins,'losses',q.losses,'rank',q.rn) order by q.rn),'[]'::jsonb) into st
+        from (select m.user_id,p.username,p.display_name,p.avatar_url,m.points,m.wins,m.losses,
+                     row_number() over (order by m.points desc,m.losses asc,m.joined_at asc) rn
+              from league_members m join profiles p on p.id=m.user_id where m.league_id=l.id) q where q.rn<=10;
+      select m.user_id into w from league_members m where m.league_id=l.id and m.points>0
+        order by m.points desc,m.losses asc,m.joined_at asc limit 1;
+      insert into league_seasons(league_id,season,started_at,ended_at,winner,standings)
+        values(l.id,l.season,l.season_start,l.season_start+make_interval(months=>mo),w,st) on conflict do nothing;
+      update league_members set points=0,wins=0,losses=0 where league_id=l.id;
+      delete from league_picks where league_id=l.id and settled_at is not null;   -- unfinished games stay and count in the new season
+    end if;
+    ns:=l.season_start;
+    while ns+make_interval(months=>mo)<=now() loop ns:=ns+make_interval(months=>mo); end loop;
+    update leagues set season=season+1,season_start=ns where id=l.id;
+    n:=n+1;
+  end loop;
+  return n;
+end $$;
+
+-- ============ FINISH ENDED LEAGUES + PAY THE WINNER (only old leagues that still have an end date) ============
 -- Safe to call any time, as often as you like: each league closes once, and the bonus can only be paid once per league
 -- (sp_credit's unique key). Returns how many leagues it closed.
 create or replace function league_finalize() returns int language plpgsql security definer set search_path=public as $$
 declare cfg jsonb:=league_cfg(); l leagues; w record; n int:=0; cnt int; ok boolean; paid boolean;
 begin
+  perform league_roll();
   for l in select x.* from leagues x
            where x.status='active' and x.ends_at<now()
              and (x.ends_at<now()-make_interval(hours=>(cfg->>'grace_hours')::int)
@@ -287,7 +334,8 @@ begin
   perform league_finalize();
   return coalesce((select jsonb_agg(to_jsonb(t) order by (t.status='active') desc,t.created_at desc) from (
     select l.id,l.name,l.code,l.sport,l.is_public,l.starts_at,l.ends_at,l.status,l.bonus_paid,l.bonus,l.winner,l.created_at,
-           l.avatar_url,l.banner_url,l.bio,l.color,l.color2,
+           l.avatar_url,l.banner_url,l.bio,l.color,l.color2,l.season,l.season_start,
+           (l.season_start+make_interval(months=>(league_cfg()->>'season_months')::int)) as season_ends,
            (l.owner=uid) as is_owner,
            (l.winner=uid and l.bonus_paid) as i_won,
            (select count(*) from league_members z where z.league_id=l.id)::int as members,
@@ -313,7 +361,7 @@ begin
 end $$;
 
 create or replace function league_detail(p_id uuid) returns jsonb language plpgsql security definer set search_path=public as $$
-declare uid uuid:=auth.uid(); cfg jsonb:=league_cfg(); l leagues; mem boolean; st jsonb; pk jsonb:='[]'::jsonb; own text;
+declare uid uuid:=auth.uid(); cfg jsonb:=league_cfg(); l leagues; mem boolean; st jsonb; pk jsonb:='[]'::jsonb; own text; hist jsonb;
 begin
   if uid is null then raise exception 'Not signed in'; end if;
   perform league_finalize();
@@ -330,13 +378,19 @@ begin
     select coalesce(jsonb_agg(jsonb_build_object('game_id',game_id,'pick',pick,'matchup',matchup,'sport',sport,'result',result,'updated_at',updated_at)
              order by updated_at desc),'[]'::jsonb) into pk from league_picks where league_id=p_id and user_id=uid;
   end if;
+  select coalesce(jsonb_agg(jsonb_build_object('season',h.season,'started_at',h.started_at,'ended_at',h.ended_at,'winner',h.winner,
+           'top',(select coalesce(jsonb_agg(e order by i),'[]'::jsonb) from jsonb_array_elements(h.standings) with ordinality as t(e,i) where i<=3)) order by h.season desc),'[]'::jsonb) into hist
+    from (select * from league_seasons where league_id=p_id order by season desc limit 8) h;
   return jsonb_build_object(
     'is_member',mem,
     'is_owner',(l.owner=uid),
+    'history',hist,
     'league',jsonb_build_object('id',l.id,'name',l.name,'code',case when mem then l.code end,'sport',l.sport,'is_public',l.is_public,
        'starts_at',l.starts_at,'ends_at',l.ends_at,'created_at',l.created_at,'status',l.status,'owner',l.owner,'owner_username',own,
        'winner',l.winner,'bonus_paid',l.bonus_paid,'bonus',l.bonus,'members',jsonb_array_length(st),
-       'avatar_url',l.avatar_url,'banner_url',l.banner_url,'bio',l.bio,'color',l.color,'color2',l.color2),
+       'avatar_url',l.avatar_url,'banner_url',l.banner_url,'bio',l.bio,'color',l.color,'color2',l.color2,
+       'season',l.season,'season_start',l.season_start,
+       'season_ends',l.season_start+make_interval(months=>(cfg->>'season_months')::int)),
     'cfg',cfg,'standings',st,'picks',pk);
 end $$;
 
@@ -352,6 +406,7 @@ revoke all on function league_save_pick(uuid,text,text,text,text,timestamptz) fr
 revoke all on function league_my() from public,anon;
 revoke all on function league_public() from public,anon;
 revoke all on function league_detail(uuid) from public,anon;
+revoke all on function league_roll() from public,anon,authenticated;
 revoke all on function league_finalize() from public,anon;
 revoke all on function settle_league_game(text,text,timestamptz) from public,anon,authenticated;
 revoke all on function league_on_final() from public,anon,authenticated;
@@ -366,6 +421,7 @@ grant execute on function league_my() to authenticated;
 grant execute on function league_public() to authenticated;
 grant execute on function league_detail(uuid) to authenticated;
 grant execute on function league_finalize() to authenticated,service_role;
+grant execute on function league_roll() to service_role;
 grant execute on function settle_league_game(text,text,timestamptz) to service_role;
 
 notify pgrst,'reload schema';
@@ -373,5 +429,6 @@ notify pgrst,'reload schema';
 -- ============ CHECK (run on its own after the file above; all should say true) ============
 -- select to_regprocedure('league_finalize()') is not null as functions_ok,
 --        to_regprocedure('league_delete(uuid)') is not null as delete_ok,
+--        to_regprocedure('league_roll()') is not null as seasons_ok,
 --        exists(select 1 from pg_trigger where tgname='league_final_trg') as trigger_ok,
 --        to_regclass('league_picks') is not null as tables_ok;
