@@ -14,11 +14,11 @@
 
   const st = document.createElement('style');
   st.textContent = `
-.modal.pk-page{flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;animation:pkin .22s ease}
+html:not(#_) .modal.pk-page{flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;animation:pkin .22s ease}
 @keyframes pkin{from{transform:translateX(26px);opacity:0}to{transform:none;opacity:1}}
-.pk-page>.glass{order:0;flex:1 1 auto;min-height:0;width:100%;max-width:560px;margin:0 auto;max-height:none;border-radius:0;border:0!important;background:transparent;box-shadow:none;animation:none;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));overflow:auto;-webkit-overflow-scrolling:touch}
-.pk-page>.glass::before{display:none}
-.pk-page>.glass>.chip[data-x],.pk-page .sheet-close{display:none!important}
+html:not(#_) .pk-page>.glass{order:0;flex:1 1 auto;min-height:0;width:100%;max-width:560px;margin:0 auto;max-height:none;border-radius:0;border:0!important;background:transparent;box-shadow:none;animation:none;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));overflow:auto;-webkit-overflow-scrolling:touch}
+html:not(#_) .pk-page>.glass::before{display:none}
+html:not(#_) .pk-page>.glass>.chip[data-x],html:not(#_) .pk-page .sheet-close{display:none!important}
 .pk-bar{order:-2;flex:none;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;background:var(--sf);border-bottom:1px solid var(--bd)}
 .pk-ib{flex:none;width:42px;height:42px;border-radius:12px;border:0;background:var(--sf2);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .pk-ib:active{transform:scale(.95)}
