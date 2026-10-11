@@ -3,7 +3,7 @@
    correct pick. Leagues never expire: they run until the owner deletes them. Owners can customize them (picture, banner, bio, colors). Everything goes through database functions (league_*), nothing is
    written to the tables directly. Loaded after app.js, so it can reuse its helpers (esc, modal, avHtml, crest, G, ME ...). */
 (() => {
-  const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set() };
+  const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set(), sf: 'all', pf: 'all', seg: 'all', open: {} };
   const SPORTS = ['ALL', 'NFL', 'NBA', 'MLB', 'NHL', 'CFB', 'UFC', 'PFL'];
   const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#64748b'];
   const DEF1 = '#3b82f6', DEF2 = '#8b5cf6';
@@ -30,6 +30,27 @@ select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:v
 .lgx-hb .lgx-av{margin-top:-34px;border:3px solid var(--sf)}
 .lgx-bar{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--lc,#3b82f6),var(--lc2,#8b5cf6));margin:8px 0}
 .lgx-tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--lc,var(--ab)) 18%,transparent);color:var(--lc,var(--ab))}
+.lgx-prog{height:6px;border-radius:6px;background:var(--sf2);overflow:hidden;margin-top:8px}
+.lgx-prog i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--lc,#3b82f6),var(--lc2,#8b5cf6));transition:width .25s}
+.lgx-day{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:18px 2px 8px}
+.lgx-day h3{margin:0;font-size:16px}
+.lgx-ev{margin:18px 0 6px;border-radius:16px;background:var(--sf);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--lc,var(--ab)) 35%,transparent);overflow:hidden}
+.lgx-evh{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.lgx-evh .t{flex:1;min-width:0}
+.lgx-evh .d{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--lc,var(--ab))}
+.lgx-evh .n{display:block;font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgx-evh .m{display:block;font-size:12px;color:var(--mu);margin-top:2px}
+.lgx-evh .c{flex:none;font-size:12px;font-weight:700;color:var(--mu)}
+.lgx-evb{padding:0 10px 4px}
+.lgx-seg{display:flex;gap:6px;margin:0 0 10px}
+.lgx-seg button{flex:1;padding:8px 6px;border-radius:10px;border:0;background:var(--sf2);color:var(--tx);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.lgx-seg button.on{background:var(--lc,var(--ab));color:#fff}
+.lgx-fc{position:relative}
+.lgx-fc.me{box-shadow:inset 0 0 0 1.5px var(--lc,var(--ab))}
+.lgx-ftag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:99px;background:var(--lc,var(--ab));color:#fff;margin-bottom:6px}
+.lgx-ok{font-size:12px;font-weight:700;color:var(--lc,var(--ab))}
+.lgx-side small{font-size:11px;font-weight:600}
+.lgx-rec{display:flex;gap:10px;align-items:center;margin:16px 2px 8px}
 .lgx-sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
 .lgx-sw button{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
 .lgx-sw button.on{border-color:var(--tx)}
@@ -124,17 +145,76 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
   const pickMap = () => new Map(((LG.det && LG.det.picks) || []).map((p) => [String(p.game_id), p]));
   const resBadge = (p) => p.result === 'win' ? '<span class="rs w">Point</span>' : p.result === 'loss' ? '<span class="rs l">Missed</span>' : p.result === 'void' ? '<span class="rs">No point</span>' : '<span class="rs">Waiting for result</span>';
 
-  function gameCard(g, mp) {
-    const cur = mp.get(String(g.id)), side = (n, k) => `<button class="lgx-side${cur && cur.pick === n ? ' on' : ''}" data-lgx="pick" data-lgid="${esc(g.id)}" data-lside="${k}" aria-pressed="${!!(cur && cur.pick === n)}">${crest(n, g.sp, 36)}<span>${esc(n)}</span></button>`;
-    return `<div class="glass card"><div class="row sp"><span class="chip glass">${esc(spl(g.sp))}</span><span class="mu">${esc(when(g))}</span></div><div class="lgx-pk">${side(g.a, 'a')}<span class="lgx-vs">VS</span>${side(g.b, 'b')}</div></div>`;
+  const dayLabel = (t) => {
+    const d = new Date(t), n = new Date(), k = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.round((k(d) - k(n)) / 864e5);
+    return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+  };
+  const tm = (d) => (d ? new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '');
+  const sideBtn = (g, n, k, cur, rec) => `<button class="lgx-side${cur && cur.pick === n ? ' on' : ''}" data-lgx="pick" data-lgid="${esc(g.id)}" data-lside="${k}" aria-pressed="${!!(cur && cur.pick === n)}">${crest(n, g.sp, MMA(g.sp) ? 44 : 36)}<span>${esc(n)}</span>${rec ? `<small class="mu">${esc(String(rec))}</small>` : ''}</button>`;
+
+  function gameCard(g, mp) {   // team sports
+    const cur = mp.get(String(g.id));
+    return `<div class="glass card"><div class="row sp"><span class="chip glass">${esc(spl(g.sp))}</span><span class="mu">${esc(tm(g.date) || when(g))}${cur ? ' · <span class="lgx-ok">Picked</span>' : ''}</span></div><div class="lgx-pk">${sideBtn(g, g.a, 'a', cur)}<span class="lgx-vs">VS</span>${sideBtn(g, g.b, 'b', cur)}</div></div>`;
   }
+  function fightCard(g, mp) {  // UFC / PFL
+    const cur = mp.get(String(g.id)), tag = g.pos === 0 ? 'MAIN EVENT' : g.pos === 1 ? 'CO-MAIN' : '';
+    return `<div class="glass card lgx-fc${g.pos === 0 ? ' me' : ''}">${tag ? `<div class="lgx-ftag">${tag}</div>` : ''}<div class="row sp"><span class="mu">${esc(g.wc || 'Bout')} · ${g.rd || 3} rounds</span>${cur ? '<span class="lgx-ok">Picked</span>' : ''}</div><div class="lgx-pk">${sideBtn(g, g.a, 'a', cur, g.ra)}<span class="lgx-vs">VS</span>${sideBtn(g, g.b, 'b', cur, g.rb)}</div></div>`;
+  }
+  const picked = (mp, g) => mp.has(String(g.id));
+  const prog = (n, t) => `<div class="lgx-prog"><i style="width:${t ? Math.round((n / t) * 100) : 0}%"></i></div>`;
+
+  function fightEvents(games, mp) {
+    const m = new Map();
+    games.forEach((g) => { const k = g.sp + ':' + (g.evi || g.ev || 'x'); if (!m.has(k)) m.set(k, { k, n: g.ev || spl(g.sp), sp: g.sp, a: [] }); m.get(k).a.push(g); });
+    const evs = [...m.values()].sort((x, y) => Date.parse(x.a[0].tm || x.a[0].date || 0) - Date.parse(y.a[0].tm || y.a[0].date || 0)).slice(0, 8);
+    return evs.map((e, i) => {
+      e.a.sort((x, y) => (x.pos || 0) - (y.pos || 0));
+      const f = e.a[0], isOpen = e.k in LG.open ? LG.open[e.k] : i === 0;
+      const dt = f.tm || f.tp || f.date, dd = dt ? new Date(dt).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'long' }).toUpperCase() : '';
+      const nPre = e.a.filter((g) => g.seg === 'pre').length, nMain = e.a.length - nPre;
+      const made = e.a.filter((g) => picked(mp, g)).length;
+      const meta = [f.tm ? 'Main card ' + tm(f.tm) : '', f.tp && nPre ? 'Prelims ' + tm(f.tp) : '', f.vn || ''].filter(Boolean).join(' · ');
+      const show = e.a.filter((g) => LG.seg === 'all' || (LG.seg === 'pre' ? g.seg === 'pre' : g.seg !== 'pre'));
+      const segs = nPre ? `<div class="lgx-seg">${[['all', 'All', e.a.length], ['main', 'Main card', nMain], ['pre', 'Prelims', nPre]].map(([k, v, n]) => `<button data-lgx="seg" data-sg="${k}" class="${LG.seg === k ? 'on' : ''}">${v} ${n}</button>`).join('')}</div>` : '';
+      return `<section class="lgx-ev"><button class="lgx-evh" data-lgx="evt" data-ek="${esc(e.k)}" data-open="${isOpen ? 1 : 0}" aria-expanded="${isOpen}"><div class="t"><span class="d">${esc(dd)}</span><span class="n">${esc(e.n)}</span>${meta ? `<span class="m">${esc(meta)}</span>` : ''}</div><span class="c">${made}/${e.a.length} ${isOpen ? '▾' : '▸'}</span></button>${isOpen ? `<div class="lgx-evb">${prog(made, e.a.length)}<div style="height:10px"></div>${segs}${show.length ? show.map((g) => fightCard(g, mp)).join('') : '<p class="mu">No fights in this section.</p>'}</div>` : ''}</section>`;
+    }).join('');
+  }
+  function teamDays(games, mp) {
+    const days = new Map();
+    games.forEach((g) => { const k = new Date(g.date).toDateString(); if (!days.has(k)) days.set(k, []); days.get(k).push(g); });
+    let n = 0, out = '';
+    for (const [, a] of days) {
+      if (n >= 40) break;
+      const slice = a.slice(0, 40 - n); n += slice.length;
+      const made = a.filter((g) => picked(mp, g)).length;
+      out += `<div class="lgx-day"><h3>${esc(dayLabel(a[0].date))}</h3><span class="mu">${made}/${a.length} picked</span></div>${slice.map((g) => gameCard(g, mp)).join('')}`;
+    }
+    return out + (games.length > 40 ? '<p class="mu">Showing the next 40 games.</p>' : '');
+  }
+
   function picksHtml(l) {
-    const mp = pickMap(), games = elig(l), openIds = new Set(games.map((g) => String(g.id)));
+    const mp = pickMap(), all = elig(l), openIds = new Set(all.map((g) => String(g.id)));
     const mine = (LG.det.picks || []).filter((p) => !openIds.has(String(p.game_id)));
-    const made = games.filter((g) => mp.has(String(g.id))).length;
-    return `<p class="mu" style="margin:0 0 10px">${games.length ? 'Tap a team to pick. You can change a pick until the game starts. ' + made + ' of ' + games.length + ' picked.' : ''}</p>
-${games.length ? games.slice(0, 40).map((g) => gameCard(g, mp)).join('') + (games.length > 40 ? '<p class="mu">Showing the next 40 games.</p>' : '') : `<div class="glass card"><b>No upcoming ${l.sport === 'ALL' ? '' : esc(sportName(l.sport)) + ' '}games right now</b><p class="mu">${GSTAT === 'loading' ? 'Loading games…' : 'Check back soon, new games show up here as they are scheduled.'}</p></div>`}
-${mine.length ? '<h2 style="margin:16px 0 10px">Your locked and settled picks</h2>' + mine.slice(0, 40).map((p) => `<div class="glass card row sp"><div style="min-width:0"><b class="ellip" style="display:block">${esc(p.pick)}</b><div class="mu ellip">${esc(p.matchup)}</div></div><span style="flex:none">${resBadge(p)}</span></div>`).join('') : ''}`;
+    // sport filter (only for "All sports" leagues that actually have games in more than one sport)
+    const sports = [...new Set(all.map((g) => g.sp))];
+    if (LG.sf !== 'all' && !sports.includes(LG.sf)) LG.sf = 'all';
+    const scoped = LG.sf === 'all' ? all : all.filter((g) => g.sp === LG.sf);
+    const made = scoped.filter((g) => picked(mp, g)).length, todo = scoped.length - made;
+    if (LG.pf === 'todo' && !todo && scoped.length) LG.pf = 'all';
+    const list = LG.pf === 'todo' ? scoped.filter((g) => !picked(mp, g)) : LG.pf === 'done' ? scoped.filter((g) => picked(mp, g)) : scoped;
+    const sfBar = l.sport === 'ALL' && sports.length > 1 ? `<div class="row hs sb">${['all', ...sports].map((c) => `<button class="sbtn ${LG.sf === c ? 'on' : ''}" data-lgx="sf" data-sp="${esc(c)}">${c === 'all' ? 'All sports' : esc(spl(c))}</button>`).join('')}</div>` : '';
+    const pfBar = scoped.length ? `<div class="row hs sb">${[['all', 'All', scoped.length], ['todo', 'To pick', todo], ['done', 'Picked', made]].map(([k, v, n]) => `<button class="sbtn ${LG.pf === k ? 'on' : ''}" data-lgx="pf" data-pf="${k}">${v} <span class="pf-n">${n}</span></button>`).join('')}</div>` : '';
+    const head = scoped.length ? `<div class="glass card"><div class="row sp"><b>Your picks</b><span class="mu">${made} of ${scoped.length} made</span></div>${prog(made, scoped.length)}<p class="mu" style="margin:8px 0 0">Tap a fighter or team to pick. You can change a pick until the game starts.</p></div>` : '';
+    const mma = list.filter((g) => MMA(g.sp)), team = list.filter((g) => !MMA(g.sp));
+    let body = '';
+    if (team.length) body += teamDays(team, mp);
+    if (mma.length) body += (team.length ? '<h2 style="margin:20px 0 4px">Fight cards</h2>' : '') + fightEvents(mma, mp);
+    if (!body) body = scoped.length ? '<div class="glass card"><b>Nothing here</b><p class="mu">Try a different filter.</p></div>'
+      : `<div class="glass card"><b>No upcoming ${l.sport === 'ALL' ? '' : esc(sportName(l.sport)) + ' '}games right now</b><p class="mu">${GSTAT === 'loading' ? 'Loading games…' : 'Check back soon, new games show up here as they are scheduled.'}</p></div>`;
+    const w = mine.filter((p) => p.result === 'win').length, lo = mine.filter((p) => p.result === 'loss').length;
+    const rec = mine.length ? `<div class="lgx-rec"><h2 style="margin:0;flex:1">Locked and settled</h2><span class="mu">${w}W · ${lo}L</span></div>` + mine.slice(0, 40).map((p) => `<div class="glass card row sp"><div style="min-width:0"><b class="ellip" style="display:block">${esc(p.pick)}</b><div class="mu ellip">${esc(p.matchup)}${p.sport ? ' · ' + esc(spl(p.sport)) : ''}</div></div><span style="flex:none">${resBadge(p)}</span></div>`).join('') : '';
+    return `${head}${sfBar}${pfBar}${body}${rec}`;
   }
   function standHtml(l, rows) {
     const fin = l.status !== 'active';
@@ -175,7 +255,7 @@ ${open ? `<p class="mu" style="margin:0">Make free picks on upcoming games. 1 po
       paint(`<div class="row" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div><div class="glass card"><b>Couldn't open this league</b><p class="mu">${esc((e && e.message) || e)}</p></div>`);
     }
   }
-  function openLeague(id) { LG.id = id; LG.det = null; LG.tab = 'picks'; paint(skel); loadDetail(); }
+  function openLeague(id) { LG.id = id; LG.det = null; LG.tab = 'picks'; LG.sf = 'all'; LG.pf = 'all'; LG.seg = 'all'; LG.open = {}; paint(skel); loadDetail(); }
   function open() { if (LG.id) { LG.det ? paint(detailHtml()) : paint(skel); loadDetail(); } else loadHome(); }
 
   /* ---------- own nav tab: bottom bar on mobile, side bar on desktop ---------- */
@@ -274,6 +354,10 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
     if (a === 'back') { LG.id = null; LG.det = null; loadHome(); return; }
     if (a === 'new') { createModal(); return; }
     if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
+    if (a === 'sf') { LG.sf = c.dataset.sp; paint(detailHtml()); return; }
+    if (a === 'pf') { LG.pf = c.dataset.pf; paint(detailHtml()); return; }
+    if (a === 'seg') { LG.seg = c.dataset.sg; paint(detailHtml()); return; }
+    if (a === 'evt') { LG.open[c.dataset.ek] = c.dataset.open !== '1'; paint(detailHtml()); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
     if (a === 'joinpub') { e.stopPropagation(); c.disabled = true; if (!(await join({ p_id: c.dataset.lid }))) c.disabled = false; return; }
     if (a === 'joincode') { const v = (document.getElementById('lgx-code') || {}).value || ''; if (v.trim().length < 4) return toast('Enter the invite code'); c.disabled = true; if (!(await join({ p_code: v.trim() }))) c.disabled = false; return; }
