@@ -51,6 +51,7 @@ select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:v
 .lgx-ftag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:99px;background:var(--lc,var(--ab));color:#fff;margin-bottom:6px}
 .lgx-ok{font-size:12px;font-weight:700;color:var(--lc,var(--ab))}
 .lgx-side small{font-size:11px;font-weight:600}
+}
 .lgx-rec{display:flex;gap:10px;align-items:center;margin:16px 2px 8px}
 .lgx-prize{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--lc,#3b82f6) 22%,var(--sf)),color-mix(in srgb,var(--lc2,#8b5cf6) 22%,var(--sf)));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--lc,var(--ab)) 55%,transparent)}
 .lgx-prize b{font-size:16px}
@@ -383,7 +384,7 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
     if (a === 'new') { createModal(); return; }
     if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
     if (a === 'sf') { LG.sf = c.dataset.sp; paintKeep(c, `[data-lgx="sf"][data-sp="${c.dataset.sp}"]`); return; }
-    if (a === 'pf') { LG.pf = c.dataset.pf; paintKeep(c, `[data-lgx="pf"][data-pf="${c.dataset.pf}"]`); return; }
+    if (a === 'pf') { LG.pf = c.dataset.lpf; paintKeep(c, `[data-lgx="pf"][data-pf="${c.dataset.lpf}"]`); return; }
     if (a === 'seg') { LG.seg = c.dataset.sg; paintKeep(c, `[data-lgx="seg"][data-sg="${c.dataset.sg}"]`); return; }
     if (a === 'evt') { LG.open[c.dataset.ek] = c.dataset.open !== '1'; paint(detailHtml()); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
