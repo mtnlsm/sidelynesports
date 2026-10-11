@@ -4,7 +4,7 @@
    written to the tables directly. Loaded after app.js, so it can reuse its helpers (esc, modal, avHtml, crest, G, ME ...). */
 (() => {
   const BONUS = 20000; // only used for text before the server answers; the real amount comes from league_cfg() in leagues.sql
-  const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set(), sf: 'all', pf: 'all', seg: 'all', open: {} };
+  const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set(), sf: 'all', pf: 'all', seg: 'all', open: {}, stay: new Set() };
   const SPORTS = ['ALL', 'NFL', 'NBA', 'MLB', 'NHL', 'CFB', 'UFC', 'PFL'];
   const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#64748b'];
   const DEF1 = '#3b82f6', DEF2 = '#8b5cf6';
@@ -223,7 +223,7 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
     const scoped = LG.sf === 'all' ? all : all.filter((g) => g.sp === LG.sf);
     const made = scoped.filter((g) => picked(mp, g)).length, todo = scoped.length - made;
     if (LG.pf === 'todo' && !todo && scoped.length) LG.pf = 'all';
-    const list = LG.pf === 'todo' ? scoped.filter((g) => !picked(mp, g)) : LG.pf === 'done' ? scoped.filter((g) => picked(mp, g)) : scoped;
+    const list = LG.pf === 'todo' ? scoped.filter((g) => !picked(mp, g) || LG.stay.has(String(g.id))) : LG.pf === 'done' ? scoped.filter((g) => picked(mp, g)) : scoped;
     const sfBar = l.sport === 'ALL' && sports.length > 1 ? `<div class="row hs sb">${['all', ...sports].map((c) => `<button class="sbtn ${LG.sf === c ? 'on' : ''}" data-lgx="sf" data-sp="${esc(c)}">${c === 'all' ? 'All sports' : esc(spl(c))}</button>`).join('')}</div>` : '';
     const pfBar = scoped.length ? `<div class="row hs sb">${[['all', 'All', scoped.length], ['todo', 'To pick', todo], ['done', 'Picked', made]].map(([k, v, n]) => `<button class="sbtn ${LG.pf === k ? 'on' : ''}" data-lgx="pf" data-lpf="${k}">${v} <span class="pf-n">${n}</span></button>`).join('')}</div>` : '';
     const head = scoped.length ? `<div class="glass card"><div class="row sp"><b>Your picks</b><span class="mu">${made} of ${scoped.length} made</span></div>${prog(made, scoped.length)}<p class="mu" style="margin:8px 0 0">Tap a fighter or team to pick. You can change a pick until the game starts.</p></div>` : '';
@@ -285,7 +285,7 @@ ${open ? `<p class="mu" style="margin:0">Make free picks on upcoming games. 1 po
       paint(`<div class="row" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div><div class="glass card"><b>Couldn't open this league</b><p class="mu">${esc((e && e.message) || e)}</p></div>`);
     }
   }
-  function openLeague(id) { LG.id = id; LG.det = null; LG.tab = 'picks'; LG.sf = 'all'; LG.pf = 'all'; LG.seg = 'all'; LG.open = {}; paint(skel); loadDetail(); }
+  function openLeague(id) { LG.id = id; LG.det = null; LG.tab = 'picks'; LG.sf = 'all'; LG.pf = 'all'; LG.seg = 'all'; LG.open = {}; LG.stay = new Set(); paint(skel); loadDetail(); }
   function open() { if (LG.id) { LG.det ? paint(detailHtml()) : paint(skel); loadDetail(); } else loadHome(); }
 
   /* ---------- own nav tab: bottom bar on mobile, side bar on desktop ---------- */
@@ -385,7 +385,7 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
     if (a === 'new') { createModal(); return; }
     if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
     if (a === 'sf') { LG.sf = c.dataset.sp; paintKeep(c, `[data-lgx="sf"][data-sp="${c.dataset.sp}"]`); return; }
-    if (a === 'pf') { LG.pf = c.dataset.lpf; paintKeep(c, `[data-lgx="pf"][data-lpf="${c.dataset.lpf}"]`); return; }
+    if (a === 'pf') { LG.pf = c.dataset.lpf; LG.stay.clear(); paintKeep(c, `[data-lgx="pf"][data-lpf="${c.dataset.lpf}"]`); return; }
     if (a === 'seg') { LG.seg = c.dataset.sg; paintKeep(c, `[data-lgx="seg"][data-sg="${c.dataset.sg}"]`); return; }
     if (a === 'evt') { LG.open[c.dataset.ek] = c.dataset.open !== '1'; paint(detailHtml()); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
@@ -414,6 +414,7 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
       try {
         await rpc('league_save_pick', { p_league: LG.id, p_game: key, p_sport: g.sp, p_pick: side, p_matchup: g.a + ' vs ' + g.b, p_start: MMA(g.sp) ? null : g.date });
         LG.det.picks = [{ game_id: key, pick: side, matchup: g.a + ' vs ' + g.b, sport: g.sp, result: null, updated_at: new Date().toISOString() }, ...LG.det.picks.filter((p) => String(p.game_id) !== key)];
+        if (LG.pf === 'todo') LG.stay.add(key);   // keep the fight on screen after you pick it
         repaintKeepY();
       } catch (err) { fail(err); } finally { LG.pk.delete(key); }
     }
