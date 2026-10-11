@@ -49,10 +49,10 @@
   // Player photo (crisp ESPN size when possible, blank circle if there is none or it fails to load).
   function ph(u) {
     if (!u || !/^https:\/\//.test(u)) return '<i class="lv-ph"></i>';
-    // Ask ESPN to crop + resize to the real on-screen size (a 350px photo shrunk 8x by the browser looks jagged).
+    // Ask ESPN for a proportional (uncropped) resize near the on-screen size so the browser never has to shrink it more than ~2x; CSS does the centering.
     let src = u;
     const m = u.match(/^https:\/\/a\.espncdn\.com(\/i\/headshots\/.+?\.png)/);
-    if (m) { const n = Math.round(48 * Math.min(3, Math.max(2, window.devicePixelRatio || 2))); src = 'https://a.espncdn.com/combiner/i?img=' + m[1] + '&w=' + n + '&h=' + n + '&scale=crop&cquality=95&location=origin'; }
+    if (m) { const w = Math.round(64 * Math.min(3, Math.max(2, window.devicePixelRatio || 2))); src = 'https://a.espncdn.com/combiner/i?img=' + m[1] + '&w=' + w + '&scale=size&cquality=100&location=origin'; }
     return `<img class="lv-ph" src="${E(src)}" data-o="${E(u)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="if(this.dataset.o&&this.src!==this.dataset.o){this.src=this.dataset.o}else{this.style.visibility='hidden'}">`;
   }
 
