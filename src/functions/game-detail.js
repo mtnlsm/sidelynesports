@@ -77,10 +77,27 @@ function normTS(j, ids) {
     .filter((r) => r[0] && r[1]).slice(0, 16);
 }
 
-function normPlays(j) {
+function normPlays(j, ids) {
   let p = Array.isArray(j.plays) ? j.plays : [];
   if (!p.length && j.drives) { const c = j.drives.current || (j.drives.previous || []).slice(-1)[0]; p = (c && c.plays) || []; }
-  return p.slice(-10).reverse().map((x) => ({ t: String(x.text || x.shortText || '').slice(0, 200), c: (x.clock && x.clock.displayValue) || '', p: String((x.period && (x.period.displayValue || x.period.number)) || ''), sc: !!x.scoringPlay })).filter((x) => x.t);
+  const side = (x) => { const t = x.team && String(x.team.id != null ? x.team.id : x.team); return ids && t === ids.a ? 'a' : ids && t === ids.b ? 'b' : ''; };
+  return p.slice(-10).reverse().map((x) => ({ t: String(x.text || x.shortText || '').slice(0, 200), c: (x.clock && x.clock.displayValue) || '', p: String((x.period && (x.period.displayValue || x.period.number)) || ''), sc: !!x.scoringPlay, tm: side(x) })).filter((x) => x.t);
+}
+
+// Who has the ball / puck / bat. Football = ESPN's own possession, baseball = top/bottom of the inning (exact). Basketball + hockey: ESPN sends no possession, so it is
+// estimated from the latest play (pe:1). 'a' = away, 'b' = home, '' = unknown.
+function possOf(sp, clk, sit, plays) {
+  const lg = LEAGUES[sp] || '';
+  if (lg.startsWith('football')) return { po: (sit && sit.po) || '', pe: 0 };
+  if (lg.startsWith('baseball')) { const c = String(clk || ''); return { po: /^top/i.test(c) ? 'a' : /^bot/i.test(c) ? 'b' : '', pe: 0 }; }
+  const p = plays[0]; if (!p || !p.tm) return { po: '', pe: 1 };
+  const other = p.tm === 'a' ? 'b' : 'a', t = p.t;
+  if (/end of (the )?(\d\w* )?(period|quarter|half|game|overtime)/i.test(t)) return { po: '', pe: 1 };
+  let po = p.tm;
+  if (lg.startsWith('hockey')) { if (/(goal|shot|blocked|missed|saved|save|giveaway|hit)\b/i.test(t) && !/takeaway/i.test(t)) po = other; }
+  else if (/\b(makes?|made|scores?)\b/i.test(t) && !/\bmiss/i.test(t)) po = other;
+  else if (/(turnover|bad pass|lost ball|traveling|offensive foul|shot clock|steals?)/i.test(t) || /\bmiss(es|ed)\b/i.test(t)) po = other;
+  return { po, pe: 1 };
 }
 
 function build(sp, id, j) {
@@ -94,9 +111,10 @@ function build(sp, id, j) {
   const away = side(aw), home = side(ho), lab = labels(sp, Math.max(away.ls.length, home.ls.length));
   while (away.ls.length < lab.length) away.ls.push('');
   while (home.ls.length < lab.length) home.ls.push('');
-  const t = (hc.status && hc.status.type) || {}, box = normBox(sp, j), lu = normLineups(sp, j, box), plays = normPlays(j);
+  const t = (hc.status && hc.status.type) || {}, box = normBox(sp, j), lu = normLineups(sp, j, box), plays = normPlays(j, ids);
   const sit = normSit(sp, j.situation || hc.situation, ids) || (plays[0] ? { k: 'g', lp: plays[0].t } : undefined);
-  return { id, sp, st: state(t.state), clk: t.shortDetail || t.detail || '', away, home, lab, sit,
+  const pos = possOf(sp, t.shortDetail || t.detail || '', sit, plays);
+  return { id, sp, st: state(t.state), clk: t.shortDetail || t.detail || '', away, home, lab, sit, po: pos.po, pe: pos.pe,
     box: [box[ids.a] || [], box[ids.b] || []], lu: [lu[ids.a] || null, lu[ids.b] || null], ts: normTS(j, ids), plays, updated: new Date().toISOString() };
 }
 
