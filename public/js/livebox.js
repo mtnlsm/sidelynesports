@@ -179,13 +179,131 @@
     return `${hero(g, c.d)}${oddsBar(g)}${tabs}<div class="lv-body">${tab === 'tape' ? tape(g) : statsBody(g, c)}</div>`;
   }
 
+
+  // ---------- FIELD VIEW: 2.5D court / rink / field / diamond with who-has-it marker (live team games only) ----------
+  const kindOf = (sp) => (/^(NFL|CFB|CFL)$/.test(sp) ? 'fb' : /^(NBA|WNBA|CBB)$/.test(sp) ? 'bb' : sp === 'NHL' ? 'hk' : /^(MLB|CBASE)$/.test(sp) ? 'bs' : '');
+  const sportIcon = (sp, z) => {
+    const k = kindOf(sp);
+    if (k === 'fb') return `<svg width="${z * 1.5}" height="${z}" viewBox="0 0 48 30" aria-hidden="true"><ellipse cx="24" cy="15" rx="22" ry="12" fill="#8a4b1f" stroke="#2e1608" stroke-width="1.4"/><path d="M12 15H36M18 11V19M24 10.5V19.5M30 11V19" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M7.5 8.5Q10 15 7.5 21.5M40.5 8.5Q38 15 40.5 21.5" fill="none" stroke="#fff" stroke-width="1.3"/></svg>`;
+    if (k === 'hk') return `<svg width="${z * 1.2}" height="${z}" viewBox="0 0 40 30" aria-hidden="true"><path d="M3 11V19C3 24 10 28 20 28C30 28 37 24 37 19V11Z" fill="#15181c"/><ellipse cx="20" cy="11" rx="17" ry="8" fill="#2c3239" stroke="#000" stroke-width=".8"/><ellipse cx="14" cy="9" rx="6" ry="2.2" fill="#fff" opacity=".18"/></svg>`;
+    if (k === 'bs') return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f7f3ea" stroke="#9a9488" stroke-width="1.2"/><g fill="none" stroke="#c8242b" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.4 2"><path d="M10 6C17 13 17 27 10 34"/><path d="M30 6C23 13 23 27 30 34"/></g></svg>`;
+    return `<svg width="${z}" height="${z}" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#ee8a2b" stroke="#5a2a06" stroke-width="1.4"/><path d="M3 20H37M20 3V37M7.5 8.5C14 14 14 26 7.5 31.5M32.5 8.5C26 14 26 26 32.5 31.5" fill="none" stroke="#5a2a06" stroke-width="1.3"/></svg>`;
+  };
+  // Small "has it" badge for the score cards: exact for football (ESPN possession) and baseball (batting team); other sports show it inside the game sheet.
+  window.possMark = (g, side) => {
+    if (!g || g.st !== 'live') return '';
+    const k = kindOf(g.sp); if (!k) return '';
+    let po = g.sit && g.sit.po || ''; if (!po && k === 'bs') po = /^top/i.test(g.clk || '') ? 'a' : /^bot/i.test(g.clk || '') ? 'b' : '';
+    return po === side ? ` <span class="fld-pk" title="${k === 'bs' ? 'Batting' : 'Has the ball'}">${sportIcon(g.sp, 15)}</span>` : '';
+  };
+  const colOf = (t, sp) => { try { if (typeof artPal === 'function') { const p = artPal(t.n, sp); return p.c1; } } catch (e) {} return '#2f7dd1'; };
+  const yardInfo = (d) => {
+    const s = d.sit || {}, po = d.po || s.po || '', pt = String(s.pt || ''), dd = String(s.dd || '');
+    const m = pt.match(/^([A-Z]{2,4})\s+(\d{1,2})$/) || dd.match(/\bat\s+([A-Z]{2,4})\s+(\d{1,2})/);
+    let yx = null;
+    if (m) { const ab = m[1], y = +m[2]; yx = ab === d.away.ab ? y : ab === d.home.ab ? 100 - y : (po === 'b' ? 100 - y : y); }
+    else if (/\b(at|^)\s*50\b/.test(dd + ' ' + pt)) yx = 50;
+    if (yx == null) return { po, yx: null };
+    const dm = dd.match(/&\s*(\d+)/), goal = /goal/i.test(dd);
+    const dist = dm ? +dm[1] : goal ? (po === 'a' ? 100 - yx : yx) : null;
+    const fd = dist == null ? null : Math.max(0, Math.min(100, po === 'a' ? yx + dist : yx - dist));
+    return { po, yx, fd };
+  };
+  const mk = (x, y, inner, c, cls) => `<i class="fld-gr${cls ? ' ' + cls : ''}" style="left:${x}%;top:${y}%;--c:${c}"></i><div class="fld-mk${cls ? ' ' + cls : ''}" style="left:${x}%;top:${y}%;--c:${c}">${inner}</div>`;
+  const ballMk = (d, x, y, c) => mk(x, y, `<span class="fld-ball">${sportIcon(d.sp, 30)}</span>`, c, 'ball');
+
+  function surface(d) {
+    const k = kindOf(d.sp), ca = colOf(d.away, d.sp), cb = colOf(d.home, d.sp), po = d.po || (d.sit && d.sit.po) || '', pc = po === 'a' ? ca : cb;
+    const ab = (t) => E((t.ab || t.n || '').slice(0, 4).toUpperCase());
+    if (k === 'bb') {
+      const W = 94, H = 50, line = 'stroke="#fff" stroke-opacity=".85" stroke-width=".5" fill="none"';
+      const hl = po ? `<rect x="${po === 'a' ? 47 : 0}" y="0" width="47" height="50" fill="${pc}" fill-opacity=".16"/>` : '';
+      const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="fw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9a35c"/><stop offset=".5" stop-color="#e6b872"/><stop offset="1" stop-color="#d9a35c"/></linearGradient></defs>
+        <rect width="${W}" height="${H}" fill="url(#fw)"/>${Array.from({ length: 24 }, (_, i) => `<rect x="${i * 4}" width=".35" height="${H}" fill="#000" opacity=".05"/>`).join('')}
+        <rect x="0" y="17" width="19" height="16" fill="${ca}" fill-opacity=".6"/><rect x="75" y="17" width="19" height="16" fill="${cb}" fill-opacity=".6"/>${hl}
+        <rect x=".4" y=".4" width="93.2" height="49.2" ${line}/><path d="M47 0V50" ${line}/><circle cx="47" cy="25" r="6" ${line}/>
+        <rect x="0" y="17" width="19" height="16" ${line}/><rect x="75" y="17" width="19" height="16" ${line}/><circle cx="19" cy="25" r="6" ${line}/><circle cx="75" cy="25" r="6" ${line}/>
+        <path d="M0 3H14.2A23.75 23.75 0 0 1 14.2 47H0" ${line}/><path d="M94 3H79.8A23.75 23.75 0 0 0 79.8 47H94" ${line}/>
+        <circle cx="5.25" cy="25" r=".9" fill="none" stroke="#e8591a" stroke-width=".5"/><circle cx="88.75" cy="25" r=".9" fill="none" stroke="#e8591a" stroke-width=".5"/>
+        <text x="9.5" y="26.6" font-size="4.4" font-weight="900" fill="#fff" fill-opacity=".9" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.away)}</text><text x="84.5" y="26.6" font-size="4.4" font-weight="900" fill="#fff" fill-opacity=".9" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.home)}</text>
+        ${po ? `<path d="M${po === 'a' ? 58 : 36} 25H${po === 'a' ? 78 : 16}" stroke="${pc}" stroke-width="1.2" stroke-dasharray="2.4 2.2" stroke-linecap="round"/>` : ''}</svg>`;
+      return { svg, ar: '94/50', tilt: 52, edge: '#8a5a24', mk: ballMk(d, po ? (po === 'a' ? 66 : 34) : 50, 50, po ? pc : '#ee8a2b') };
+    }
+    if (k === 'hk') {
+      const W = 200, H = 85, line = (c, w) => `stroke="${c}" stroke-width="${w}" fill="none"`;
+      const hl = po ? `<rect x="${po === 'a' ? 125 : 0}" y="0" width="75" height="85" fill="${pc}" fill-opacity=".14"/>` : '';
+      const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><clipPath id="rk"><rect width="${W}" height="${H}" rx="26"/></clipPath><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4fbff"/><stop offset="1" stop-color="#d6ecf7"/></linearGradient></defs>
+        <g clip-path="url(#rk)"><rect width="${W}" height="${H}" fill="url(#ig)"/><rect width="11" height="${H}" fill="${ca}" fill-opacity=".22"/><rect x="189" width="11" height="${H}" fill="${cb}" fill-opacity=".22"/>${hl}
+        <path d="M100 0V85" ${line('#d33a3a', 2.4)} stroke-dasharray="5 2"/><path d="M75 0V85M125 0V85" ${line('#2d6fd6', 2.4)}/><path d="M11 0V85M189 0V85" ${line('#d33a3a', .8)}/>
+        <circle cx="100" cy="42.5" r="15" ${line('#2d6fd6', .9)}/><circle cx="100" cy="42.5" r="1.6" fill="#2d6fd6"/>
+        ${[[31, 22], [31, 63], [169, 22], [169, 63]].map((c) => `<circle cx="${c[0]}" cy="${c[1]}" r="15" ${line('#d33a3a', .8)}/><circle cx="${c[0]}" cy="${c[1]}" r="1.6" fill="#d33a3a"/>`).join('')}
+        <path d="M11 35.5A8 8 0 0 1 11 49.5Z" fill="#7fb6ec" stroke="#d33a3a" stroke-width=".6"/><path d="M189 35.5A8 8 0 0 0 189 49.5Z" fill="#7fb6ec" stroke="#d33a3a" stroke-width=".6"/>
+        <rect x="6" y="38" width="5" height="9" fill="none" stroke="#999" stroke-width=".8"/><rect x="189" y="38" width="5" height="9" fill="none" stroke="#999" stroke-width=".8"/>
+        <text x="50" y="45" font-size="9" font-weight="900" fill="${ca}" fill-opacity=".55" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.away)}</text><text x="150" y="45" font-size="9" font-weight="900" fill="${cb}" fill-opacity=".55" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.home)}</text>
+        ${po ? `<path d="M${po === 'a' ? 98 : 102} 42.5H${po === 'a' ? 140 : 60}" stroke="${pc}" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>` : ''}</g>
+        <rect x=".6" y=".6" width="198.8" height="83.8" rx="26" ${line('#9fb7c4', 1.2)}/></svg>`;
+      return { svg, ar: '200/85', rad: '13%/30.6%', tilt: 54, edge: '#7a98a8', mk: ballMk(d, po ? (po === 'a' ? 70 : 30) : 50, 50, po ? pc : '#2c3239') };
+    }
+    if (k === 'fb') {
+      const y = yardInfo(d), X = (v) => 10 + v;
+      const stripes = Array.from({ length: 10 }, (_, i) => (i % 2 ? `<rect x="${10 + i * 10}" width="10" height="53.3" fill="#fff" opacity=".05"/>` : '')).join('');
+      const lines = Array.from({ length: 21 }, (_, i) => `<path d="M${10 + i * 5} 0V53.3" stroke="#fff" stroke-opacity="${i % 2 ? .22 : .6}" stroke-width=".35"/>`).join('');
+      const nums = [10, 20, 30, 40, 50, 60, 70, 80, 90].map((v) => `<text x="${10 + v}" y="10" font-size="3.4" fill="#fff" fill-opacity=".55" text-anchor="middle" font-weight="800" font-family="Arial,sans-serif" transform="rotate(180 ${10 + v} 8.8)">${Math.min(v, 100 - v)}</text><text x="${10 + v}" y="46.6" font-size="3.4" fill="#fff" fill-opacity=".55" text-anchor="middle" font-weight="800" font-family="Arial,sans-serif">${Math.min(v, 100 - v)}</text>`).join('');
+      const hash = Array.from({ length: 99 }, (_, i) => `<path d="M${11 + i} 22.4v1.1M${11 + i} 29.8v1.1" stroke="#fff" stroke-opacity=".4" stroke-width=".25"/>`).join('');
+      let live = '';
+      if (y.yx != null && y.po) {
+        const x0 = y.po === 'a' ? X(y.yx) : 10, x1 = y.po === 'a' ? 110 : X(y.yx);
+        live = `<rect x="${x0}" y="0" width="${x1 - x0}" height="53.3" fill="${pc}" fill-opacity=".16"/>`
+          + (y.fd != null ? `<path d="M${X(y.fd)} 0V53.3" stroke="#ffd83a" stroke-width=".9"/>` : '') + `<path d="M${X(y.yx)} 0V53.3" stroke="#3b8cff" stroke-width=".9"/>`
+          + `<path d="M${X(y.yx) + (y.po === 'a' ? 3 : -3)} 26.65H${X(y.yx) + (y.po === 'a' ? 15 : -15)}" stroke="${pc}" stroke-width="1.4" stroke-linecap="round"/><path d="M${X(y.yx) + (y.po === 'a' ? 12 : -12)} 23.4L${X(y.yx) + (y.po === 'a' ? 16 : -16)} 26.65L${X(y.yx) + (y.po === 'a' ? 12 : -12)} 29.9" fill="none" stroke="${pc}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+      const svg = `<svg viewBox="0 0 120 53.3" preserveAspectRatio="none"><rect width="120" height="53.3" fill="#2f7d3c"/>${stripes}<rect width="10" height="53.3" fill="${ca}" fill-opacity=".9"/><rect x="110" width="10" height="53.3" fill="${cb}" fill-opacity=".9"/>${lines}${hash}${nums}
+        <text transform="translate(6.6 26.65) rotate(-90)" font-size="5" font-weight="900" fill="#fff" fill-opacity=".92" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.away)}</text><text transform="translate(113.4 26.65) rotate(90)" font-size="5" font-weight="900" fill="#fff" fill-opacity=".92" text-anchor="middle" font-family="Arial Black,Arial,sans-serif">${ab(d.home)}</text>
+        ${live}<rect x=".3" y=".3" width="119.4" height="52.7" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width=".6"/></svg>`;
+      const bx = y.yx != null ? ((10 + y.yx) / 120) * 100 : 50;
+      return { svg, ar: '120/53.3', tilt: 52, edge: '#144a22', mk: ballMk(d, bx, 50, y.po ? pc : '#8a4b1f') };
+    }
+    if (k === 'bs') {
+      const s = d.sit || {}, bat = po, fld = po === 'a' ? 'b' : po === 'b' ? 'a' : '', cbat = bat === 'a' ? ca : bat === 'b' ? cb : '#f4efe4', cfld = fld === 'a' ? ca : fld === 'b' ? cb : '#888';
+      const base = (x, y, on) => `<g transform="rotate(45 ${x} ${y})"><rect x="${x - 4.5}" y="${y - 4.5}" width="9" height="9" fill="${on ? cbat : '#fff'}" stroke="${on ? '#fff' : '#222'}" stroke-opacity="${on ? 1 : .5}" stroke-width="${on ? 1.2 : .6}"/></g>${on ? `<circle cx="${x}" cy="${y}" r="11" fill="${cbat}" fill-opacity=".35"/>` : ''}`;
+      const svg = `<svg viewBox="0 0 200 170" preserveAspectRatio="none"><defs><clipPath id="bf"><path d="M100 152L-4 48Q100 -52 204 48Z"/></clipPath></defs><rect width="200" height="170" fill="#1d4a2b"/>
+        <path d="M100 152L-4 48Q100 -52 204 48Z" fill="#2f7d3c"/><g clip-path="url(#bf)">${Array.from({ length: 6 }, (_, i) => `<path d="M-4 ${150 - i * 34}Q100 ${60 - i * 34} 204 ${150 - i * 34}" fill="none" stroke="#fff" stroke-opacity=".045" stroke-width="12"/>`).join('')}<circle cx="100" cy="112" r="52" fill="#b98a55"/><path d="M100 80L132 110L100 140L68 110Z" fill="#2f7d3c"/></g>
+        <path d="M100 152L-4 48M100 152L204 48" stroke="#fff" stroke-opacity=".8" stroke-width="1"/><path d="M-4 48Q100 -52 204 48" fill="none" stroke="#12331a" stroke-width="3" stroke-opacity=".7"/>
+        <path d="M100 152L142 110L100 68L58 110Z" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.1"/><circle cx="100" cy="110" r="6" fill="#c89a63" stroke="#fff" stroke-opacity=".4" stroke-width=".6"/>
+        ${base(142, 110, s.r1)}${base(100, 68, s.r2)}${base(58, 110, s.r3)}<path d="M94.5 150H105.500V154L100 158L94.500 154Z" fill="#fff" stroke="#222" stroke-opacity=".5" stroke-width=".6"/></svg>`;
+      const nm2 = (n) => E(String(n || '').split(' ').slice(-1)[0] || '');
+      let m = '';
+      if (s.r1) m += mk(71, 64.7, '<i class="fld-pin"></i>', cbat, 'run');
+      if (s.r2) m += mk(50, 40, '<i class="fld-pin"></i>', cbat, 'run');
+      if (s.r3) m += mk(29, 64.7, '<i class="fld-pin"></i>', cbat, 'run');
+      m += mk(50, 66, `<i class="fld-pin"></i>${s.pt ? `<span class="fld-nm">${nm2(s.pt)}</span>` : ''}`, cfld, 'run');
+      m += mk(50, 90, `<span class="fld-ball">${sportIcon(d.sp, 26)}</span>${s.bt ? `<span class="fld-nm">${nm2(s.bt)}</span>` : ''}`, cbat, 'ball');
+      return { svg, ar: '200/170', tilt: 42, edge: '#1c4a26', mk: m };
+    }
+    return null;
+  }
+
+  function fieldTab(d) {
+    const sf = surface(d); if (!sf) return '<p class="mu">Field view isn\u2019t available for this sport.</p>';
+    const po = d.po || (d.sit && d.sit.po) || '', k = kindOf(d.sp), t = (x, side) => `<div class="fld-t ${side}${po === side ? ' has' : ''}">${po === side ? `<span class="fld-pk">${sportIcon(d.sp, 18)}</span>` : ''}<b>${E(x.ab || x.n)}</b><em>${E(x.sc)}</em></div>`;
+    const s = d.sit || {}, ap = sf.ar.split('/'), gap = (0.86 * 0.5 * (ap[1] / ap[0]) * (1 - Math.cos((sf.tilt * Math.PI) / 180)) * 100).toFixed(1);
+    let cap = '';
+    if (k === 'fb') cap = [s.dd ? `<b>${E(s.dd)}</b>` : '', po ? `${E(po === 'a' ? d.away.ab : d.home.ab)} ball` : '', s.rz ? '<b class="lv-rz">Red zone</b>' : ''].filter(Boolean).join(' \u00b7 ');
+    else if (k === 'bs') cap = [s.ba != null ? `${s.ba}-${s.sk} count` : '', s.o != null ? `${s.o} out${s.o === 1 ? '' : 's'}` : '', s.bt ? `At bat: <b>${E(s.bt)}</b>` : '', s.pt ? `Pitching: <b>${E(s.pt)}</b>` : ''].filter(Boolean).join(' \u00b7 ');
+    else cap = po ? `${E(po === 'a' ? d.away.ab : d.home.ab)} ${k === 'hk' ? 'puck' : 'ball'}${d.pe ? ' <span class="mu">(estimated from the last play)</span>' : ''}` : '<span class="mu">Possession shows up after the next play.</span>';
+    const lp = d.plays && d.plays[0] ? `<p class="fld-lp">${E(d.plays[0].t)}</p>` : (s.lp ? `<p class="fld-lp">${E(s.lp)}</p>` : '');
+    return `<div class="fld"><div class="fld-hd">${t(d.away, 'a')}<div class="fld-clk">${E(d.clk || '')}</div>${t(d.home, 'b')}</div>
+      <div class="fld-stage k-${k}" style="margin-top:-${gap}%;margin-bottom:-${gap}%"><div class="fld-plane" style="--tilt:${sf.tilt}deg;--edge:${sf.edge};aspect-ratio:${sf.ar}${sf.rad ? ';border-radius:' + sf.rad : ''}">${sf.svg}${sf.mk}</div></div>
+      <div class="fld-cap">${cap}</div>${lp}</div>`;
+  }
+
   function inner(g) {
     if (isMma(g)) return mmaInner(g);
     const c = C[g.id];
     if (!c || !c.d) return `<p class="mu lv-ld">${c && c.err ? 'Live details aren\u2019t available right now.' : 'Loading live details\u2026'}</p>`;
-    const d = c.d, tabs = [['live', 'Live'], ['box', 'Box score'], ['lu', 'Lineups'], ['ts', 'Team stats']].filter((t) => t[0] !== 'lu' || d.lu[0] || d.lu[1]).filter((t) => t[0] !== 'ts' || d.ts.length);
-    const tab = tabs.some((t) => t[0] === c.tab) ? c.tab : 'live';
-    const body = tab === 'live' ? lineScore(d) + situation(d) + plays(d) : tab === 'box' ? boxTab(c, d) : tab === 'lu' ? luTab(d) : tsTab(d);
+    const d = c.d, tabs = [['field', 'Field'], ['live', 'Live'], ['box', 'Box score'], ['lu', 'Lineups'], ['ts', 'Team stats']].filter((t) => t[0] !== 'field' || kindOf(d.sp)).filter((t) => t[0] !== 'lu' || d.lu[0] || d.lu[1]).filter((t) => t[0] !== 'ts' || d.ts.length);
+    const tab = tabs.some((t) => t[0] === c.tab) ? c.tab : tabs[0][0];
+    const body = tab === 'field' ? fieldTab(d) : tab === 'live' ? lineScore(d) + situation(d) + plays(d) : tab === 'box' ? boxTab(c, d) : tab === 'lu' ? luTab(d) : tsTab(d);
     return `<div class="lv-tabs">${tabs.map((t) => `<button class="${t[0] === tab ? 'on' : ''}" data-lvt="${t[0]}">${t[1]}</button>`).join('')}</div><div class="lv-body">${body}</div>${c.err ? '<p class="mu lv-ld">Reconnecting\u2026</p>' : ''}`;
   }
 
@@ -194,7 +312,7 @@
 
   window.startLive = (g, m) => {
     if (!isTeam(g) && !isMma(g)) return;
-    const c = (C[g.id] = C[g.id] || { tab: isMma(g) ? 'stats' : 'live', tm: 0, gi: 0 });
+    const c = (C[g.id] = C[g.id] || { tab: isMma(g) ? 'stats' : 'field', tm: 0, gi: 0 });
     const paint = () => { const b = m.querySelector('#lvd'); if (b) b.innerHTML = inner(g); };
     m.addEventListener('click', (e) => {
       const t = e.target.closest('[data-lvt]'), x = e.target.closest('[data-lvm]'), y = e.target.closest('[data-lvg]');
