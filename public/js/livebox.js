@@ -281,8 +281,8 @@
         return mk(x, y, img + (name ? `<span class="fld-nm">${nm2(name)}</span>` : ''), cbat, 'run');
       };
       m += runner(71, 64.7, s.r1, s.p1, s.n1) + runner(50, 40, s.r2, s.p2, s.n2) + runner(29, 64.7, s.r3, s.p3, s.n3);
-      m += mk(50, 66, `<i class="fld-pin"></i>${s.pt ? `<span class="fld-nm">${nm2(s.pt)}</span>` : ''}`, cfld, 'run');
-      m += mk(50, 90, `<span class="fld-ball">${sportIcon(d.sp, 26)}</span>${s.bt ? `<span class="fld-nm">${nm2(s.bt)}</span>` : ''}`, cbat, 'ball');
+      m += mk(50, 66, `${s.pp && /^https:\/\//.test(s.pp) ? `<img class="fld-ph" src="${E(s.pp)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='<i class=&quot;fld-pin&quot;></i>'">` : '<i class="fld-pin"></i>'}${s.pt ? `<span class="fld-nm">${nm2(s.pt)}</span>` : ''}`, cfld, 'run');
+      m += mk(50, 90, `${s.bp && /^https:\/\//.test(s.bp) ? `<img class="fld-ph" src="${E(s.bp)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='<i class=&quot;fld-pin&quot;></i>'">` : `<span class="fld-ball">${sportIcon(d.sp, 26)}</span>`}${s.bt ? `<span class="fld-nm">${nm2(s.bt)}</span>` : ''}`, cbat, 'ball');
       return { svg, ar: '200/170', tilt: 42, edge: '#1c4a26', mk: m };
     }
     return null;
