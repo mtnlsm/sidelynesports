@@ -9,6 +9,55 @@
   var E = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var idFromImg = function (u) { var m = /players\/full\/(\d+)\./.exec(u || ''); return m ? m[1] : ''; };
 
+  /* ===== FIGHTER SPECIALTIES =====
+     BACKGROUND: edit this list any time. ESPN does not provide a fighter's base discipline, so it is curated by hand.
+     Format:  'fighter name': ['Discipline', 'Discipline'],   (names are matched ignoring capitals, accents and punctuation)
+     A fighter who is not listed simply shows no background tag. This is a starter list, so check it and add your own. */
+  var BACKGROUND = {
+    'islam makhachev': ['Sambo', 'Wrestling'],
+    'khabib nurmagomedov': ['Sambo', 'Wrestling'],
+    'jon jones': ['Wrestling'],
+    'kamaru usman': ['Wrestling'],
+    'belal muhammad': ['Wrestling'],
+    'khamzat chimaev': ['Wrestling'],
+    'colby covington': ['Wrestling'],
+    'merab dvalishvili': ['Wrestling'],
+    'henry cejudo': ['Wrestling'],
+    'daniel cormier': ['Wrestling'],
+    'michael chandler': ['Wrestling'],
+    'charles oliveira': ['BJJ'],
+    'nate diaz': ['BJJ'],
+    'gilbert burns': ['BJJ'],
+    'mackenzie dern': ['BJJ'],
+    'alexandre pantoja': ['BJJ'],
+    'amanda nunes': ['BJJ', 'Boxing'],
+    'ilia topuria': ['Boxing', 'BJJ'],
+    'dustin poirier': ['Boxing'],
+    'francis ngannou': ['Boxing'],
+    'sean o\'malley': ['Boxing'],
+    'alex pereira': ['Kickboxing'],
+    'israel adesanya': ['Kickboxing'],
+    'valentina shevchenko': ['Muay Thai'],
+    'weili zhang': ['Sanda'],
+    'kayla harrison': ['Judo'],
+    'ronda rousey': ['Judo']
+  };
+  var norm = function (n) { return String(n || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim(); };
+  var backgroundOf = function (name) { return BACKGROUND[norm(name)] || []; };
+
+  /* FINISHING STYLE: worked out automatically from how the fighter's wins came (KO/TKO, submission, decision). */
+  function finishStyle(r) {
+    if (!r || !r.wins || r.wins < 5) return '';
+    var ko = r.ko || 0, sub = r.sub || 0, dec = r.dec || 0, w = r.wins;
+    if (ko + sub + dec < w * 0.6) return '';          // ESPN did not give a full breakdown, so don't guess
+    if (ko / w >= 0.35 && sub >= 3 && sub / w >= 0.35) return 'Finisher';   // both KO and submission power
+    if (ko / w >= 0.55) return 'Knockout artist';
+    if (sub >= 3 && sub / w >= 0.35) return 'Submission specialist';
+    if (dec / w >= 0.6) return 'Decision fighter';
+    if ((ko + sub) / w >= 0.7) return 'Finisher';
+    return '';
+  }
+
   var css = document.createElement('style');
   css.textContent = [
     '.fp-head{display:flex;gap:14px;align-items:center}',
@@ -18,6 +67,9 @@
     '.fp-nk{color:var(--mu);font-style:italic;margin-top:2px}',
     '.fp-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
     '.fp-tags .chip,.fp-brk .chip{padding:4px 10px;min-height:0;font-size:13px}',
+    '.fp-sp{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
+    '.fp-sp .chip{padding:4px 10px;min-height:0;font-size:13px;font-weight:700}',
+    '.fp-sp .chip.bg{background:var(--ab);color:var(--abx,#fff);border-color:var(--ab)}',
     '.fp-rec{display:flex;align-items:baseline;gap:12px;margin:18px 0 8px;flex-wrap:wrap}',
     '.fp-rec b{font-family:var(--fd);font-size:48px;font-weight:900;font-style:italic;line-height:1}',
     '.fp-rec span{color:var(--mu)}',
@@ -65,12 +117,15 @@
   }
 
   function render(d, name) {
-    var r = d.record, nm = d.name || name, tags = [];
+    var r = d.record, nm = d.name || name, tags = [], sp = [];
+    backgroundOf(nm).forEach(function (b) { sp.push('<span class="chip bg" title="Fighting background">' + E(b) + '</span>'); });
+    var fs = finishStyle(r); if (fs) sp.push('<span class="chip glass" title="Based on how their wins came">' + E(fs) + '</span>');
     if (d.weightClass) tags.push(d.weightClass);
     if (d.streak) tags.push((d.streak[0] === 'W' ? 'Won ' : 'Lost ') + d.streak.slice(1) + ' in a row');
     var h = '<div class="fp-head"><div class="fp-ph">' + photo(d, nm) + '</div><div style="min-width:0"><h3 class="fp-nm">' + E(nm) + '</h3>' +
       (d.nickname ? '<div class="fp-nk">\u201c' + E(d.nickname) + '\u201d</div>' : '') +
-      (tags.length ? '<div class="fp-tags">' + tags.map(function (t) { return '<span class="chip glass">' + E(t) + '</span>'; }).join('') + '</div>' : '') + '</div></div>';
+      (tags.length ? '<div class="fp-tags">' + tags.map(function (t) { return '<span class="chip glass">' + E(t) + '</span>'; }).join('') + '</div>' : '') +
+      (sp.length ? '<div class="fp-sp">' + sp.join('') + '</div>' : '') + '</div></div>';
 
     if (r) {
       h += '<div class="fp-rec"><b>' + E(r.summary) + '</b><span>W-L-D</span></div>';
