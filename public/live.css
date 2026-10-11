@@ -51,7 +51,7 @@
 
 /* box score player photos */
 .lv-pn{display:inline-flex;align-items:center;gap:8px}
-.lv-ph{flex:none;width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:50% 12%;background:var(--sf2);display:block;box-shadow:0 0 0 1px var(--bd)}
+.lv-ph{flex:none;width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:50% 8%;background:var(--sf2);display:block;box-shadow:0 0 0 1px var(--bd)}
 
 /* ===== BIGGER LIVE GAME POPUP + roomier box score ===== */
 .modal>.glass:has(.lvd){width:min(760px,100%);max-height:92vh}
