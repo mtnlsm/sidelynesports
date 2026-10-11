@@ -128,12 +128,12 @@ const navBtn=(t,i,l,on)=>`<button data-t="${t}" aria-label="${l}"${on?' class="o
 $('#nav').innerHTML=NAV.map(n=>navBtn(n[0],n[1],n[2])).join('');
 /* red dot on the Live tab while any game is live */
 setInterval(()=>{const b=$('#nav [data-t=live]');if(b)b.classList.toggle('has-live',typeof G!=='undefined'&&G.some(g=>g.st==='live'))},3000);
-$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.t)};
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.t,false,true)};
 $('#th').onclick=()=>{const d=document.documentElement,dk=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;S.theme=dk?'light':'dark';d.dataset.theme=S.theme;try{localStorage.setItem('fx-theme',S.theme)}catch(e){}repaint()};
 try{matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>repaint())}catch(e){}
-function go(t,np){if(!np&&pathUser())history.pushState({},'','/');S.tab=t;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));const m=$('#m');{const h=R[t]();LASTH=h;m.innerHTML='<div class="page enter">'+h+'</div>';scrollTo(0,0);if(t==='profile')profileExtras();if(t==='predict')loadProps();if(t==='admin')loadAdmin();if(t==='community')loadFeed();if(t==='discover')loadSuggest();if(t==='shop')loadShop();if(t==='board')loadBoard()}}
+function go(t,np,top){if(!np&&pathUser())history.pushState({},'','/');const same=!top&&S.tab===t&&!!document.querySelector('#m .page'),y0=same?window.scrollY:0,hs0=same?[...document.querySelectorAll('#m .hs')].map(e=>e.scrollLeft):[];S.tab=t;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));const m=$('#m');{const h=R[t]();LASTH=h;m.innerHTML='<div class="page'+(same?'':' enter')+'">'+h+'</div>';if(same){scrollTo(0,y0);document.querySelectorAll('#m .hs').forEach((e,i)=>{if(hs0[i])e.scrollLeft=hs0[i]})}else scrollTo(0,0);if(t==='profile')profileExtras();if(t==='predict')loadProps();if(t==='admin')loadAdmin();if(t==='community')loadFeed();if(t==='discover')loadSuggest();if(t==='shop')loadShop();if(t==='board')loadBoard()}}
 let LASTH=null;
-function repaint(){const pg=$('#m .page');if(!pg||!R[S.tab])return;const h=R[S.tab]();if(h===LASTH)return;const y=scrollY;LASTH=h;pg.classList.remove('enter');pg.innerHTML=h;scrollTo(0,y)}
+function repaint(){const pg=$('#m .page');if(!pg||!R[S.tab])return;const h=R[S.tab]();if(h===LASTH)return;const y=scrollY,hs=[...pg.querySelectorAll('.hs')].map(e=>e.scrollLeft);LASTH=h;pg.classList.remove('enter');pg.innerHTML=h;scrollTo(0,y);pg.querySelectorAll('.hs').forEach((e,i)=>{if(hs[i])e.scrollLeft=hs[i]})}
 const odP=(a,b)=>{const pr=x=>{const n=parseInt(x,10);if(!n)return null;return n<0?-n/(-n+100):100/(n+100)},x=pr(a),y=pr(b);return x&&y?[Math.round(x/(x+y)*100),Math.round(y/(x+y)*100)]:null};
 /* PAYOUT: a winning bet returns stake x multiplier (from the moneyline when ESPN lists one, else 2x). Must match odds_mult() in supabase/odds.sql. */
 const mlMult=ml=>{const n=parseInt(ml,10);if(!n)return 2;const m=n>0?1+n/100:1+100/-n;return Math.min(21,Math.max(1.01,m))};
@@ -425,7 +425,7 @@ S.up={username:name,prof:r.data,fc:{r:a.count||0,g:b.count||0},posts:pp.error?[]
 catch(e){if(stale())return;S.up={username:name,err:String(e.message||e)}}
 $('#m').innerHTML='<div class="page">'+userHtml()+'</div>'}
 const startTab=()=>{try{const s=JSON.parse(localStorage.getItem('fx-set')||'{}').start;return NAV.some(n=>n[0]===s)?s:'community'}catch(e){return'community'}};
-function route(first){const u=pathUser();if(u)openUser(u,false);else go(first?startTab():(S.tab==='user'?(S.back||'community'):S.tab),true)}
+function route(first){const u=pathUser();if(u)openUser(u,false);else{go(first?startTab():(S.tab==='user'?(S.back||'community'):S.tab),true);if(window.__pkRoute)window.__pkRoute()}}
 window.addEventListener('popstate',()=>{if(ME){document.querySelectorAll('.modal:not(#gate)').forEach(x=>x.remove());route(false)}});
 async function followList(kind,uid){const m=modal(`<h3>${kind==='r'?'Followers':'Following'}</h3><div id="fll" style="max-height:55vh;overflow:auto"><div class="sk"></div></div>`);
 const col=kind==='r'?'follower':'followee',other=kind==='r'?'followee':'follower';
