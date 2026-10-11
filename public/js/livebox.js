@@ -271,7 +271,10 @@
         <path d="M100 152L-4 48M100 152L204 48" stroke="#fff" stroke-opacity=".8" stroke-width="1"/><path d="M-4 48Q100 -52 204 48" fill="none" stroke="#12331a" stroke-width="3" stroke-opacity=".7"/>
         <path d="M100 152L142 110L100 68L58 110Z" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.1"/><circle cx="100" cy="110" r="6" fill="#c89a63" stroke="#fff" stroke-opacity=".4" stroke-width=".6"/>
         ${base(142, 110, s.r1)}${base(100, 68, s.r2)}${base(58, 110, s.r3)}<path d="M94.5 150H105.500V154L100 158L94.500 154Z" fill="#fff" stroke="#222" stroke-opacity=".5" stroke-width=".6"/></svg>`;
-      const nm2 = (n) => { const p = String(n || '').trim().split(/\s+/).filter(Boolean); if (!p.length) return ''; if (p.length === 1) return E(p[0]); return E(p[0].charAt(0).toUpperCase() + '. ' + p.slice(1).join(' ')); }; // first initial + full last name (keeps Jr., De La Cruz, etc.)
+      // ESPN sometimes sends just a surname; look it up in the box score / lineups to get the first initial.
+      const pool = []; try { (d.box || []).forEach((gs) => (gs || []).forEach((g) => (g.rows || []).forEach((r) => pool.push(r.n)))); (d.lu || []).forEach((l) => l && ['s', 'b', 'p'].forEach((k) => (l[k] || []).forEach((r) => pool.push(r.n)))); } catch (e) {}
+      const fix = (n) => { n = String(n || '').trim(); if (!n) return n; const lo = n.toLowerCase(), hit = pool.find((x) => { const t = String(x || '').trim().split(/\s+/); return t.length > 1 && t.slice(1).join(' ').toLowerCase() === lo; }); return hit || n; };
+      const nm2 = (n0) => { const n = fix(n0), p = String(n || '').trim().split(/\s+/).filter(Boolean); if (!p.length) return ''; if (p.length === 1) return E(p[0]); return E(p[0].charAt(0).toUpperCase() + '. ' + p.slice(1).join(' ')); }; // first initial + full last name (keeps Jr., De La Cruz, etc.)
       let m = '';
       // Runner on a base: their photo (team-colored ring) + last name; falls back to the plain pin if ESPN has no photo or it fails to load.
       const runner = (x, y, on, ph, name) => {
