@@ -105,7 +105,10 @@ textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:
   function paint(html) {
     const b = box(); if (!b) return false;
     if (html === last && b.dataset.lgx === '1') return true;
-    b.innerHTML = html; b.dataset.lgx = '1'; last = html; return true;
+    const hs = [...b.querySelectorAll('.hs')].map((e) => e.scrollLeft);   // keep the filter rows where the user scrolled them
+    b.innerHTML = html; b.dataset.lgx = '1'; last = html;
+    b.querySelectorAll('.hs').forEach((e, i) => { if (hs[i]) e.scrollLeft = hs[i]; });
+    return true;
   }
   const paintErr = (e) => paint(`<div class="glass card"><b>Couldn't load leagues</b><p class="mu">${esc((e && e.message) || e)}</p><p class="mu">Did you run supabase/leagues.sql in the Supabase SQL Editor?</p></div>`);
 
