@@ -1,12 +1,13 @@
 /* ===== LEAGUES (needs supabase/leagues.sql) =====
    Has its own tab in the main navigation (bottom bar on mobile, side bar on desktop). You vs everyone in the league: make free picks on upcoming games, 1 point per
-   correct pick, #1 when the league ends wins the bonus SP. Everything goes through database functions (league_*), nothing is
+   correct pick. Leagues never expire: they run until the owner deletes them. Owners can customize them (picture, banner, bio, colors). Everything goes through database functions (league_*), nothing is
    written to the tables directly. Loaded after app.js, so it can reuse its helpers (esc, modal, avHtml, crest, G, ME ...). */
 (() => {
-  const BONUS = 20000; // only used for text before the server answers; the real amount comes from league_cfg() in leagues.sql
   const LG = { id: null, tab: 'picks', mine: null, pub: null, det: null, pk: new Set() };
   const SPORTS = ['ALL', 'NFL', 'NBA', 'MLB', 'NHL', 'CFB', 'UFC', 'PFL'];
-  const DAYS = [[1, '1 day'], [3, '3 days'], [7, '1 week'], [14, '2 weeks'], [30, '30 days'], [60, '60 days'], [90, '90 days']];
+  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#64748b'];
+  const DEF1 = '#3b82f6', DEF2 = '#8b5cf6';
+  const HEX = /^#[0-9a-fA-F]{6}$/;
   const skel = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
 
   const st = document.createElement('style');
@@ -19,7 +20,22 @@
 .lgx-code{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
 .lgx-code>div{flex:1;min-width:110px}.lgx-code b{display:block;font-size:22px;letter-spacing:3px}
 select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:var(--sf2);border:1.5px solid transparent;border-radius:12px;padding:12px 14px;margin:4px 0 12px}
-.lgx-win{background:color-mix(in srgb,var(--ab) 14%,var(--sf));box-shadow:inset 0 0 0 1.5px var(--ab)}
+.lgx-win{background:color-mix(in srgb,var(--lc,var(--ab)) 14%,var(--sf));box-shadow:inset 0 0 0 1.5px var(--lc,var(--ab))}
+.lgx-side.on{border-color:var(--lc,var(--ab));background:color-mix(in srgb,var(--lc,var(--ab)) 12%,var(--sf2))}
+.lgx-av{flex:none;border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;background:linear-gradient(135deg,var(--lc,#3b82f6),var(--lc2,#8b5cf6))}
+.lgx-av.sq{border-radius:22%}
+.lgx-hero{border-radius:18px;overflow:hidden;margin-bottom:10px;background:var(--sf);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--lc,var(--ab)) 40%,transparent)}
+.lgx-ban{height:110px;background:linear-gradient(135deg,var(--lc,#3b82f6),var(--lc2,#8b5cf6)) center/cover no-repeat}
+.lgx-hb{padding:0 14px 14px;position:relative}
+.lgx-hb .lgx-av{margin-top:-34px;border:3px solid var(--sf)}
+.lgx-bar{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--lc,#3b82f6),var(--lc2,#8b5cf6));margin:8px 0}
+.lgx-tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--lc,var(--ab)) 18%,transparent);color:var(--lc,var(--ab))}
+.lgx-sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.lgx-sw button{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
+.lgx-sw button.on{border-color:var(--tx)}
+.lgx-up{display:flex;gap:8px;align-items:center;margin:6px 0 12px;flex-wrap:wrap}
+.lgx-up .chip{flex:none}
+textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:var(--sf2);border:1.5px solid transparent;border-radius:12px;padding:12px 14px;margin:4px 0 4px;resize:vertical;box-sizing:border-box}
 `;
   document.head.append(st);
 
@@ -30,12 +46,30 @@ select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:v
   const sportName = (c) => (c === 'ALL' ? 'All sports' : (typeof spl === 'function' ? spl(c) : c));
   const fmt = (n) => Number(n || 0).toLocaleString();
   const left = (iso) => {
+    if (!iso) return 'Always on';
     const ms = Date.parse(iso) - Date.now(); if (ms <= 0) return 'Ended';
     const m = Math.floor(ms / 6e4), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60);
     return d > 0 ? d + 'd ' + h + 'h left' : h > 0 ? h + 'h ' + (m % 60) + 'm left' : Math.max(1, m) + 'm left';
   };
-  const isOpen = (l) => l.status === 'active' && Date.parse(l.ends_at) > Date.now();
-  const stateTxt = (l) => (l.status !== 'active' ? 'Finished' : Date.parse(l.ends_at) <= Date.now() ? 'Finishing…' : left(l.ends_at));
+  const isOpen = (l) => l.status === 'active' && (!l.ends_at || Date.parse(l.ends_at) > Date.now());
+  const stateTxt = (l) => (l.status !== 'active' ? 'Finished' : !l.ends_at ? 'Always on' : Date.parse(l.ends_at) <= Date.now() ? 'Finishing…' : left(l.ends_at));
+  const c1 = (l) => (l && HEX.test(l.color || '') ? l.color : DEF1);
+  const c2 = (l) => (l && HEX.test(l.color2 || '') ? l.color2 : (l && HEX.test(l.color || '') ? l.color : DEF2));
+  const cv = (l) => `--lc:${c1(l)};--lc2:${c2(l)}`;
+  const safeUrl = (u) => (u && /^https?:\/\//.test(u) ? u : '');
+  const lav = (l, z, sq) => safeUrl(l.avatar_url)
+    ? `<img class="lgx-av${sq ? ' sq' : ''}" src="${esc(l.avatar_url)}" alt="" style="width:${z}px;height:${z}px;${cv(l)}">`
+    : `<div class="lgx-av${sq ? ' sq' : ''}" style="width:${z}px;height:${z}px;font-size:${Math.round(z * .42)}px;${cv(l)}">${esc(((l.name || '?').trim()[0] || '?').toUpperCase())}</div>`;
+  async function uploadLeagueImg(file, kind) {
+    if (!file || !/^image\//.test(file.type)) throw new Error('Please choose an image');
+    if (file.size > 10 * 1024 * 1024) throw new Error('Image is too large (max 10 MB)');
+    const b = kind === 'banner' ? await resizeImg(file, 1200, 400) : await resizeImg(file, 400, 400);
+    const path = ME.id + '/league-' + kind + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + '.jpg';
+    const up = await FX_DB.storage.from('avatars').upload(path, b, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+    if (up.error) throw up.error;
+    return FX_DB.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  }
+  const chooseFile = () => new Promise((res) => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => res(i.files[0] || null); i.click(); });
   const seen = () => { try { return new Set(JSON.parse(localStorage.getItem('fx-lg-won') || '[]')); } catch (e) { return new Set(); } };
   const mark = (id) => { try { const s = seen(); s.add(id); localStorage.setItem('fx-lg-won', JSON.stringify([...s].slice(-100))); } catch (e) {} };
   const copy = async (t) => { try { await navigator.clipboard.writeText(t); toast('Copied'); } catch (e) { toast('Copy failed. Long-press to copy: ' + t); } };
@@ -56,16 +90,16 @@ select.lgx-sel{width:100%;font:inherit;font-size:16px;color:inherit;background:v
   }
 
   /* ---------- home: my leagues, public leagues, create / join ---------- */
-  const cardHtml = (l) => `<div class="glass card" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer">
-<div class="row sp"><b class="ellip" style="min-width:0">${esc(l.name)}</b><span class="chip" style="flex:none">${esc(stateTxt(l))}</span></div>
-<div class="mu" style="margin:4px 0 8px">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.is_public ? ' · Public' : ''}</div>
+  const cardHtml = (l) => `<div class="glass card" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer;${cv(l)};box-shadow:inset 4px 0 0 var(--lc)">
+<div class="row sp"><div class="row" style="min-width:0;gap:10px">${lav(l, 36)}<b class="ellip" style="min-width:0">${esc(l.name)}</b></div><span class="chip" style="flex:none">${esc(stateTxt(l))}</span></div>
+<div class="mu" style="margin:4px 0 8px">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.is_public ? ' · Public' : ''}${l.is_owner ? ' · Yours' : ''}</div>${l.bio ? `<div class="mu ellip" style="margin:-2px 0 8px">${esc(l.bio)}</div>` : ''}
 <div class="row sp"><span>Rank <b>#${l.rank}</b> of ${l.members}</span><span class="mu">${l.wins} W · ${l.losses} L${l.i_won ? ' · <b style="color:var(--ab)">Won +' + fmt(l.bonus) + ' SP</b>' : ''}</span></div></div>`;
-  const pubHtml = (l) => `<div class="glass card row sp" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer">
-<div style="min-width:0"><b class="ellip" style="display:block">${esc(l.name)}</b><div class="mu">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'} · ${esc(left(l.ends_at))}${l.owner_name ? ' · @' + esc(l.owner_name) : ''}</div></div>
+  const pubHtml = (l) => `<div class="glass card row sp" data-lgx="open" data-lid="${esc(l.id)}" role="button" tabindex="0" style="cursor:pointer;gap:10px;${cv(l)};box-shadow:inset 4px 0 0 var(--lc)">
+${lav(l, 40)}<div style="min-width:0;flex:1"><b class="ellip" style="display:block">${esc(l.name)}</b><div class="mu ellip">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'}${l.owner_name ? ' · @' + esc(l.owner_name) : ''}</div>${l.bio ? `<div class="mu ellip">${esc(l.bio)}</div>` : ''}</div>
 <button class="chip on" data-lgx="joinpub" data-lid="${esc(l.id)}" style="flex:none">Join</button></div>`;
   function homeHtml() {
     const mine = LG.mine || [], pub = (LG.pub || []).filter((x) => !x.joined);
-    return `<div class="glass card"><b>Leagues</b><p class="mu" style="margin:6px 0 0">Pick winners against your friends (or everyone) for a set time. 1 point per correct pick, no SP at risk. Finish <b>#1</b> when a league ends and you win <b>${fmt(BONUS)} SP</b>.</p></div>
+    return `<div class="glass card"><b>Leagues</b><p class="mu" style="margin:6px 0 0">Pick winners against your friends (or everyone). 1 point per correct pick, no SP at risk. Leagues never expire: they stay open until the owner deletes them, and you can give yours a picture, banner, bio and colors.</p></div>
 <div class="row" style="gap:8px;margin-bottom:10px"><button class="pri" data-lgx="new" style="flex:1">Create a league</button></div>
 <div class="glass card"><div class="row" style="gap:8px"><input id="lgx-code" maxlength="8" placeholder="Have an invite code?" autocapitalize="characters" autocomplete="off" spellcheck="false" style="font-size:16px;text-transform:uppercase"><button class="chip on" data-lgx="joincode" style="flex:none">Join</button></div></div>
 <h2 style="margin:16px 0 10px">My leagues</h2>${mine.length ? mine.map(cardHtml).join('') : '<p class="mu">You are not in a league yet. Create one, or enter an invite code above.</p>'}
@@ -111,18 +145,22 @@ ${mine.length ? '<h2 style="margin:16px 0 10px">Your locked and settled picks</h
   }
   function detailHtml() {
     const d = LG.det; if (!d) return skel;
-    const l = d.league, mem = d.is_member, open = isOpen(l), cfg = d.cfg || {};
+    const l = d.league, mem = d.is_member, open = isOpen(l), cfg = d.cfg || {}, mine = !!(ME && l.owner === ME.id);
     const winner = l.status !== 'active' ? d.standings.find((u) => u.rank === 1) : null;
     const code = mem && open ? `<div class="lgx-code"><div><small class="mu">Invite code</small><b>${esc(l.code)}</b></div><button class="chip" data-lgx="copycode">Copy code</button><button class="chip" data-lgx="copylink">Copy invite link</button></div>` : '';
     const join = !mem && open ? `<button class="pri" data-lgx="joinpub" data-lid="${esc(l.id)}" style="margin-top:12px">Join this league</button>` : '';
     const banner = winner ? `<div class="glass card lgx-win"><div class="row sp"><b>${ic('crown', 16, 1)} ${l.bonus_paid ? esc(winner.display_name || winner.username) + ' won the league' : 'Final standings'}</b>${l.bonus_paid ? '<b>+' + fmt(l.bonus) + ' SP</b>' : ''}</div>${l.bonus_paid ? '' : `<p class="mu" style="margin:6px 0 0">No bonus this time: a league needs ${cfg.min_members || 3}+ players and a winner with ${cfg.min_picks || 5}+ graded picks.</p>`}</div>` : '';
-    const info = `<div class="glass card"><div class="row sp"><b class="ellip" style="font-size:18px;min-width:0">${esc(l.name)}</b><span class="chip" style="flex:none">${esc(stateTxt(l))}</span></div>
+    const ban = safeUrl(l.banner_url) ? `background-image:url('${esc(l.banner_url).replace(/'/g, '%27')}')` : '';
+    const info = `<div class="lgx-hero"><div class="lgx-ban" style="${ban}"></div><div class="lgx-hb"><div class="row sp" style="align-items:flex-end;gap:10px">${lav(l, 68, 1)}<div class="row" style="gap:8px;flex:none;margin-bottom:4px">${mine ? '<button class="chip" data-lgx="edit">Edit league</button>' : ''}<span class="chip">${esc(stateTxt(l))}</span></div></div>
+<b class="ellip" style="display:block;font-size:20px;margin-top:8px">${esc(l.name)}</b>
 <div class="mu" style="margin-top:4px">${esc(sportName(l.sport))} · ${l.members} player${l.members === 1 ? '' : 's'} · ${l.is_public ? 'Public' : 'Private'}${l.owner_username ? ' · by @' + esc(l.owner_username) : ''}</div>
-${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bonus || BONUS)} SP</b>. Needs ${cfg.min_members || 3}+ players and ${cfg.min_picks || 5}+ graded picks.</p>` : ''}${code}${join}</div>`;
+${l.bio ? `<p style="margin:10px 0 0;white-space:pre-wrap;word-break:break-word">${esc(l.bio)}</p>` : ''}
+<div class="lgx-bar"></div>
+${open ? `<p class="mu" style="margin:0">Make free picks on upcoming games. 1 point per correct pick.</p>` : ''}${code}${join}</div></div>`;
     const tabs = mem ? `<div class="row hs sb" style="margin-bottom:10px">${[['picks', 'Picks'], ['stand', 'Standings']].map(([k, v]) => `<button class="sbtn ${LG.tab === k ? 'on' : ''}" data-lgx="tab" data-lt="${k}">${v}</button>`).join('')}</div>` : '<h2 style="margin:16px 0 10px">Standings</h2>';
     const body = mem && LG.tab === 'picks' ? picksHtml(l) : standHtml(l, d.standings);
-    const leave = mem && open && (l.owner !== (ME && ME.id) || l.members === 1) ? `<div style="margin-top:16px"><button class="chip" data-lgx="leave">${l.owner === (ME && ME.id) ? 'Delete league' : 'Leave league'}</button></div>` : '';
-    return `<div class="row sp" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div>${banner}${info}${tabs}${body}${leave}`;
+    const leave = mine ? `<div style="margin-top:16px"><button class="chip" data-lgx="del">Delete league</button></div>` : (mem && open ? `<div style="margin-top:16px"><button class="chip" data-lgx="leave">Leave league</button></div>` : '');
+    return `<div style="${cv(l)}"><div class="row sp" style="margin-bottom:10px"><button class="chip" data-lgx="back">‹ Leagues</button></div>${banner}${info}${tabs}${body}${leave}</div>`;
   }
   async function loadDetail(silent) {
     const id = LG.id;
@@ -153,32 +191,72 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
   window.go = function (t) { const r = origGo.apply(this, arguments); if (t === 'leagues') open(); return r; };
   document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#nav [data-t="leagues"]')) { LG.id = null; LG.det = null; } }, true); // tapping the tab again goes back to the list
 
-  /* ---------- create / join ---------- */
-  function createModal() {
-    let pub = 0, busy = false;
-    const m = modal(`<h3 style="margin-bottom:10px">Create a league</h3>
-<label class="mu">League name</label><input id="lgx-name" maxlength="40" placeholder="Sunday Sharps" autocomplete="off" style="font-size:16px;margin:4px 0 12px">
-<label class="mu">Sport</label><select id="lgx-sport" class="lgx-sel">${SPORTS.map((s) => `<option value="${s}">${esc(sportName(s))}</option>`).join('')}</select>
-<label class="mu">Runs for</label><select id="lgx-days" class="lgx-sel">${DAYS.map(([d, t]) => `<option value="${d}"${d === 7 ? ' selected' : ''}>${t}</option>`).join('')}</select>
-<div class="row" style="margin:0 0 6px"><button class="chip on" data-v="0">Private</button><button class="chip" data-v="1">Public</button></div>
-<p class="mu" id="lgx-vh" style="margin:0 0 12px">Only people with your invite code can join.</p>
-<button class="pri" id="lgx-go">Create league</button>`);
-    m.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => {
-      pub = +b.dataset.v; m.querySelectorAll('[data-v]').forEach((x) => x.classList.toggle('on', x === b));
-      m.querySelector('#lgx-vh').textContent = pub ? 'Anyone can find and join it from the Leagues tab.' : 'Only people with your invite code can join.';
-    });
-    m.querySelector('#lgx-go').onclick = async () => {
-      if (busy) return;
-      const name = m.querySelector('#lgx-name').value.trim();
-      if (name.length < 3) return toast('Give your league a name (3+ characters)');
-      busy = true;
-      try {
-        const r = await rpc('league_create', { p_name: name, p_sport: m.querySelector('#lgx-sport').value, p_days: +m.querySelector('#lgx-days').value, p_public: !!pub });
-        m.remove(); LG.mine = null; toast('League created. Share the code with your friends.'); openLeague(r.id);
-      } catch (e) { fail(e); busy = false; }
+  /* ---------- create / edit (same form) ---------- */
+  function leagueForm(existing) {
+    const ed = !!existing;
+    const st = { pub: ed ? (existing.is_public ? 1 : 0) : 0, color: ed ? c1(existing) : DEF1, color2: ed ? c2(existing) : DEF2,
+                 avatar: ed ? (existing.avatar_url || '') : '', banner: ed ? (existing.banner_url || '') : '', busy: false };
+    const sw = (k) => COLORS.map((c) => `<button type="button" data-sw="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');
+    const m = modal(`<h3 style="margin-bottom:10px">${ed ? 'Edit league' : 'Create a league'}</h3>
+<div class="lgx-hero" id="lgx-prev"></div>
+<label class="mu">League name</label><input id="lgx-name" maxlength="40" placeholder="Sunday Sharps" autocomplete="off" value="${ed ? esc(existing.name) : ''}" style="font-size:16px;margin:4px 0 12px">
+<label class="mu">Bio <span id="lgx-bc">0/200</span></label><textarea id="lgx-bio" class="lgx-ta" rows="3" maxlength="200" placeholder="What is this league about? Rules, vibe, who it's for.">${ed ? esc(existing.bio || '') : ''}</textarea>
+<label class="mu" style="display:block;margin-top:8px">League picture</label>
+<div class="lgx-up"><button type="button" class="chip" id="lgx-avu">Upload</button><button type="button" class="chip" id="lgx-avr">Remove</button></div>
+<label class="mu">Banner</label>
+<div class="lgx-up"><button type="button" class="chip" id="lgx-bnu">Upload</button><button type="button" class="chip" id="lgx-bnr">Remove</button></div>
+<label class="mu">Main color</label><div class="lgx-sw" id="lgx-sw1">${sw('color')}</div>
+<label class="mu">Second color</label><div class="lgx-sw" id="lgx-sw2">${sw('color2')}</div>
+${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-sel">${SPORTS.map((s) => `<option value="${s}">${esc(sportName(s))}</option>`).join('')}</select>`}
+<div class="row" style="margin:0 0 6px"><button type="button" class="chip" data-v="0">Private</button><button type="button" class="chip" data-v="1">Public</button></div>
+<p class="mu" id="lgx-vh" style="margin:0 0 12px"></p>
+<p class="mu" style="margin:0 0 12px">${ed ? 'The sport can\'t be changed after a league is created.' : 'Leagues never expire. They stay open until you delete them.'}</p>
+<button class="pri" id="lgx-go">${ed ? 'Save changes' : 'Create league'}</button>`);
+    const q = (x) => m.querySelector(x);
+    const preview = () => {
+      const l = { name: q('#lgx-name').value || 'Your league', color: st.color, color2: st.color2, avatar_url: st.avatar, banner_url: st.banner };
+      const ban = safeUrl(st.banner) ? `background-image:url('${esc(st.banner).replace(/'/g, '%27')}')` : '';
+      const el = q('#lgx-prev'); el.style.cssText = cv(l);
+      el.innerHTML = `<div class="lgx-ban" style="${ban};height:80px"></div><div class="lgx-hb"><div style="display:flex">${lav(l, 56, 1)}</div><b class="ellip" style="display:block;font-size:17px;margin-top:6px">${esc(l.name)}</b><div class="lgx-bar"></div></div>`;
+      m.querySelectorAll('[data-sw]').forEach((b) => b.classList.toggle('on', st[b.dataset.sw].toLowerCase() === b.dataset.c));
+      q('#lgx-bc').textContent = q('#lgx-bio').value.length + '/200';
     };
-    setTimeout(() => { const i = m.querySelector('#lgx-name'); i && i.focus(); }, 50);
+    const vis = () => {
+      m.querySelectorAll('[data-v]').forEach((x) => x.classList.toggle('on', +x.dataset.v === st.pub));
+      q('#lgx-vh').textContent = st.pub ? 'Anyone can find and join it from the Leagues tab.' : 'Only people with your invite code can join.';
+    };
+    m.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { st.pub = +b.dataset.v; vis(); });
+    m.querySelectorAll('[data-sw]').forEach((b) => b.onclick = () => { st[b.dataset.sw] = b.dataset.c; preview(); });
+    q('#lgx-name').addEventListener('input', preview); q('#lgx-bio').addEventListener('input', preview);
+    const up = (kind, key) => async () => {
+      const f = await chooseFile(); if (!f) return;
+      toast('Uploading…');
+      try { st[key] = await uploadLeagueImg(f, kind); preview(); toast('Uploaded'); } catch (e) { toast('Upload failed: ' + ((e && e.message) || e)); }
+    };
+    q('#lgx-avu').onclick = up('avatar', 'avatar'); q('#lgx-bnu').onclick = up('banner', 'banner');
+    q('#lgx-avr').onclick = () => { st.avatar = ''; preview(); }; q('#lgx-bnr').onclick = () => { st.banner = ''; preview(); };
+    q('#lgx-go').onclick = async () => {
+      if (st.busy) return;
+      const name = q('#lgx-name').value.trim();
+      if (name.length < 3) return toast('Give your league a name (3+ characters)');
+      st.busy = true;
+      try {
+        if (ed) {
+          await rpc('league_update', { p_id: existing.id, p_name: name, p_bio: q('#lgx-bio').value.trim() || null, p_color: st.color, p_color2: st.color2, p_avatar: st.avatar || null, p_banner: st.banner || null, p_public: !!st.pub });
+          m.remove(); LG.mine = null; toast('League updated'); loadDetail();
+        } else {
+          const r = await rpc('league_create', { p_name: name, p_sport: q('#lgx-sport').value, p_public: !!st.pub, p_bio: q('#lgx-bio').value.trim() || null, p_color: st.color, p_color2: st.color2, p_avatar: st.avatar || null, p_banner: st.banner || null });
+          m.remove(); LG.mine = null; toast('League created. Share the code with your friends.'); openLeague(r.id);
+        }
+      } catch (e) { fail(e); st.busy = false; }
+    };
+    vis(); preview();
+    setTimeout(() => { const i = q('#lgx-name'); i && !ed && i.focus(); }, 50);
   }
+  const createModal = () => leagueForm(null);
+  const editModal = (l) => leagueForm(l);
+
+  /* ---------- join ---------- */
   async function join(args) {
     try { const r = await rpc('league_join', args); LG.mine = null; toast('You joined the league'); openLeague(r.id); return true; }
     catch (e) { fail(e); return false; }
@@ -195,15 +273,22 @@ ${open ? `<p class="mu" style="margin:8px 0 0">Finish #1 to win <b>${fmt(cfg.bon
     if (a === 'open') { openLeague(c.dataset.lid); return; }
     if (a === 'back') { LG.id = null; LG.det = null; loadHome(); return; }
     if (a === 'new') { createModal(); return; }
+    if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
     if (a === 'joinpub') { e.stopPropagation(); c.disabled = true; if (!(await join({ p_id: c.dataset.lid }))) c.disabled = false; return; }
     if (a === 'joincode') { const v = (document.getElementById('lgx-code') || {}).value || ''; if (v.trim().length < 4) return toast('Enter the invite code'); c.disabled = true; if (!(await join({ p_code: v.trim() }))) c.disabled = false; return; }
     if (a === 'copycode' && LG.det) { copy(LG.det.league.code); return; }
     if (a === 'copylink' && LG.det) { copy(location.origin + '/?lg=' + LG.det.league.code); return; }
     if (a === 'leave' && LG.det) {
-      const l = LG.det.league, del = l.owner === (ME && ME.id);
-      if (!confirm(del ? 'Delete this league?' : 'Leave this league? Your picks in it will be removed.')) return;
-      try { await rpc('league_leave', { p_id: l.id }); LG.mine = null; toast(del ? 'League deleted' : 'You left the league'); LG.id = null; LG.det = null; loadHome(); } catch (err) { fail(err); }
+      const l = LG.det.league;
+      if (!confirm('Leave this league? Your picks in it will be removed.')) return;
+      try { await rpc('league_leave', { p_id: l.id }); LG.mine = null; toast('You left the league'); LG.id = null; LG.det = null; loadHome(); } catch (err) { fail(err); }
+      return;
+    }
+    if (a === 'del' && LG.det) {
+      const l = LG.det.league;
+      if (!confirm('Delete "' + l.name + '" for everyone? All members, picks and standings will be removed. This cannot be undone.')) return;
+      try { await rpc('league_delete', { p_id: l.id }); LG.mine = null; toast('League deleted'); LG.id = null; LG.det = null; loadHome(); } catch (err) { fail(err); }
       return;
     }
     if (a === 'pick' && LG.det) {
