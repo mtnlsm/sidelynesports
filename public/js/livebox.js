@@ -273,9 +273,14 @@
         ${base(142, 110, s.r1)}${base(100, 68, s.r2)}${base(58, 110, s.r3)}<path d="M94.5 150H105.500V154L100 158L94.500 154Z" fill="#fff" stroke="#222" stroke-opacity=".5" stroke-width=".6"/></svg>`;
       const nm2 = (n) => E(String(n || '').split(' ').slice(-1)[0] || '');
       let m = '';
-      if (s.r1) m += mk(71, 64.7, '<i class="fld-pin"></i>', cbat, 'run');
-      if (s.r2) m += mk(50, 40, '<i class="fld-pin"></i>', cbat, 'run');
-      if (s.r3) m += mk(29, 64.7, '<i class="fld-pin"></i>', cbat, 'run');
+      // Runner on a base: their photo (team-colored ring) + last name; falls back to the plain pin if ESPN has no photo or it fails to load.
+      const runner = (x, y, on, ph, name) => {
+        if (!on) return '';
+        const pin = '<i class="fld-pin"></i>';
+        const img = ph && /^https:\/\//.test(ph) ? `<img class="fld-ph" src="${E(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.outerHTML='<i class=&quot;fld-pin&quot;></i>'">` : pin;
+        return mk(x, y, img + (name ? `<span class="fld-nm">${nm2(name)}</span>` : ''), cbat, 'run');
+      };
+      m += runner(71, 64.7, s.r1, s.p1, s.n1) + runner(50, 40, s.r2, s.p2, s.n2) + runner(29, 64.7, s.r3, s.p3, s.n3);
       m += mk(50, 66, `<i class="fld-pin"></i>${s.pt ? `<span class="fld-nm">${nm2(s.pt)}</span>` : ''}`, cfld, 'run');
       m += mk(50, 90, `<span class="fld-ball">${sportIcon(d.sp, 26)}</span>${s.bt ? `<span class="fld-nm">${nm2(s.bt)}</span>` : ''}`, cbat, 'ball');
       return { svg, ar: '200/170', tilt: 42, edge: '#1c4a26', mk: m };
