@@ -104,6 +104,7 @@ textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:
 
   let last = '';
   // repaint in place without the page jumping: pin the tapped control to the same spot on screen
+  function repaintKeepY() { const y = window.scrollY; paint(detailHtml()); if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y); }
   function paintKeep(c, sel) {
     const top = c.getBoundingClientRect().top;
     paint(detailHtml());
@@ -224,7 +225,7 @@ ${pub.length ? '<h2 style="margin:16px 0 10px">Public leagues</h2>' + pub.map(pu
     if (LG.pf === 'todo' && !todo && scoped.length) LG.pf = 'all';
     const list = LG.pf === 'todo' ? scoped.filter((g) => !picked(mp, g)) : LG.pf === 'done' ? scoped.filter((g) => picked(mp, g)) : scoped;
     const sfBar = l.sport === 'ALL' && sports.length > 1 ? `<div class="row hs sb">${['all', ...sports].map((c) => `<button class="sbtn ${LG.sf === c ? 'on' : ''}" data-lgx="sf" data-sp="${esc(c)}">${c === 'all' ? 'All sports' : esc(spl(c))}</button>`).join('')}</div>` : '';
-    const pfBar = scoped.length ? `<div class="row hs sb">${[['all', 'All', scoped.length], ['todo', 'To pick', todo], ['done', 'Picked', made]].map(([k, v, n]) => `<button class="sbtn ${LG.pf === k ? 'on' : ''}" data-lgx="pf" data-pf="${k}">${v} <span class="pf-n">${n}</span></button>`).join('')}</div>` : '';
+    const pfBar = scoped.length ? `<div class="row hs sb">${[['all', 'All', scoped.length], ['todo', 'To pick', todo], ['done', 'Picked', made]].map(([k, v, n]) => `<button class="sbtn ${LG.pf === k ? 'on' : ''}" data-lgx="pf" data-lpf="${k}">${v} <span class="pf-n">${n}</span></button>`).join('')}</div>` : '';
     const head = scoped.length ? `<div class="glass card"><div class="row sp"><b>Your picks</b><span class="mu">${made} of ${scoped.length} made</span></div>${prog(made, scoped.length)}<p class="mu" style="margin:8px 0 0">Tap a fighter or team to pick. You can change a pick until the game starts.</p></div>` : '';
     const mma = list.filter((g) => MMA(g.sp)), team = list.filter((g) => !MMA(g.sp));
     let body = '';
@@ -384,7 +385,7 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
     if (a === 'new') { createModal(); return; }
     if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
     if (a === 'sf') { LG.sf = c.dataset.sp; paintKeep(c, `[data-lgx="sf"][data-sp="${c.dataset.sp}"]`); return; }
-    if (a === 'pf') { LG.pf = c.dataset.lpf; paintKeep(c, `[data-lgx="pf"][data-pf="${c.dataset.lpf}"]`); return; }
+    if (a === 'pf') { LG.pf = c.dataset.lpf; paintKeep(c, `[data-lgx="pf"][data-lpf="${c.dataset.lpf}"]`); return; }
     if (a === 'seg') { LG.seg = c.dataset.sg; paintKeep(c, `[data-lgx="seg"][data-sg="${c.dataset.sg}"]`); return; }
     if (a === 'evt') { LG.open[c.dataset.ek] = c.dataset.open !== '1'; paint(detailHtml()); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
@@ -413,14 +414,14 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
       try {
         await rpc('league_save_pick', { p_league: LG.id, p_game: key, p_sport: g.sp, p_pick: side, p_matchup: g.a + ' vs ' + g.b, p_start: MMA(g.sp) ? null : g.date });
         LG.det.picks = [{ game_id: key, pick: side, matchup: g.a + ' vs ' + g.b, sport: g.sp, result: null, updated_at: new Date().toISOString() }, ...LG.det.picks.filter((p) => String(p.game_id) !== key)];
-        paint(detailHtml());
+        repaintKeepY();
       } catch (err) { fail(err); } finally { LG.pk.delete(key); }
     }
   });
 
   /* ---------- keep things fresh ---------- */
   const here = () => S.tab === 'leagues' && !document.hidden && !document.querySelector('.modal');
-  setInterval(() => { if (here() && LG.id && LG.det && LG.tab === 'picks') paint(detailHtml()); }, 15000);   // new games from the live feed
+  setInterval(() => { if (here() && LG.id && LG.det && LG.tab === 'picks') repaintKeepY(); }, 15000);   // new games from the live feed
   setInterval(() => { if (here()) { if (LG.id) loadDetail(true); else loadHome(); } }, 60000);               // standings / time left
   async function bg() { if (typeof ME === 'undefined' || !ME || !window.FX_DB) return; try { const rows = await rpc('league_my'); LG.mine = rows; scan(rows); } catch (e) {} }
   setTimeout(bg, 8000); setInterval(() => { if (!document.hidden) bg(); }, 600000);   // also pays out + announces a league win even if you never open the tab
