@@ -160,7 +160,7 @@ function normTeam(sp, ev) {
     od: st === 'up' ? normOdds(c) : undefined,
     pp: st === 'up' && String(LEAGUES[sp] || '').startsWith('baseball') ? (() => { const a = probP(away), b = probP(home); return a || b ? { a, b } : undefined; })() : undefined,
     sit: st === 'live' ? normSit(sp, c.situation, { a: String(away.team.id), b: String(home.team.id) }) : undefined,
-    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: MMA_SP.has(sp) ? hs(o.athlete, sp) : '' } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0 } : null))).filter(Boolean)) : undefined,
+    ld: st === 'up' ? [away, home].flatMap((x) => (x.leaders || []).map((l) => { const o = (l.leaders || [])[0]; return o && o.athlete ? { n: l.name, a: l.abbreviation, p: o.athlete.displayName, v: Number(o.value), i: hs(o.athlete, sp) } : null; }).concat((x.probables || []).map((pb) => (pb && pb.athlete ? { n: 'probableStartingPitcher', a: 'pitch', p: pb.athlete.displayName, v: 0, i: hs(pb.athlete, sp) } : null))).filter(Boolean)) : undefined,
     clk: st === 'final' ? 'Final' : st === 'live' ? (ev.status.type.shortDetail || ev.status.displayClock) : ''};
 }
 function normUfc(ev, sp = 'UFC') {
