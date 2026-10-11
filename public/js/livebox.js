@@ -116,7 +116,7 @@
       ${rkTag(q)}<b class="uf2-n">${E(n)}</b>${p && p.nickname ? `<small class="uf2-nk">\u201c${E(p.nickname)}\u201d</small>` : ''}<span class="uf2-rec">${E(rec || '\u2013')}</span></div>`;
   }
   function oddsBar(g) {
-    const o = g.od; if (g.st !== 'up' || !o || !o.a || !o.b) return '';
+    const o = g.od; if (g.st === 'final' || !o || !o.a || !o.b) return '';
     const x = impl(o.a), y = impl(o.b), t = x + y; if (!t) return '';
     const pa = Math.round((x / t) * 100), pb = 100 - pa;
     return `<div class="uf2-od"><div class="uf2-od-h"><b>${pa}%</b><span>Win probability</span><b>${pb}%</b></div><div class="uf2-od-b"><i class="a" style="width:${pa}%"></i><i class="b"></i></div><div class="uf2-od-s"><span>${E(o.a)}</span><span>Moneyline</span><span>${E(o.b)}</span></div></div>`;
