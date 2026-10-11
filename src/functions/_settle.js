@@ -82,7 +82,7 @@ exports.run = async (opts = {}) => {
   // Shuffled so one game that is not finished yet can never starve the others; unfinished ones just retry next run.
   const cand = shuffle([...open].filter((id) => !games.has(id)));
   for (let k = 0; k < cand.length;) {
-    const n = Math.min(6, Math.floor((left() - 1) / 2));
+    const n = Math.min(6, Math.floor((left() - 1) / 3)); // 3 requests per recovered game: ESPN lookup, settle_game, league scoring
     if (n < 1) { deferred += cand.length - k; break; }
     const batch = cand.slice(k, k + n); k += n;
     await Promise.all(batch.map(async (id) => {
@@ -98,12 +98,14 @@ exports.run = async (opts = {}) => {
         if (!Number.isFinite(sa) || !Number.isFinite(sb)) return;
         const x = { w: sa > sb ? teams[0] : sb > sa ? teams[1] : 'Draw', date: comp.date || null };
         games.set(id, x); await settle(id, x);
+        await c.rpc('settle_league_game', { p_game: id, p_winner: x.w, p_start: x.date }); // league picks for this game (ignored if leagues.sql isn't installed)
       } catch (e) { errors.push('lookup ' + id + ': ' + String(e.message || e)); }
     }));
   }
 
   // 6) cleanup (skipped if the budget is used up; it will run next time)
   if (left() >= 1) await c.from('finished_games').delete().lt('finished_at', new Date(Date.now() - KEEP_MS).toISOString());
+  if (left() >= 1) await c.rpc('league_finalize'); // closes ended leagues and pays the #1 bonus (ignored if leagues.sql isn't installed)
   if (errors.length) console.error('settle-games errors', errors);
   return out(200, { finals: games.size, openPickGames: open.size, paid });
 };
