@@ -102,6 +102,13 @@ textarea.lgx-ta{width:100%;font:inherit;font-size:16px;color:inherit;background:
   const copy = async (t) => { try { await navigator.clipboard.writeText(t); toast('Copied'); } catch (e) { toast('Copy failed. Long-press to copy: ' + t); } };
 
   let last = '';
+  // repaint in place without the page jumping: pin the tapped control to the same spot on screen
+  function paintKeep(c, sel) {
+    const top = c.getBoundingClientRect().top;
+    paint(detailHtml());
+    const n = document.querySelector(sel);
+    if (n) window.scrollBy(0, n.getBoundingClientRect().top - top);
+  }
   function paint(html) {
     const b = box(); if (!b) return false;
     if (html === last && b.dataset.lgx === '1') return true;
@@ -375,9 +382,9 @@ ${ed ? '' : `<label class="mu">Sport</label><select id="lgx-sport" class="lgx-se
     if (a === 'back') { LG.id = null; LG.det = null; loadHome(); return; }
     if (a === 'new') { createModal(); return; }
     if (a === 'edit' && LG.det) { editModal(LG.det.league); return; }
-    if (a === 'sf') { LG.sf = c.dataset.sp; paint(detailHtml()); return; }
-    if (a === 'pf') { LG.pf = c.dataset.pf; paint(detailHtml()); return; }
-    if (a === 'seg') { LG.seg = c.dataset.sg; paint(detailHtml()); return; }
+    if (a === 'sf') { LG.sf = c.dataset.sp; paintKeep(c, `[data-lgx="sf"][data-sp="${c.dataset.sp}"]`); return; }
+    if (a === 'pf') { LG.pf = c.dataset.pf; paintKeep(c, `[data-lgx="pf"][data-pf="${c.dataset.pf}"]`); return; }
+    if (a === 'seg') { LG.seg = c.dataset.sg; paintKeep(c, `[data-lgx="seg"][data-sg="${c.dataset.sg}"]`); return; }
     if (a === 'evt') { LG.open[c.dataset.ek] = c.dataset.open !== '1'; paint(detailHtml()); return; }
     if (a === 'tab') { LG.tab = c.dataset.lt; paint(detailHtml()); return; }
     if (a === 'joinpub') { e.stopPropagation(); c.disabled = true; if (!(await join({ p_id: c.dataset.lid }))) c.disabled = false; return; }
