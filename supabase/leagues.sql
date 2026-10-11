@@ -13,7 +13,7 @@
 -- players and the winner made enough graded picks. Change the numbers in league_cfg() below.
 
 do $$ begin
-  if to_regproc('sp_credit(uuid,integer,integer,text,text)') is null then raise exception 'Run supabase/stake.sql first (it creates sp_credit).'; end if;
+  if to_regprocedure('sp_credit(uuid,integer,integer,text,text)') is null then raise exception 'Run supabase/stake.sql first (it creates sp_credit).'; end if;
   if to_regclass('finished_games') is null then raise exception 'Run supabase/results.sql first (it creates finished_games).'; end if;
 end $$;
 
@@ -312,6 +312,6 @@ grant execute on function settle_league_game(text,text,timestamptz) to service_r
 notify pgrst,'reload schema';
 
 -- ============ CHECK (run on its own after the file above; all should say true) ============
--- select to_regproc('league_finalize()') is not null as functions_ok,
+-- select to_regprocedure('league_finalize()') is not null as functions_ok,
 --        exists(select 1 from pg_trigger where tgname='league_final_trg') as trigger_ok,
 --        to_regclass('league_picks') is not null as tables_ok;
