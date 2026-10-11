@@ -142,8 +142,10 @@ function normSit(sp, s, ids) {
       return { n: pn(o), ph: hs(a, sp, id) };
     };
     const b1 = who(s.onFirst), b2 = who(s.onSecond), b3 = who(s.onThird);
+    const pw = who(s.pitcher);
+    const bw = who(s.batter);
     return { k: 'b', ba: Number(s.balls) || 0, sk: Number(s.strikes) || 0, o: Number(s.outs) || 0, r1: !!s.onFirst, r2: !!s.onSecond, r3: !!s.onThird, bt: pn(s.batter), pt: pn(s.pitcher),
-      n1: b1 ? b1.n : '', n2: b2 ? b2.n : '', n3: b3 ? b3.n : '', p1: b1 ? b1.ph : '', p2: b2 ? b2.ph : '', p3: b3 ? b3.ph : '', lp };
+      n1: b1 ? b1.n : '', n2: b2 ? b2.n : '', n3: b3 ? b3.n : '', p1: b1 ? b1.ph : '', p2: b2 ? b2.ph : '', p3: b3 ? b3.ph : '', pp: pw ? pw.ph : '', bp: bw ? bw.ph : '', lp };
   }
   if (lg.startsWith('football')) { const p = s.possession != null ? String(s.possession) : '';
     return { k: 'f', dd: String(s.downDistanceText || s.shortDownDistanceText || '').slice(0, 40), pt: String(s.possessionText || '').slice(0, 30), po: ids && p === ids.a ? 'a' : ids && p === ids.b ? 'b' : '', rz: !!s.isRedZone,
