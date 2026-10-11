@@ -9,7 +9,7 @@ const https = (u) => String(u || '').replace(/^http:/, 'https:');
 const logo = (t) => https(t && (t.logo || (t.logos && t.logos[0] && t.logos[0].href)));
 const nm = (a) => (a ? a.shortName || a.displayName || '' : '');
 // Player photo: ESPN's own headshot link when it sends one, else the standard ESPN headshot URL for that player id (the app hides it if it doesn't load).
-const pic = (sp, a) => { if (!a || (sp !== 'UFC' && sp !== 'PFL')) return ''; const h = a.headshot, u = typeof h === 'string' ? h : (h && h.href) || ''; if (u) return https(u); const seg = (LEAGUES[sp] || '').split('/').pop(); return a.id && seg && !(LEAGUES[sp] || '').startsWith('soccer') ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + a.id + '.png' : ''; };
+const pic = (sp, a) => { if (!a) return ''; const h = a.headshot, u = typeof h === 'string' ? h : (h && h.href) || ''; if (u) return https(u); const seg = (LEAGUES[sp] || '').split('/').pop(); return a.id && seg && !(LEAGUES[sp] || '').startsWith('soccer') ? 'https://a.espncdn.com/i/headshots/' + seg + '/players/full/' + a.id + '.png' : ''; };
 const posOf = (r) => (r.athlete && r.athlete.position && r.athlete.position.abbreviation) || (r.positions && r.positions[0] && r.positions[0].abbreviation) || (r.position && r.position.abbreviation) || '';
 const state = (s) => (s === 'in' ? 'live' : s === 'post' ? 'final' : 'up');
 
