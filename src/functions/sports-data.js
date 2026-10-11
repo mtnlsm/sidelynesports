@@ -138,7 +138,15 @@ function normSit(sp, s, ids) {
   if (lg.startsWith('football')) { const p = s.possession != null ? String(s.possession) : '';
     return { k: 'f', dd: String(s.downDistanceText || s.shortDownDistanceText || '').slice(0, 40), pt: String(s.possessionText || '').slice(0, 30), po: ids && p === ids.a ? 'a' : ids && p === ids.b ? 'b' : '', rz: !!s.isRedZone,
       ta: s.awayTimeouts != null ? Number(s.awayTimeouts) : undefined, tb: s.homeTimeouts != null ? Number(s.homeTimeouts) : undefined, lp }; }
-  return lp ? { k: 'g', lp } : undefined;
+  // Basketball / hockey: ESPN sends no possession, so estimate it from the team on the last play (pe:1 = estimated).
+  const ls = s.lastPlay && s.lastPlay.team && ids ? (String(s.lastPlay.team.id) === ids.a ? 'a' : String(s.lastPlay.team.id) === ids.b ? 'b' : '') : '';
+  let po = '';
+  if (ls && !/end of (the )?(\d\w* )?(period|quarter|half|game|overtime)/i.test(lp)) {
+    const other = ls === 'a' ? 'b' : 'a'; po = ls;
+    if (lg.startsWith('hockey')) { if (/(goal|shot|blocked|missed|saved|save|giveaway|hit)\b/i.test(lp) && !/takeaway/i.test(lp)) po = other; }
+    else if ((/\b(makes?|made|scores?)\b/i.test(lp) && !/\bmiss/i.test(lp)) || /(turnover|bad pass|lost ball|traveling|offensive foul|shot clock|steals?)/i.test(lp) || /\bmiss(es|ed)\b/i.test(lp)) po = other;
+  }
+  return lp || po ? { k: 'g', lp, po, pe: 1 } : undefined;
 }
 // MLB / college baseball: probable starting pitcher per team (ESPN scoreboard "probables"), shown on the pick sheet.
 const probP = (x) => { const pb = ((x && x.probables) || []).find((q) => q && q.athlete); if (!pb) return '';
